@@ -9,6 +9,21 @@
       "expo-font"
     ],
     "name": "rova-b2c-app",
-    "slug": "rova-b2c-app"
+    "slug": "rova-b2c-app",
+    "version": "1.0.0",
+    "ios": {
+      "bundleIdentifier": "com.swing.rovab2capp"
+    },
+    "android": {
+      "package": "com.swing.rovab2capp"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "afd38dc6-6bba-4bac-ac7d-e465d3880be6"
+      }
+    }
   }
 }

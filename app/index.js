@@ -1,16 +1,10 @@
 import React, { useState } from 'react';
-import { SafeAreaView, TextInput, FlatList, Text, View } from 'react-native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-// Import icons if needed
 import { MaterialIcons } from '@expo/vector-icons';
-import RNPickerSelect from 'react-native-picker-select';
 import Add from './components/Add';
-
-const feedData = [
-  // Your feed data...
-];
+import Profile from './components/Profile';
 
 const Feed = () => (
   <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, height: '100%' }}>
@@ -25,7 +19,6 @@ const Explore = () => (
   </View>
 );
 
-const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MyTabs() {
@@ -64,7 +57,7 @@ function MyTabs() {
       <Tab.Screen name="Explore" component={Explore} />
       <Tab.Screen name="Add" component={Add} options={{headerStyle: { backgroundColor: 'blue', height: 0 }}}/>
       <Tab.Screen name="Groups" component={Explore} />
-      <Tab.Screen name="Profile" component={Explore} />
+      <Tab.Screen name="Profile" component={Profile} options={{headerStyle: { height: 0 }}}/>
     </Tab.Navigator>
   );
 }
