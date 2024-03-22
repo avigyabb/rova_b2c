@@ -2,7 +2,6 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
-import * as SQLite from 'react-native-sqlite-storage'; // whats the difference between this and import SQLite
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -69,46 +68,6 @@ const CategoryTile = ({ name }) => {
 };
 
 const Profile = () => {
-  const db = SQLite.openDatabase('rova_b2c.db');
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState([]);
-
-  if (loading) {
-    return <Text>Loading...</Text>;
-  }
-
-  useEffect(() => {
-    async function openDB() {
-      const database = await SQLite.openDatabase({ name: 'rova_b2c.db', location: 'default' });
-      return database;
-    }
-
-    async function fetchData() {
-      try {
-        const db = await openDB();
-        db.transaction((tx) => {
-          tx.executeSql(
-            'SELECT * FROM YourTableName', 
-            [],
-            (tx, results) => {
-              let rows = results.rows.raw(); // Use raw() to get plain JS objects
-              setData(rows);
-            },
-            (error) => {
-              console.log('Failed to fetch data from database', error);
-            }
-          );
-        });
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    fetchData();
-
-    // Don't forget to close the database when the component unmounts
-    return () => db.close();
-  }, []);
 
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
