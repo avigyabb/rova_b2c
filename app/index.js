@@ -15,7 +15,7 @@ const Feed = () => (
 // Add more screens here
 const Explore = () => (
   <View style={{ backgroundColor: 'white', padding: 20, height: '100%' }}>
-    <Text>Settings</Text>
+    <Text>Settingss</Text>
   </View>
 );
 

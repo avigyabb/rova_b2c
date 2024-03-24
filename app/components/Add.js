@@ -117,6 +117,7 @@ const Add = () => {
   return (
     <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
       <Text style={{ fontSize: 30, fontWeight: 'bold' }}> rova </Text>
+      {/* text input */}
       <TextInput
         placeholder="Album, Movie, Restaurant..."
         placeholderTextColor="#000"
@@ -128,6 +129,7 @@ const Add = () => {
           borderRadius: 10
         }}
       />
+      
       <RNPickerSelect
         onValueChange={(value) => setValue(value)}
         items={[
