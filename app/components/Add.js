@@ -259,6 +259,19 @@ const Add = () => {
     }
   }
 
+  onAddLaterPress = () => {
+    const newLaterItemRef = push(ref(database, 'items'));
+    set(newLaterItemRef, { 
+      category_id: newItemCategory,
+      content: newItem, 
+      score: -1, 
+      bucket: 'later'
+    })
+    .then(() => console.log(`New later item added`))
+    .catch((error) => console.error(`Failed to add later item: ${error}`));
+    setItemAdded(true);
+  }
+
   if (itemAdded) {
     return (
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
@@ -355,7 +368,7 @@ const Add = () => {
               <Text style={styles.optionText}>I didn't like it</Text>
             </View>
           </View>
-          <TouchableOpacity style={{marginTop: 20}}>
+          <TouchableOpacity style={{marginTop: 20}} onPress={() => onAddLaterPress()}>
             <Text style={{ fontWeight: 'bold'}}> Add to 'Later' </Text>
           </TouchableOpacity>
         </View>
