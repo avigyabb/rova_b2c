@@ -184,13 +184,24 @@ const Profile = () => {
     );
   };
 
+  function getScoreColorHSL(score) {
+    if (score < 0) {
+      return '#A3A3A3'; // Gray color for negative scores
+    }
+    const cappedScore = Math.max(0, Math.min(score, 10)); // Cap the score between 0 and 100
+    const hue = (cappedScore / 10) * 120; // Calculate hue from green to red
+    const lightness = 30; // Constant lightness
+    return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
+  }
+
   const ListItemTile = ({ item }) => {
     console.log(item)
+    let scoreColor = getScoreColorHSL(Number(item.score));
     return (
       <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
         <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
-        <View style={styles.listTileScore}>
-          <Text style={{ color: 'green', fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
+        <View style={[styles.listTileScore, { borderColor: scoreColor }]}>
+          <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
         </View>
       </View>
     );
