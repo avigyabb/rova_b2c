@@ -6,6 +6,7 @@ import { ref, set, onValue, off, push, query, equalTo, orderByChild, get } from 
 import { useEffect, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { launchImageLibrary } from 'react-native-image-picker';
+import CategoryList from './CategoryList';
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -40,16 +41,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     marginVertical: 20
-  },
-  listTileScore: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-    borderColor: 'green',
-    borderWidth: 3
   }
 });
 
@@ -87,23 +78,6 @@ const Profile = () => {
   }, [user]);
 
   const onCategoryPress = (category_name, category_id) => {
-    // console.log(category_id)
-    // const userCategoryListRef = ref(database, `categories/${category_id}`);
-
-    // // change this to get ~
-    // const handleValueChange = (snapshot) => {
-    //   console.log(snapshot)
-    //   if (snapshot.exists()) {
-    //     setFocusedList(snapshot.val());
-    //     setFocusedCategory(category_name);
-    //   }
-    // };
-
-    // onValue(userCategoryListRef, handleValueChange);
-
-    // // Clean up listener on unmount
-    // return () => off(userCategoryListRef, 'value', handleValueChange);
-
     const categoryItemsRef = ref(database, 'items');
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(category_id));
 
@@ -184,29 +158,6 @@ const Profile = () => {
     );
   };
 
-  function getScoreColorHSL(score) {
-    if (score < 0) {
-      return '#A3A3A3'; // Gray color for negative scores
-    }
-    const cappedScore = Math.max(0, Math.min(score, 10)); // Cap the score between 0 and 100
-    const hue = (cappedScore / 10) * 120; // Calculate hue from green to red
-    const lightness = 30; // Constant lightness
-    return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
-  }
-
-  const ListItemTile = ({ item }) => {
-    console.log(item)
-    let scoreColor = getScoreColorHSL(Number(item.score));
-    return (
-      <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
-        <View style={[styles.listTileScore, { borderColor: scoreColor }]}>
-          <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
       {focusedCategory === 'addList' ? (
@@ -241,27 +192,7 @@ const Profile = () => {
           </TouchableOpacity>
         </>
       ) : focusedCategory ? (
-        <>
-          <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey' }}>
-            <TouchableOpacity onPress={() => onBackPress()}> 
-              <MaterialIcons name="arrow-back" size={30} color="black" />
-            </TouchableOpacity>
-
-            <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> {focusedCategory}</Text>
-          </View>
-
-          {focusedList ? (           
-            <FlatList
-              data={Object.values(focusedList)}
-              renderItem={({ item }) => <ListItemTile item={item} />}
-              keyExtractor={(item, index) => index.toString()}
-              numColumns={1}
-              key={"single-column"}
-            />
-          ) : (
-            <Text>Add some items to this category!</Text>
-          )}
-        </>
+        <CategoryList focusedCategory={focusedCategory} focusedList={focusedList} onBackPress={() => onBackPress()} />
       ) : (
         <>
           <View style={{ flexDirection: 'row', padding: 15 }}>

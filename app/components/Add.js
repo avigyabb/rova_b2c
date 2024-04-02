@@ -355,6 +355,9 @@ const Add = () => {
               <Text style={styles.optionText}>I didn't like it</Text>
             </View>
           </View>
+          <TouchableOpacity style={{marginTop: 20}}>
+            <Text style={{ fontWeight: 'bold'}}> Add to 'Later' </Text>
+          </TouchableOpacity>
         </View>
       )}
       
