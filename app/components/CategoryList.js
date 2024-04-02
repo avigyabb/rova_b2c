@@ -17,6 +17,7 @@ const styles = StyleSheet.create({
 
 const CategoryList = ({ focusedCategory, focusedList, onBackPress }) => {
   const [listView, setListView] = useState('ranked');
+  const [listData, setListData] = useState(focusedList['now']);
 
   function getScoreColorHSL(score) {
     if (score < 0) {
@@ -29,7 +30,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress }) => {
   }
 
   const ListItemTile = ({ item }) => {
-    console.log(item)
     let scoreColor = getScoreColorHSL(Number(item.score));
     return (
       <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -39,6 +39,16 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress }) => {
         </View>
       </View>
     );
+  }
+
+  const onIconViewPress = () => {
+    if (listView === 'ranked') {
+      setListData(focusedList['later']);
+      setListView('later');
+    } else {
+      setListData(focusedList['now']);
+      setListView('ranked');
+    }
   }
 
   return (
@@ -53,12 +63,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress }) => {
 
       <View style={{ flexDirection: 'row' }}>
         <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'ranked' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
-          <TouchableOpacity onPress={() => setListView('ranked')}>
+          <TouchableOpacity onPress={() => onIconViewPress()}>
             <MaterialIcons name="format-list-bulleted" size={listView === 'ranked' ? 32 : 30} color={listView === 'ranked' ? 'black' : 'gray'} />
           </TouchableOpacity>
         </View>
         <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'later' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
-          <TouchableOpacity onPress={() => setListView('later')}>
+          <TouchableOpacity onPress={() => onIconViewPress()}>
             <MaterialIcons name="watch-later" size={listView === 'later' ? 32 : 30} color={listView === 'later' ? 'black' : 'gray'} />
           </TouchableOpacity>
         </View>
@@ -66,7 +76,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress }) => {
 
       {focusedList ? (           
         <FlatList
-          data={Object.values(focusedList)}
+          data={listData}
           renderItem={({ item }) => <ListItemTile item={item} />}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}

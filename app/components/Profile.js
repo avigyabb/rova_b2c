@@ -82,8 +82,16 @@ const Profile = () => {
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(category_id));
 
     get(categoryItemsQuery).then((snapshot) => {
-      setFocusedList(snapshot.val());
-      setFocusedCategory(category_name);
+      let tempFocusedList = {'now': [], 'later': []};
+      for (const [key, value] of Object.entries(snapshot.val())) {
+        if (value.bucket === 'later') {
+          tempFocusedList['later'].push(value);
+        } else {
+          tempFocusedList['now'].push(value);
+        }
+        setFocusedList(tempFocusedList);
+        setFocusedCategory(category_name);
+      }
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
