@@ -1,7 +1,12 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity, TextInput, SafeAreaView, Alert } from 'react-native';
+
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
+
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
-import { database } from '../../firebaseConfig';
+import { database, storage } from '../../firebaseConfig';
 import { ref, set, onValue, off, push, query, equalTo, orderByChild, get } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import { useEffect, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -120,46 +125,64 @@ const Profile = () => {
     setFocusedCategory(null);
   }
 
-  const selectImage = async () => {
-    const result = await launchImageLibrary({ mediaType: 'photo', quality: 1 });
-    if (result.assets && result.assets.length > 0) { // don't understand the reason for this ~
-      const uri = result.assets[0].uri;
-      uploadImage(uri);
+  
+
+  const [image, setImage] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const pickImage = async () => {
+    // no permissions request is necessary for launching the image library
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,         // all, images, videos
+      allowsEditing: true,
+      aspect: [4,3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
     }
   };
-
-  const selectAndUploadImage = () => {
-    const options = {
-      mediaType: 'photo',
-      quality: 1,
-    };
+  // upload media files
+  const uploadMedia = async () => {
+    if (image === null) return; // Ensure there is an image to upload
+    setUploading(true);
+    try {
+      const response = await fetch(image);
+      const blob = await response.blob(); // Using fetch API to create a blob directly
+      const filename = image.substring(image.lastIndexOf('/') + 1);
+      console.log(filename);
+      const storageRef = storRef(storage, filename); // Corrected reference creation
+      const uploadTask = uploadBytesResumable(storageRef, blob); // Starting the upload
   
-    launchImageLibrary(options, async (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.error) {
-        console.log('ImagePicker Error: ', response.error);
-      } else {
-        const uri = response.assets[0].uri;
-        const imageName = `images/${Date.now()}`; // Create a unique name for the image
-        const imgStorageRef = storageRef(storage(), imageName);
-        
-        try {
-          const imgBlob = await (await fetch(uri)).blob(); // Fetch the image as a blob
-          await uploadBytes(imgStorageRef, imgBlob); // Upload blob to Firebase Storage
-          const imgUrl = await getDownloadURL(imgStorageRef); // Get the download URL
-          console.log('Image uploaded and download URL fetched');
-          
-          // Push new image reference to the Firebase Realtime Database
-          const newImageRef = push(databaseRef(database, 'images'));
-          await set(newImageRef, { imageUrl: imgUrl, createdAt: Date.now() });
-          console.log('Image URL saved to the database');
-        } catch (error) {
-          console.error('Error during the image upload:', error);
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          // You can handle progress here using snapshot
+          // For example, to log the progress:
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log('Upload is ' + progress + '% done');
+        }, 
+        (error) => {
+          // Handle unsuccessful uploads
+          console.error(error);
+          setUploading(false);
+        }, 
+        () => {
+          // Handle successful uploads on complete
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => { // Correctly getting the download URL
+            console.log('File available at', downloadURL);
+            Alert.alert(`Photo ${filename} Uploaded`);
+            setImage(null);
+            setUploading(false);
+          });
         }
-      }
-    });
-  };
+      );
+    } catch (error) {
+      console.error(error);
+      setUploading(false);
+    }
+  };  
+
+
 
   const CategoryTile = ({ category_name, category_id }) => {
     return (
@@ -194,7 +217,16 @@ const Profile = () => {
             }}
           />
 
-          <TouchableOpacity onPress={() => selectAndUploadImage}>
+          <TouchableOpacity onPress={pickImage}>
+            <Text>Pick Image</Text>
+          </TouchableOpacity>
+          <View>
+            {image && <Image
+              source={{ uri: image }}
+              style={{ width: 300, height: 300 }}
+            />}
+          </View>
+          <TouchableOpacity onPress={uploadMedia}>
             <Text>Upload Image</Text>
           </TouchableOpacity>
 

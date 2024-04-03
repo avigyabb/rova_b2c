@@ -53,9 +53,9 @@ function MyTabs() {
 
     >
       {/* this is wrong  */}
-      <Tab.Screen name="Feed" component={Feed} options={{headerStyle: { backgroundColor: 'blue', height: 0 }}}/>
+      <Tab.Screen name="Feed" component={Feed} options={{headerStyle: { height: 0 }}}/>
       <Tab.Screen name="Explore" component={Explore} />
-      <Tab.Screen name="Add" component={Add} options={{headerStyle: { backgroundColor: 'blue', height: 0 }}}/>
+      <Tab.Screen name="Add" component={Add} options={{headerStyle: { height: 0 }}}/>
       <Tab.Screen name="Groups" component={Explore} />
       <Tab.Screen name="Profile" component={Profile} options={{headerStyle: { height: 0 }}}/>
     </Tab.Navigator>
