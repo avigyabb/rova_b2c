@@ -272,6 +272,18 @@ const Add = () => {
     setItemAdded(true);
   }
 
+  onContinuePress = () => {
+    setNewItem('');
+    setNewItemCategory('null'); 
+    setNewItemRating(null);
+    setItemComparisons([]);
+    setItemAdded(false);
+    setBinarySearchL(0);
+    setBinarySearchR(0);
+    setBinarySearchM(0);
+    setNewItemFinalScore(0);
+  }
+
   if (itemAdded) {
     return (
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
@@ -279,39 +291,45 @@ const Add = () => {
         <Text>Item added!</Text>
         <Text>{newItem}</Text>
         <Text>{newItemFinalScore}</Text>
+        <TouchableOpacity onPress={() => onContinuePress()}>
+          <Text>Continue</Text>
+        </TouchableOpacity>
       </View>
     )
   }
+
+  console.log(userCategories.find(item => item.id === newItemCategory))
 
   return (
     <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
       <Text style={{ fontSize: 30, fontWeight: 'bold' }}> rova </Text>
 
-      <TextInput
-        placeholder="Album, Movie, Restaurant..."
-        placeholderTextColor="#000"
-        onChangeText={setNewItem}
+      <RNPickerSelect
+        onValueChange={(value) => setNewItemCategory(value)}
+        items={userCategories.map((item) => ({ label: item.category_name, value: item.id }))}
         style={{
-          marginTop: 20,
-          backgroundColor: 'lightgray',
-          height: 38,
-          padding: 10,
-          borderRadius: 10
+          inputIOS: {
+            padding: 15,
+            borderWidth: 2,
+            borderColor: 'lightgray',
+            borderRadius: 10,
+            marginTop: 20,
+            fontWeight: 'bold',
+          },
         }}
       />
 
-      {newItem.length > 0 && (
-        <RNPickerSelect
-          onValueChange={(value) => setNewItemCategory(value)}
-          items={userCategories.map((item) => ({ label: item.category_name, value: item.id }))}
+      {newItemCategory && newItemCategory !== 'null' && (
+        <TextInput
+          placeholder={`Add item to ${userCategories.find(item => item.id === newItemCategory).category_name}`}
+          placeholderTextColor="#000"
+          onChangeText={setNewItem}
           style={{
-            inputIOS: {
-              padding: 10,
-              borderWidth: 1,
-              borderColor: 'gray',
-              borderRadius: 10,
-              marginTop: 20,
-            },
+            marginTop: 20,
+            backgroundColor: 'lightgray',
+            padding: 15,
+            borderRadius: 10,
+            fontSize: 15
           }}
         />
       )}

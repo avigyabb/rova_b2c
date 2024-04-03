@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
 const Profile = () => {
   const [categories, setCategories] = useState({});
   const [focusedCategory, setFocusedCategory] = useState(null);
+  const [focusedCategoryId, setFocusedCategoryId] = useState(null);
   const [focusedList, setFocusedList] = useState({});
   const [addCategoryName, setAddCategoryName] = useState('');
   const user = 'lebron';
@@ -85,13 +86,15 @@ const Profile = () => {
       let tempFocusedList = {'now': [], 'later': []};
       for (const [key, value] of Object.entries(snapshot.val())) {
         if (value.bucket === 'later') {
-          tempFocusedList['later'].push(value);
+          tempFocusedList['later'].push([key, value]);
         } else {
-          tempFocusedList['now'].push(value);
+          tempFocusedList['now'].push([key, value]);
         }
-        setFocusedList(tempFocusedList);
-        setFocusedCategory(category_name);
       }
+      tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
+      setFocusedList(tempFocusedList);
+      setFocusedCategory(category_name);
+      setFocusedCategoryId(category_id);
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
@@ -200,7 +203,7 @@ const Profile = () => {
           </TouchableOpacity>
         </>
       ) : focusedCategory ? (
-        <CategoryList focusedCategory={focusedCategory} focusedList={focusedList} onBackPress={() => onBackPress()} />
+        <CategoryList focusedCategory={focusedCategory} focusedList={focusedList} focusedCategoryId={focusedCategoryId} onBackPress={() => onBackPress()}/>
       ) : (
         <>
           <View style={{ flexDirection: 'row', padding: 15 }}>
