@@ -105,7 +105,8 @@ const Add = ({ route }) => {
   const [newItem, setNewItem] = useState('');
   const [userCategories, setUserCategories] = useState([]);
   const [newItemCategory, setNewItemCategory] = useState('null');
-  const [newItemRating, setNewItemRating] = useState(null);
+  const [newItemDescription, setNewItemDescription] = useState('');
+  const [newItemBucket, setNewItemBucket] = useState(null);
   const [itemComparisons, setItemComparisons] = useState([]);
   const [itemAdded, setItemAdded] = useState(false);
   const [binarySearchL, setBinarySearchL] = useState(0);
@@ -135,7 +136,7 @@ const Add = ({ route }) => {
 
       setUserCategories(categories);
     }).catch((error) => {
-      console.error("Error fetching categories:", error);
+      console.error("Error getUserCategories:", error);
     });
   }
 
@@ -144,92 +145,82 @@ const Add = ({ route }) => {
     getUserCategories();
   }, []);
 
-  const addNewItem = (rating, newBinarySearchM, isNewCard) => {
-    let items = addElementAndRecalculate(itemComparisons, newItem, rating, newBinarySearchM, isNewCard);
+  function addElementAndRecalculate(array, newItemObj, newBinarySearchM, isNewCard) {
+    const minMaxMap = {'like': [10.0, 6.7], 'neutral': [6.6, 3.3], 'dislike': [3.2, 0.0]}
+    if (isNewCard) {
+      array.splice(newBinarySearchM, 0, newItemObj);
+    } else {
+      array.splice(newBinarySearchM + 1, 0, newItemObj);
+    }
+
+    let isLike = newItemObj.bucket === 'like' ? 0 : 1;
+
+    const step = (minMaxMap[newItemObj.bucket][0] - minMaxMap[newItemObj.bucket][1]) / (array.length + isLike);
+    for (let i = 0; i < array.length; i++) {
+        console.log(array[i])
+        array[i].score = minMaxMap[newItemObj.bucket][0] - step * (i + isLike);
+    }
+    return array
+  }
+
+  const addNewItem = (newItemBucket, newBinarySearchM, isNewCard) => {
+    const newItemObj = {'bucket': newItemBucket, 'content': newItem, 'description': newItemDescription, 'score': null};
+    let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
 
     items.forEach((item) => {
-      // Check if a Firebase key exists in the third position of the sub-array
-      if (item.length === 3 && item[2]) {
-        // There is a key, so update the score for the existing item
-        const itemRef = ref(database, `items/${item[2]}`);
-        set(itemRef, { 
-          bucket: newItemRating,
-          category_id: newItemCategory,
-          content: item[0],
-          score: item[1]
-        })
-        .then(() => console.log(`Score updated for ${item[2]}`))
-        .catch((error) => console.error(`Failed to update score for ${item[2]}: ${error}`));
+      let itemRef = null;
+      if (item.key) { // There is a key, this is an item that already has been added
+        itemRef = ref(database, `items/${item.key}`);
       } else {
-        // There is no key, so add a new item with a score of 10
-        setNewItemFinalScore(item[1].toFixed(1));
-        const newItemRef = push(ref(database, 'items'));
-        set(newItemRef, { 
-          category_id: newItemCategory,
-          content: item[0], 
-          score: item[1], 
-          bucket: rating
-        })
-        .then(() => console.log(`New item added`))
-        .catch((error) => console.error(`Failed to add new item: ${error}`));
+        setNewItemFinalScore(item.score.toFixed(1));
+        itemRef = push(ref(database, 'items'));
       }
+      set(itemRef, { 
+        bucket: newItemBucket,
+        category_id: newItemCategory,
+        content: item.content, 
+        description: item.description,
+        score: item.score
+      })
+      .then(() => console.log(`Score updated for ${item[2]}`))
+      .catch((error) => console.error(`Failed to update score for ${item[2]}: ${error}`));
     });
 
     setItemAdded(true);
   }
 
-  const onBucketPress = (rating) => {
+  const onBucketPress = (bucket) => {
     const categoryItemsRef = ref(database, 'items');
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(newItemCategory));
 
     get(categoryItemsQuery).then((snapshot) => {
       const itemComparisons = [];
-      snapshot.forEach((childSnapshot) => {
-        if (childSnapshot.val().bucket === rating) {
-          itemComparisons.push([childSnapshot.val().content, childSnapshot.val().score, childSnapshot.key]);
-        }
-      });
-      itemComparisons.sort((a, b) => b[1] - a[1]);
+      if (snapshot.exists()) { // didn't affect anything
+        snapshot.forEach((childSnapshot) => {
+          if (childSnapshot.val().bucket === bucket) {
+            itemComparisons.push({
+              'key': childSnapshot.key,
+              'content':childSnapshot.val().content, 
+              'description': childSnapshot.val().description,
+              'score': childSnapshot.val().score,
+            });
+          }
+        });
+        itemComparisons.sort((a, b) => b.score - a.score);
+      } 
       setItemComparisons(itemComparisons)
-      setNewItemRating(rating);
+      setNewItemBucket(bucket); // bucket doesn't update fast enough so need to pass in as a parameter
       setBinarySearchL(0);
       setBinarySearchR(itemComparisons.length - 1);
       setBinarySearchM(Math.floor((itemComparisons.length - 1) / 2));
       if (itemComparisons.length === 0) {
         setBinarySearchL(0);
         setBinarySearchR(0);
-        addNewItem(rating, 0, true);
+        addNewItem(bucket, 0, true); // if there are no items to compare add it to the first position
       }
     }).catch((error) => {
-      console.error("Error fetching categories:", error);
+      console.error("Error onBucketPress:", error);
     });
-  }
-
-  function addElementAndRecalculate(array, newItemContent, newItemBucket, newBinarySearchM, isNewCard) {
-    const minMaxMap = {
-      'like': [10.0, 6.7],
-      'neutral': [6.6, 3.3],
-      'dislike': [3.2, 0.0]
-    }
-    if (isNewCard) {
-      array.splice(newBinarySearchM, 0, [newItemContent, null]);
-    } else {
-      array.splice(newBinarySearchM + 1, 0, [newItemContent, null]);
-    }
-
-    let isLike = 1
-    if (newItemBucket === 'like') {
-      isLike = 0
-    }
-
-    // Calculate the step based on the range and the length of the array
-    const step = (minMaxMap[newItemBucket][0] - minMaxMap[newItemBucket][1]) / (array.length + isLike);
-  
-    // Recalculate the numbers for each element
-    for (let i = 0; i < array.length; i++) {
-        array[i][1] = minMaxMap[newItemBucket][0] - step * (i + isLike);
-    }
-    return array
   }
 
   const onCardComparisonPress = (isNewCard) => {
@@ -241,7 +232,7 @@ const Add = ({ route }) => {
       if (newBinarySearchL > newBinarySearchR) {
         setBinarySearchL(0);
         setBinarySearchR(0);
-        addNewItem(newItemRating, newBinarySearchM, isNewCard);
+        addNewItem(newItemBucket, newBinarySearchM, isNewCard);
       }
       newBinarySearchM = Math.floor((newBinarySearchR + newBinarySearchL) / 2)
       setBinarySearchR(newBinarySearchR);
@@ -251,7 +242,7 @@ const Add = ({ route }) => {
       if (newBinarySearchL > newBinarySearchR) {
         setBinarySearchL(0);
         setBinarySearchR(0);
-        addNewItem(newItemRating, newBinarySearchM, isNewCard);
+        addNewItem(newItemBucket,newBinarySearchM, isNewCard);
       }
       newBinarySearchM = Math.floor((newBinarySearchR + newBinarySearchL) / 2)
       setBinarySearchL(newBinarySearchL);
@@ -275,7 +266,7 @@ const Add = ({ route }) => {
   onContinuePress = () => {
     setNewItem('');
     setNewItemCategory('null'); 
-    setNewItemRating(null);
+    setNewItemBucket(null);
     setItemComparisons([]);
     setItemAdded(false);
     setBinarySearchL(0);
@@ -286,15 +277,49 @@ const Add = ({ route }) => {
   }
 
   if (itemAdded) {
+    function getScoreColorHSL(score) {
+      if (score < 0) {
+        return '#A3A3A3'; // Gray color for negative scores
+      }
+      const cappedScore = Math.max(0, Math.min(score, 10)); // Cap the score between 0 and 100
+      const hue = (cappedScore / 10) * 120; // Calculate hue from green to red
+      const lightness = 30; // Constant lightness
+      return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
+    }
+
+    let scoreColor = getScoreColorHSL(newItemFinalScore);
+
     return (
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
-        <Text style={{ fontSize: 30 }}> rova </Text>
-        <Text>Item added!</Text>
-        <Text>{newItem}</Text>
-        <Text>{newItemFinalScore}</Text>
-        <TouchableOpacity onPress={() => onContinuePress()}>
-          <Text>Continue</Text>
-        </TouchableOpacity>
+        <Text style={{ fontSize: 30, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+        <View style={{ alignItems: 'center', justifyContent: 'space-evenly', height: '80%' }}>
+          <Text style={{ fontSize: 30, fontWeight: 'bold' }}>Item added! 🎉</Text>
+          <View style={{ borderWidth: 3, borderColor: 'lightgray', width: 250, height: 250, alignItems: 'center', justifyContent: 'space-evenly', borderRadius: 25 }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{newItem}</Text>
+            <View style={{
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 4,
+              borderColor: scoreColor,
+              borderWidth: 3
+            }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: scoreColor }}>{newItemFinalScore}</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={() => onContinuePress()} style={{
+            width: 250,
+            backgroundColor: 'black',
+            alignItems: 'center',
+            height: 50,
+            justifyContent: 'center',
+            borderRadius: 15
+          }}>
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Continue</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     )
   }
@@ -360,6 +385,7 @@ const Add = ({ route }) => {
             />
             <TextInput
               placeholder={'Add a description...'}
+              onChangeText={setNewItemDescription}
               placeholderTextColor="gray"
               multiline={true}
               style={{ 
@@ -436,11 +462,11 @@ const Add = ({ route }) => {
                   style={[
                     styles.option,
                     { backgroundColor: 'lightgreen' },
-                    newItemRating === 'like' && styles.selectedOption,
+                    newItemBucket === 'like' && styles.selectedOption,
                   ]}
                   onPress={() => onBucketPress('like')}
                 >
-                  {newItemRating === 'like' && (
+                  {newItemBucket === 'like' && (
                     <MaterialIcons name="check" size={24} color="white" />
                   )}
                 </TouchableOpacity>
@@ -452,11 +478,11 @@ const Add = ({ route }) => {
                   style={[
                     styles.option,
                     { backgroundColor: 'gold' },
-                    newItemRating === 'neutral' && styles.selectedOption,
+                    newItemBucket === 'neutral' && styles.selectedOption,
                   ]}
                   onPress={() => onBucketPress('neutral')}
                 >
-                  {newItemRating === 'neutral' && (
+                  {newItemBucket === 'neutral' && (
                     <MaterialIcons name="check" size={24} color="white" />
                   )}
                 </TouchableOpacity>
@@ -468,11 +494,11 @@ const Add = ({ route }) => {
                   style={[
                     styles.option,
                     { backgroundColor: 'tomato' },
-                    newItemRating === 'dislike' && styles.selectedOption,
+                    newItemBucket === 'dislike' && styles.selectedOption,
                   ]}
                   onPress={() => onBucketPress('dislike')}
                 >
-                  {newItemRating === 'dislike' && (
+                  {newItemBucket === 'dislike' && (
                     <MaterialIcons name="check" size={24} color="white" />
                   )}
                 </TouchableOpacity>
@@ -512,9 +538,9 @@ const Add = ({ route }) => {
               </View>
               
               <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(false)}>
-                <Text style={styles.restaurantName}>{itemComparisons[binarySearchM][0]}</Text>
+                <Text style={styles.restaurantName}>{itemComparisons[binarySearchM].content}</Text>
                 <Text style={styles.location}>Washington, DC</Text>
-                <Text style={styles.location}>{itemComparisons[binarySearchM][1].toFixed(1)}</Text>
+                <Text style={styles.location}>{itemComparisons[binarySearchM].score.toFixed(1)}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.actionsContainer}>

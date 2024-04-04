@@ -7,9 +7,9 @@ import { getStorage, ref as storageRef, deleteObject } from "firebase/storage";
 
 const styles = StyleSheet.create({
   listTileScore: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
@@ -114,6 +114,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     const categoryItemsRef = ref(database, 'items');
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(focusedCategoryId));
 
+    // some repeated code here from Profile.js
     get(categoryItemsQuery).then((snapshot) => {
       let tempFocusedList = {'now': [], 'later': []};
       if (snapshot.exists()) {
@@ -132,17 +133,20 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     });
   }
 
-  const ListItemTile = ({ item, item_key }) => {
+  const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
     return (
-      <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
+      <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, flexDirection: 'row' }}>
         {editMode && (
-          <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)}>
+          <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
             <MaterialIcons name="do-disturb-on" size={25} color="red" />
           </TouchableOpacity>
         )}
-        <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
-        <View style={[styles.listTileScore, { borderColor: scoreColor }]}>
+        <View>
+          <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{index + 1}) {item.content}</Text>
+          <Text style={{ color: 'grey', marginTop: 5 }}>{item.description}</Text>
+        </View>
+        <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
           <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
         </View>
       </View>
@@ -237,7 +241,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       {listData[listView].length > 0 ? (           
         <FlatList
           data={listData[listView]}
-          renderItem={({ item }) => <ListItemTile item={item[1]} item_key={item[0]} />}
+          renderItem={({ item, index }) => <ListItemTile item={item[1]} item_key={item[0]} index={index} />}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}
