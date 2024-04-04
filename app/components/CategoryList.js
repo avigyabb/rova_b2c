@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from "react
 import { MaterialIcons } from '@expo/vector-icons';
 import { ref, set, remove, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
 import { database } from '../../firebaseConfig';
+import { getStorage, ref as storageRef, deleteObject } from "firebase/storage";
 
 const styles = StyleSheet.create({
   listTileScore: {
@@ -51,6 +52,25 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     }
     return similarBucketItems;
   }
+
+  const deleteImageFromStorage = async (imageUri) => {
+    try {
+      const storage = getStorage();
+      
+      // You need to transform the `imageUri` from your database to the storage reference
+      // If your `imageUri` is a full URL like in the example you provided,
+      // you will need to extract the path to the file from it.
+      // Example: "items/84E4F4D9-D783-4486-8BDD-251FF2752334.png"
+      const imagePath = imageUri.split('/o/')[1].split('?')[0];
+      const decodedImagePath = decodeURIComponent(imagePath);
+  
+      const imageRef = storageRef(storage, decodedImagePath);
+      await deleteObject(imageRef);
+      console.log('Image deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+    }
+  };
 
   const onDeleteItemPress = (item_bucket, item_category_id) => {
     const delItemRef = ref(database, `items/${item_category_id}`);
@@ -158,6 +178,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     remove(delCategoryRef).then(() => {
       console.log('Category deleted successfully!');
     })
+
+    onBackPress();
   }
 
   const onDeleteCategoryPress = () => {
@@ -166,7 +188,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       "All items in this category will be deleted.", // Alert Message
       [
         { text: "Cancel", onPress: () => console.log("Cancel Pressed"), style: "cancel"},
-        { text: "Delete Category", onPress: () => console.log("Confirmed") }
+        { text: "Delete Category", onPress: () => deleteCategoryAndItems() }
       ],
       { cancelable: false } // This prevents the alert from being dismissed by tapping outside of the alert dialog.
     );
@@ -183,7 +205,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
           </TouchableOpacity>
         ) : (
-          <Text style={{ fontSize: 15, fontWeight: 'bold' }}> {focusedCategory}</Text>
+          <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{focusedCategory}</Text>
         )}
 
         <TouchableOpacity onPress={() => onEditPress()}>

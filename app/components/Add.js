@@ -120,7 +120,7 @@ const Add = ({ route }) => {
   });
   const [rankMode, setRankMode] = useState(false);
 
-  useEffect(() => {
+  const getUserCategories = () => {
     const categoriesRef = ref(database, 'categories');
     const userCategoriesQuery = query(categoriesRef, orderByChild('user_id'), equalTo(userKey));
     get(userCategoriesQuery).then((snapshot) => {
@@ -137,6 +137,11 @@ const Add = ({ route }) => {
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
+  }
+
+  useEffect(() => {
+    console.log(userKey)
+    getUserCategories();
   }, []);
 
   const addNewItem = (rating, newBinarySearchM, isNewCard) => {
@@ -302,6 +307,7 @@ const Add = ({ route }) => {
         {!rankMode && (
           <RNPickerSelect
             onValueChange={(value) => setNewItemCategory(value)}
+            onOpen={() => getUserCategories()}
             items={userCategories.map((item) => ({ label: item.category_name, value: item.id }))}
             style={{
               inputIOS: {
