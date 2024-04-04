@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity, TextInput, SafeAreaView, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity, TextInput, SafeAreaView, Alert, ImageBackground } from 'react-native';
 
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -10,7 +10,6 @@ import { database, storage } from '../../firebaseConfig';
 import { ref, set, onValue, off, push, query, equalTo, orderByChild, get } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import { useEffect, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { launchImageLibrary } from 'react-native-image-picker';
 import CategoryList from './CategoryList';
 
 const styles = StyleSheet.create({
@@ -27,13 +26,17 @@ const styles = StyleSheet.create({
     width: 129,
     height: 129,
     margin: 1,
-    backgroundColor: 'lightgrey',
-    padding: 8,
+    overflow: 'hidden', // Ensure the image is contained within the borders of the tile
+  },
+  tileBackground: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'flex-end', // Position text at the bottom of the tile
   },
   tileText: {
-    // Add text styling if needed
-    fontSize: 16,
-    fontWeight: 'bold',
+    // existing text styles...
+    color: 'white', // Ensure text is visible on likely darker images
+    padding: 8, // Add padding to separate text from the edges
   },
   editButtons: {
     fontWeight: 'bold',
@@ -105,27 +108,25 @@ const Profile = () => {
     });
   }
 
-  const onAddCategoryPress = (category_name) => {
+  const onAddCategoryPress = (category_name, image) => {
     const newCategoryRef = push(ref(database, 'categories'));
-
-    // Set the data for the new item reference
+  
     set(newCategoryRef, {
       category_name: category_name,
       num_items: 0,
       user_id: user,
       category_type: 'ranked_list',
       list_num: 0,
+      imageUri: image, // Save the URI in the database
     })
-    .then(() => console.log('New category added.'))
+    .then(() => console.log('New category added with image URI.'))
     .catch((error) => console.error('Error adding new category:', error));
-  };
+  };  
 
   onBackPress = () => {
     setFocusedList({});
     setFocusedCategory(null);
   }
-
-  
 
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -140,57 +141,60 @@ const Profile = () => {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      console.log(result.assets[0].uri); // Log the selected image URI. THIS IS WHAT WE WANT STORED IN THE OBJECT, THIS IS WHAT THE LONG LINK IS FOR EACH VARIABLE. right now one is hard coded, but we need to store this somehow in the object so then it can be retrieved and set to the uri to display a specific image for each tile.
     }
   };
+
   // upload media files
   const uploadMedia = async () => {
-    if (image === null) return; // Ensure there is an image to upload
+    if (image === null) return null; // Return null if no image to upload
     setUploading(true);
     try {
       const response = await fetch(image);
-      const blob = await response.blob(); // Using fetch API to create a blob directly
+      const blob = await response.blob();
       const filename = image.substring(image.lastIndexOf('/') + 1);
-      console.log(filename);
-      const storageRef = storRef(storage, filename); // Corrected reference creation
-      const uploadTask = uploadBytesResumable(storageRef, blob); // Starting the upload
+      const storageRef = storRef(storage, filename); // Use the previously renamed 'ref' function
+      const uploadTask = uploadBytesResumable(storageRef, blob);
   
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          // You can handle progress here using snapshot
-          // For example, to log the progress:
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log('Upload is ' + progress + '% done');
-        }, 
-        (error) => {
-          // Handle unsuccessful uploads
-          console.error(error);
-          setUploading(false);
-        }, 
-        () => {
-          // Handle successful uploads on complete
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => { // Correctly getting the download URL
-            console.log('File available at', downloadURL);
-            Alert.alert(`Photo ${filename} Uploaded`);
+      // Use a promise to wait for the upload to complete and then return the filename
+      return await new Promise((resolve, reject) => {
+        uploadTask.on('state_changed', 
+          (snapshot) => {
+            // Optional: Update progress state here
+          }, 
+          (error) => {
+            console.error(error);
+            setUploading(false);
+            reject(error);
+          }, 
+          () => {
+            console.log('File available at', filename);
             setImage(null);
             setUploading(false);
-          });
-        }
-      );
+            resolve(filename); // Resolve the promise with the filename
+          }
+        );
+      });
     } catch (error) {
       console.error(error);
       setUploading(false);
+      return null; // Return null in case of error
     }
   };  
 
-
-
-  const CategoryTile = ({ category_name, category_id }) => {
+  const CategoryTile = ({ category_name, category_id, imageUri }) => {
     return (
       <TouchableOpacity style={styles.tile} onPress={() => onCategoryPress(category_name, category_id)}>
-        <Text style={styles.tileText}>{category_name}</Text>
+        <ImageBackground
+          source={{ uri: imageUri }} // Use the imageUri directly
+          resizeMode="cover"
+          style={styles.tileBackground}
+        >
+          <Text style={styles.tileText}>{category_name}</Text>
+        </ImageBackground>
       </TouchableOpacity>
     );
-  };
+  };  
 
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
@@ -205,7 +209,7 @@ const Profile = () => {
           </View>
 
           <TextInput
-            placeholder="List Name"
+            placeholder="Enter New List Name..."
             placeholderTextColor="#000"
             onChangeText={setAddCategoryName}
             style={{
@@ -213,26 +217,37 @@ const Profile = () => {
               backgroundColor: 'lightgray',
               height: 38,
               padding: 10,
-              borderRadius: 10
+              borderRadius: 10,
             }}
           />
 
-          <TouchableOpacity onPress={pickImage}>
-            <Text>Pick Image</Text>
-          </TouchableOpacity>
-          <View>
-            {image && <Image
-              source={{ uri: image }}
-              style={{ width: 300, height: 300 }}
-            />}
+          <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+            <TouchableOpacity onPress={pickImage} style={{ width: 140, height: 70, borderRadius: 35, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center', marginTop: 35 }}>
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Pick Image</Text>
+            </TouchableOpacity>
+            <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+              {image && <Image
+                source={{ uri: image }}
+                style={{ width: 300, height: 300, marginTop: 35 }}
+              />}
+            </View>
           </View>
-          <TouchableOpacity onPress={uploadMedia}>
-            <Text>Upload Image</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity style={{width: 70, height: 70, borderRadius: 35, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center', marginTop: 20}} onPress={() => onAddCategoryPress(addCategoryName)}>
-            <Text style={{color: 'white', fontWeight: 'bold'}}>Add</Text>
-          </TouchableOpacity>
+          <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+            <TouchableOpacity
+              style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center', marginTop: 35 }}
+              onPress={async () => {
+                const filename = await uploadMedia(); // This should be the URI or a reference to the image
+                if (filename) {
+                  onAddCategoryPress(addCategoryName, image); // Pass the filename/URI here
+                  Alert.alert("Category Uploaded");
+                } else {
+                  Alert.alert("Upload failed", "The image could not be uploaded. Please try again.");
+                }
+              }}>
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Add</Text>
+            </TouchableOpacity>
+          </View>
         </>
       ) : focusedCategory ? (
         <CategoryList focusedCategory={focusedCategory} focusedList={focusedList} focusedCategoryId={focusedCategoryId} onBackPress={() => onBackPress()}/>
@@ -266,7 +281,7 @@ const Profile = () => {
 
           <FlatList
             data={categories}
-            renderItem={({ item }) => <CategoryTile category_name={item.category_name} category_id={item.id}/>}
+            renderItem={({ item }) => <CategoryTile category_name={item.category_name} category_id={item.id} imageUri={item.imageUri}/>}
             keyExtractor={(item, index) => index.toString()}
             numColumns={3}
             contentContainerStyle={styles.grid}
