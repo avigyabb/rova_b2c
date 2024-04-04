@@ -1,24 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ref, set, onValue, off, query, orderByChild, push, equalTo, get } from "firebase/database";
 import { database } from '../../firebaseConfig';
+import { useFonts } from 'expo-font';
+import profilePic from '../../assets/images/lebron_profile_pic.webp';
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginTop: 20
-  },
-  question: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
   optionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -44,31 +33,17 @@ const styles = StyleSheet.create({
     width: '26%',
     alignItems: 'center',
   },
-  pickingContainer: {
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 10,
-    marginTop: 20,
-  },
-  headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    marginTop: 10
-  },
   cardsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
     width: '96%',
   },
   card: {
     borderWidth: 1,
-    borderColor: 'black',
+    borderColor: 'lightgray',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -110,6 +85,19 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 16,
   },
+  profilePic: {
+    width: 36,        // Specify the width
+    height: 36,       // Specify the height
+    borderRadius: 18,  // Make sure this is half of the width and height
+  },
+  postButtons: {
+    flexDirection: 'row',
+    borderWidth: 2,
+    padding: 6,
+    alignItems: 'center',
+    borderRadius: 17,
+    marginRight: 8
+  }
 });
 
 const Add = () => {
@@ -123,6 +111,13 @@ const Add = () => {
   const [binarySearchR, setBinarySearchR] = useState(0);
   const [binarySearchM, setBinarySearchM] = useState(0);
   const [newItemFinalScore, setNewItemFinalScore] = useState(0);
+  const [loaded] = useFonts({
+    'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
+    'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
+    'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
+    'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
+  });
+  const [rankMode, setRankMode] = useState(false);
   const user = 'lebron';
 
   useEffect(() => {
@@ -287,7 +282,7 @@ const Add = () => {
   if (itemAdded) {
     return (
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
-        <Text style={{ fontSize: 30, fontWeight: 'bold' }}> rova </Text>
+        <Text style={{ fontSize: 30 }}> rova </Text>
         <Text>Item added!</Text>
         <Text>{newItem}</Text>
         <Text>{newItemFinalScore}</Text>
@@ -301,131 +296,237 @@ const Add = () => {
   console.log(userCategories.find(item => item.id === newItemCategory))
 
   return (
-    <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
-      <Text style={{ fontSize: 30, fontWeight: 'bold' }}> rova </Text>
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+      <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
+        <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginTop: 10 }}>ambora\social</Text>
 
-      <RNPickerSelect
-        onValueChange={(value) => setNewItemCategory(value)}
-        items={userCategories.map((item) => ({ label: item.category_name, value: item.id }))}
-        style={{
-          inputIOS: {
-            padding: 15,
-            borderWidth: 2,
-            borderColor: 'lightgray',
-            borderRadius: 10,
-            marginTop: 20,
-            fontWeight: 'bold',
-          },
-        }}
-      />
+        {!rankMode && (
+          <RNPickerSelect
+            onValueChange={(value) => setNewItemCategory(value)}
+            items={userCategories.map((item) => ({ label: item.category_name, value: item.id }))}
+            style={{
+              inputIOS: {
+                padding: 15,
+                borderWidth: 2,
+                borderColor: 'lightgray',
+                borderRadius: 10,
+                marginTop: 15,
+                fontWeight: 'bold',
+                letterSpacing: 0.4,
+                fontSize: 16
+              },
+            }}
+          />
+        )}
 
-      {newItemCategory && newItemCategory !== 'null' && (
-        <TextInput
-          placeholder={`Add item to ${userCategories.find(item => item.id === newItemCategory).category_name}`}
-          placeholderTextColor="#000"
-          onChangeText={setNewItem}
-          style={{
-            marginTop: 20,
+        {newItemCategory && newItemCategory !== 'null' && (
+          <View style={{
+            flexDirection: 'row',
+            marginTop: 15,
             backgroundColor: 'lightgray',
-            padding: 15,
+            paddingHorizontal: 15,
             borderRadius: 10,
-            fontSize: 15
-          }}
-        />
-      )}
-      
-      {newItem.length > 0 && newItemCategory !== 'null' && (
-        <View style={styles.container}>
-          <Text style={styles.question}>How was it?</Text>
-          <View style={styles.optionsContainer}>
-            <View style={styles.optionBox}>
-              <TouchableOpacity
-                style={[
-                  styles.option,
-                  { backgroundColor: 'lightgreen' },
-                  newItemRating === 'like' && styles.selectedOption,
-                ]}
-                onPress={() => onBucketPress('like')}
-              >
-                {newItemRating === 'like' && (
-                  <MaterialIcons name="check" size={24} color="white" />
-                )}
-              </TouchableOpacity>
-              <Text style={styles.optionText}>I liked it!</Text>
-            </View>
-            
-            <View style={styles.optionBox}>
-              <TouchableOpacity
-                style={[
-                  styles.option,
-                  { backgroundColor: 'gold' },
-                  newItemRating === 'neutral' && styles.selectedOption,
-                ]}
-                onPress={() => onBucketPress('neutral')}
-              >
-                {newItemRating === 'neutral' && (
-                  <MaterialIcons name="check" size={24} color="white" />
-                )}
-              </TouchableOpacity>
-              <Text style={styles.optionText}>It was fine</Text>
-            </View>
-            
-            <View style={styles.optionBox}>
-              <TouchableOpacity
-                style={[
-                  styles.option,
-                  { backgroundColor: 'tomato' },
-                  newItemRating === 'dislike' && styles.selectedOption,
-                ]}
-                onPress={() => onBucketPress('dislike')}
-              >
-                {newItemRating === 'dislike' && (
-                  <MaterialIcons name="check" size={24} color="white" />
-                )}
-              </TouchableOpacity>
-              <Text style={styles.optionText}>I didn't like it</Text>
-            </View>
+            alignItems: 'center', // Aligns the TextInput and the icon vertically
+          }}>
+            <MaterialIcons name="search" size={24} color="black" style={styles.icon} />
+            <TextInput
+              placeholder={`Add to ${userCategories.find(item => item.id === newItemCategory)?.category_name || ''}`}
+              placeholderTextColor="gray"
+              onChangeText={setNewItem}
+              style={{
+                flex: 1, // Takes up the maximum space leaving the icon on the far side
+                fontSize: 15,
+                letterSpacing: 0.4,
+                paddingLeft: 10, // Optional: Adds some space between the icon and the text input
+                fontWeight: 'bold',
+                fontSize: 16,
+                height: 50
+              }}
+            />
           </View>
-          <TouchableOpacity style={{marginTop: 20}} onPress={() => onAddLaterPress()}>
-            <Text style={{ fontWeight: 'bold'}}> Add to 'Later' </Text>
+        )}
+
+        {newItem.length > 0 && newItemCategory !== 'null' && !rankMode &&(
+          <>
+          <View style={{ flexDirection: 'row', marginTop: 15 }}>
+            <Image
+              source={profilePic}
+              style={styles.profilePic}
+            />
+            <TextInput
+              placeholder={'Add a description...'}
+              placeholderTextColor="gray"
+              multiline={true}
+              style={{ 
+                marginLeft: 10, 
+                fontSize: 16, 
+                height: 'auto', 
+                flex: 1,
+                height: 160
+              }}
+            />
+          </View>
+
+          <View style={{ flexDirection: 'row', marginTop: 15, borderBottomWidth: 1, borderColor: 'lightgray', paddingBottom: 15 }}>
+            <TouchableOpacity style={styles.postButtons}>
+              <MaterialIcons name="photo-camera" size={20} color="black" />
+              <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Add Image</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.postButtons}>
+              <MaterialIcons name="person-pin" size={20} color="black" />
+              <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Friends</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={{alignItems: 'center', marginTop: 60}}>
+            <TouchableOpacity onPress={() => setRankMode(true)} style={{
+              backgroundColor: 'black',
+              alignItems: 'center',
+              padding: 20,
+              paddingHorizontal: 80,
+              borderRadius: 28
+            }}>
+              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Add to List</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onAddLaterPress()} style={{ 
+              marginTop: 20, 
+              borderWidth: 2, 
+              borderColor: 'lightgray', 
+              padding: 15, 
+              borderRadius: 15,
+              flexDirection: 'row',
+              alignItems: 'center'
+            }}>
+              <MaterialIcons name="watch-later" size={20} color="gray" />
+              <Text style={{ color: 'gray', fontWeight: 'bold', fontSize: 14, marginLeft: 8 }}>Add to 'Later'</Text>
+            </TouchableOpacity>
+          </View>
+          </>
+        )}
+        
+        {newItem.length > 0 && newItemCategory !== 'null' && rankMode && (
+          <>
+          <TouchableOpacity style={{ marginTop: 15 }} onPress={() => setRankMode(false)}>
+            <Text style={{ fontSize: 16 }}>Cancel</Text>
           </TouchableOpacity>
-        </View>
-      )}
-      
-      {newItem.length > 0 && newItemCategory !== 'null' && itemComparisons.length > 0 && !itemAdded && (
-        <View style={styles.pickingContainer}>
-          <Text style={styles.headerText}>Which do you prefer?</Text>
-          <View style={styles.cardsContainer}>
-            <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(true)}>
-              <Text style={styles.restaurantName}>{newItem}</Text>
-              <Text style={styles.location}>Washington, DC</Text>
-            </TouchableOpacity>
-
-            <View style={styles.orContainer}>
-              <Text style={styles.orText}>OR</Text>
+          <View style={{
+            alignItems: 'center',
+            borderColor: 'lightgray',
+            borderWidth: 2,
+            borderRadius: 10,
+            padding: 10,
+            paddingVertical: 15,
+            marginTop: 10
+          }}>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: 'bold',
+              marginBottom: 15,
+            }}>
+              How was it?
+            </Text>
+            <View style={styles.optionsContainer}>
+              <View style={styles.optionBox}>
+                <TouchableOpacity
+                  style={[
+                    styles.option,
+                    { backgroundColor: 'lightgreen' },
+                    newItemRating === 'like' && styles.selectedOption,
+                  ]}
+                  onPress={() => onBucketPress('like')}
+                >
+                  {newItemRating === 'like' && (
+                    <MaterialIcons name="check" size={24} color="white" />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.optionText}>Good!</Text>
+              </View>
+              
+              <View style={styles.optionBox}>
+                <TouchableOpacity
+                  style={[
+                    styles.option,
+                    { backgroundColor: 'gold' },
+                    newItemRating === 'neutral' && styles.selectedOption,
+                  ]}
+                  onPress={() => onBucketPress('neutral')}
+                >
+                  {newItemRating === 'neutral' && (
+                    <MaterialIcons name="check" size={24} color="white" />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.optionText}>Mid</Text>
+              </View>
+              
+              <View style={styles.optionBox}>
+                <TouchableOpacity
+                  style={[
+                    styles.option,
+                    { backgroundColor: 'tomato' },
+                    newItemRating === 'dislike' && styles.selectedOption,
+                  ]}
+                  onPress={() => onBucketPress('dislike')}
+                >
+                  {newItemRating === 'dislike' && (
+                    <MaterialIcons name="check" size={24} color="white" />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.optionText}>Bad.</Text>
+              </View>
             </View>
-            
-            <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(false)}>
-              <Text style={styles.restaurantName}>{itemComparisons[binarySearchM][0]}</Text>
-              <Text style={styles.location}>Washington, DC</Text>
-              <Text style={styles.location}>{itemComparisons[binarySearchM][1].toFixed(1)}</Text>
-            </TouchableOpacity>
           </View>
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionText}>Undo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionText}>Too tough</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionText}>Skip</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+          </>
+        )}
+        
+        {newItem.length > 0 && newItemCategory !== 'null' && itemComparisons.length > 0 && !itemAdded  && rankMode && (
+          <View style={{
+            alignItems: 'center',
+            backgroundColor: 'white',
+            borderColor: 'lightgray',
+            borderWidth: 2,
+            borderRadius: 10,
+            marginTop: 20,
+            paddingVertical: 10
+          }}>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: 'bold',
+              marginBottom: 15,
+              marginTop: 10
+            }}>
+              Which do you prefer?
+            </Text>
+            <View style={styles.cardsContainer}>
+              <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(true)}>
+                <Text style={styles.restaurantName}>{newItem}</Text>
+                <Text style={styles.location}>Washington, DC</Text>
+              </TouchableOpacity>
 
-    </View>
+              <View style={styles.orContainer}>
+                <Text style={styles.orText}>OR</Text>
+              </View>
+              
+              <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(false)}>
+                <Text style={styles.restaurantName}>{itemComparisons[binarySearchM][0]}</Text>
+                <Text style={styles.location}>Washington, DC</Text>
+                <Text style={styles.location}>{itemComparisons[binarySearchM][1].toFixed(1)}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.actionsContainer}>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionText}>Undo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionText}>Too tough</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionText}>Skip</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 

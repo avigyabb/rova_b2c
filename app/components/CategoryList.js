@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
 import { ref, set, remove, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
 import { database } from '../../firebaseConfig';
@@ -22,27 +22,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [listData, setListData] = useState(focusedList);
   const [editMode, setEditMode] = useState(false);
   const [categoryLoading, setCategoryLoading] = useState(false);
-
-  // useEffect(() => {
-  //   const categoryItemsRef = ref(database, 'items');
-  //   const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(focusedCategoryId));
-
-  //   get(categoryItemsQuery).then((snapshot) => {
-  //     let tempFocusedList = {'now': [], 'later': []};
-  //     for (const [key, value] of Object.entries(snapshot.val())) {
-
-  //       if (value.bucket === 'later') {
-  //         tempFocusedList['later'].push([key, value]);
-  //       } else {
-  //         tempFocusedList['now'].push([key, value]);
-  //       }
-  //     }
-  //     tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
-  //     setListData(tempFocusedList);
-  //   }).catch((error) => {
-  //     console.error("Error fetching categories:", error);
-  //   });
-  // }, [categoryLoading]);
 
   function getScoreColorHSL(score) {
     if (score < 0) {
@@ -158,14 +137,54 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     setEditMode(!editMode);
   }
 
+  const deleteCategoryAndItems = () => {
+    const categoryItemsRef = ref(database, 'items');
+    const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(focusedCategoryId));
+
+    get(categoryItemsQuery).then((snapshot) => {
+      snapshot.forEach((childSnapshot) => {
+        const itemRef = ref(database, `items/${childSnapshot.key}`);
+        remove(itemRef).then(() => {
+            console.log(`Item with key ${childSnapshot.key} deleted successfully.`);
+        }).catch((error) => {
+            console.error("Error deleting item:", error);
+        });
+      });
+    }).catch((error) => {
+      console.error("Error fetching categories:", error);
+    });
+
+    const delCategoryRef = ref(database, `categories/${focusedCategoryId}`);
+    remove(delCategoryRef).then(() => {
+      console.log('Category deleted successfully!');
+    })
+  }
+
+  const onDeleteCategoryPress = () => {
+    Alert.alert(
+      "Are you sure?", // Alert Title
+      "All items in this category will be deleted.", // Alert Message
+      [
+        { text: "Cancel", onPress: () => console.log("Cancel Pressed"), style: "cancel"},
+        { text: "Delete Category", onPress: () => console.log("Confirmed") }
+      ],
+      { cancelable: false } // This prevents the alert from being dismissed by tapping outside of the alert dialog.
+    );
+  };
+
   return (
     <>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={onBackPress}> 
           <MaterialIcons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
-
-        <Text style={{ fontSize: 15, fontWeight: 'bold' }}> {focusedCategory}</Text>
+        {editMode ? (
+          <TouchableOpacity onPress={() => onDeleteCategoryPress()}>
+            <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={{ fontSize: 15, fontWeight: 'bold' }}> {focusedCategory}</Text>
+        )}
 
         <TouchableOpacity onPress={() => onEditPress()}>
           {editMode ? (
@@ -189,7 +208,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         </View>
       </View>
 
-      {focusedList ? (           
+      {listData[listView].length > 0 ? (           
         <FlatList
           data={listData[listView]}
           renderItem={({ item }) => <ListItemTile item={item[1]} item_key={item[0]} />}
@@ -198,7 +217,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           key={"single-column"}
         />
       ) : (
-        <Text>Add some items to this category!</Text>
+        <Text style={{ textAlign: 'center', fontWeight: 'bold', color: 'gray', fontSize: 16, marginTop: '50%' }}>Add items to see your rankings... 😶‍🌫️</Text>
       )}
     </>
   )

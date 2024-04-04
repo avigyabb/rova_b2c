@@ -4,13 +4,14 @@ import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity, TextInput, S
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
-
+import { useFonts } from 'expo-font';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import { database, storage } from '../../firebaseConfig';
 import { ref, set, onValue, off, push, query, equalTo, orderByChild, get } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import { useEffect, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
+import EditProfile from './EditProfile';
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -56,8 +57,17 @@ const Profile = () => {
   const [categories, setCategories] = useState({});
   const [focusedCategory, setFocusedCategory] = useState(null);
   const [focusedCategoryId, setFocusedCategoryId] = useState(null);
-  const [focusedList, setFocusedList] = useState({});
+  const [focusedList, setFocusedList] = useState({'now': [], 'later': []});
   const [addCategoryName, setAddCategoryName] = useState('');
+  const [categoryEditMode, setCategoryEditMode] = useState(false);
+  const [imageUri, setImageUri] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [downloadImage, setDownloadImage] = useState(null);
+  const [loaded] = useFonts({
+    'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
+    'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
+    'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
+  });
   const user = 'lebron';
 
   useEffect(() => {
@@ -82,7 +92,6 @@ const Profile = () => {
       });
 
       setCategories(categories);
-      console.log(categories);
     });
   }, [user]);
 
@@ -92,14 +101,16 @@ const Profile = () => {
 
     get(categoryItemsQuery).then((snapshot) => {
       let tempFocusedList = {'now': [], 'later': []};
-      for (const [key, value] of Object.entries(snapshot.val())) {
-        if (value.bucket === 'later') {
-          tempFocusedList['later'].push([key, value]);
-        } else {
-          tempFocusedList['now'].push([key, value]);
+      if (snapshot.exists()) {
+        for (const [key, value] of Object.entries(snapshot.val())) {
+          if (value.bucket === 'later') {
+            tempFocusedList['later'].push([key, value]);
+          } else {
+            tempFocusedList['now'].push([key, value]);
+          }
         }
+        tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
       }
-      tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
       setFocusedList(tempFocusedList);
       setFocusedCategory(category_name);
       setFocusedCategoryId(category_id);
@@ -108,81 +119,62 @@ const Profile = () => {
     });
   }
 
-  const onAddCategoryPress = (category_name, image) => {
-    const newCategoryRef = push(ref(database, 'categories'));
-  
-    set(newCategoryRef, {
-      category_name: category_name,
-      num_items: 0,
-      user_id: user,
-      category_type: 'ranked_list',
-      list_num: 0,
-      imageUri: image, // Save the URI in the database
-    })
-    .then(() => console.log('New category added with image URI.'))
-    .catch((error) => console.error('Error adding new category:', error));
-  };  
+  const onAddCategoryPress = async (category_name) => {
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+    const filename = imageUri.substring(imageUri.lastIndexOf('/') + 1);
+    const storageRef = storRef(storage, filename); // Use the previously renamed 'ref' function
+    const uploadTask = uploadBytesResumable(storageRef, blob);
+    
+    uploadTask.on('state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log('Upload is ' + progress + '% done');
+      }, 
+      (error) => {
+        console.error('Upload failed', error);
+      }, 
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          console.log('File available at', downloadURL);
+          const newCategoryRef = push(ref(database, 'categories'));
+          set(newCategoryRef, {
+            category_name: category_name,
+            num_items: 0,
+            user_id: user,
+            category_type: 'ranked_list',
+            list_num: 0,
+            imageUri: downloadURL, // Save the URI in the database
+          })
+          .then(() => {
+            console.log('New category added with image URI.')
+            setImageUri(null);
+            onBackPress();
+          })
+          .catch((error) => console.error('Error adding new category:', error));
+        });
+      }
+    );
+  }
 
   onBackPress = () => {
     setFocusedList({});
     setFocusedCategory(null);
   }
 
-  const [image, setImage] = useState(null);
-  const [uploading, setUploading] = useState(false);
   const pickImage = async () => {
-    // no permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,         // all, images, videos
       allowsEditing: true,
-      aspect: [4,3],
+      aspect: [4,3], // search up
       quality: 1,
     });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-      console.log(result.assets[0].uri); // Log the selected image URI. THIS IS WHAT WE WANT STORED IN THE OBJECT, THIS IS WHAT THE LONG LINK IS FOR EACH VARIABLE. right now one is hard coded, but we need to store this somehow in the object so then it can be retrieved and set to the uri to display a specific image for each tile.
-    }
-  };
-
-  // upload media files
-  const uploadMedia = async () => {
-    if (image === null) return null; // Return null if no image to upload
-    setUploading(true);
-    try {
-      const response = await fetch(image);
-      const blob = await response.blob();
-      const filename = image.substring(image.lastIndexOf('/') + 1);
-      const storageRef = storRef(storage, filename); // Use the previously renamed 'ref' function
-      const uploadTask = uploadBytesResumable(storageRef, blob);
-  
-      // Use a promise to wait for the upload to complete and then return the filename
-      return await new Promise((resolve, reject) => {
-        uploadTask.on('state_changed', 
-          (snapshot) => {
-            // Optional: Update progress state here
-          }, 
-          (error) => {
-            console.error(error);
-            setUploading(false);
-            reject(error);
-          }, 
-          () => {
-            console.log('File available at', filename);
-            setImage(null);
-            setUploading(false);
-            resolve(filename); // Resolve the promise with the filename
-          }
-        );
-      });
-    } catch (error) {
-      console.error(error);
-      setUploading(false);
-      return null; // Return null in case of error
-    }
-  };  
+    setImageUri(result.assets[0].uri);
+  }; 
 
   const CategoryTile = ({ category_name, category_id, imageUri }) => {
+    console.log("imageUri")
+    console.log(imageUri);
     return (
       <TouchableOpacity style={styles.tile} onPress={() => onCategoryPress(category_name, category_id)}>
         <ImageBackground
@@ -198,7 +190,9 @@ const Profile = () => {
 
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
-      {focusedCategory === 'addList' ? (
+      {focusedCategory === 'editProfile' ? (
+        <EditProfile profilePic={profilePic}/>
+      ) : focusedCategory === 'addList' ? (
         <>
           <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey' }}>
             <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
@@ -226,8 +220,8 @@ const Profile = () => {
               <Text style={{ color: 'white', fontWeight: 'bold' }}>Pick Image</Text>
             </TouchableOpacity>
             <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-              {image && <Image
-                source={{ uri: image }}
+              {imageUri && <Image
+                source={{ uri: imageUri }}
                 style={{ width: 300, height: 300, marginTop: 35 }}
               />}
             </View>
@@ -236,15 +230,8 @@ const Profile = () => {
           <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
             <TouchableOpacity
               style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center', marginTop: 35 }}
-              onPress={async () => {
-                const filename = await uploadMedia(); // This should be the URI or a reference to the image
-                if (filename) {
-                  onAddCategoryPress(addCategoryName, image); // Pass the filename/URI here
-                  Alert.alert("Category Uploaded");
-                } else {
-                  Alert.alert("Upload failed", "The image could not be uploaded. Please try again.");
-                }
-              }}>
+              onPress={() => onAddCategoryPress(addCategoryName)}
+            >
               <Text style={{ color: 'white', fontWeight: 'bold' }}>Add</Text>
             </TouchableOpacity>
           </View>
@@ -259,7 +246,7 @@ const Profile = () => {
               style={styles.profilePic}
             />
             <View>
-              <Text style={{ marginLeft: 10, fontSize: 20, marginTop: 10, fontWeight: 'bold' }}> @lebron </Text>
+              <Text style={{ marginLeft: 10, fontSize: 20, marginTop: 10, fontWeight: 'bold', fontFamily: 'Poppins Bold' }}> @lebron </Text>
               <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 10 }}>
                 <Text style={{ marginRight: 5 }}> 10 Followers </Text><Text> 11 Following </Text>
               </View>
@@ -271,7 +258,7 @@ const Profile = () => {
           </Text>
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15}}>
-            <TouchableOpacity style={styles.editContainer}>
+            <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
               <Text style={styles.editButtons}> Edit Profile </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('addList')}>
