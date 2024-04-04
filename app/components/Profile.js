@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
 import EditProfile from './EditProfile';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -53,7 +54,8 @@ const styles = StyleSheet.create({
   }
 });
 
-const Profile = () => {
+const Profile = ({ route }) => {
+  const { userKey, username, setView, fetchUserData } = route.params;
   const [categories, setCategories] = useState({});
   const [focusedCategory, setFocusedCategory] = useState(null);
   const [focusedCategoryId, setFocusedCategoryId] = useState(null);
@@ -68,14 +70,10 @@ const Profile = () => {
     'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
   });
-  const user = 'lebron';
 
   useEffect(() => {
-    // Create a reference to the 'categories' node
     const categoriesRef = ref(database, 'categories');
-
-    // Create a query to filter by 'user_id' equal to 'lebron'
-    const userCategoriesQuery = query(categoriesRef, orderByChild('user_id'), equalTo(user));
+    const userCategoriesQuery = query(categoriesRef, orderByChild('user_id'), equalTo(userKey));
 
     // Execute the query and listen for updates
     onValue(userCategoriesQuery, (snapshot) => {
@@ -93,7 +91,7 @@ const Profile = () => {
 
       setCategories(categories);
     });
-  }, [user]);
+  }, []);
 
   const onCategoryPress = (category_name, category_id) => {
     const categoryItemsRef = ref(database, 'items');
@@ -141,7 +139,7 @@ const Profile = () => {
           set(newCategoryRef, {
             category_name: category_name,
             num_items: 0,
-            user_id: user,
+            user_id: userKey,
             category_type: 'ranked_list',
             list_num: 0,
             imageUri: downloadURL, // Save the URI in the database
@@ -164,7 +162,7 @@ const Profile = () => {
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,         // all, images, videos
+      mediaTypes: ImagePicker.MediaTypeOptions.All, // ~ may need to change to just pictures
       allowsEditing: true,
       aspect: [4,3], // search up
       quality: 1,
@@ -173,8 +171,6 @@ const Profile = () => {
   }; 
 
   const CategoryTile = ({ category_name, category_id, imageUri }) => {
-    console.log("imageUri")
-    console.log(imageUri);
     return (
       <TouchableOpacity style={styles.tile} onPress={() => onCategoryPress(category_name, category_id)}>
         <ImageBackground
@@ -187,6 +183,13 @@ const Profile = () => {
       </TouchableOpacity>
     );
   };  
+
+  const onLogOutPress = async () => {
+    await AsyncStorage.removeItem('username');
+    await AsyncStorage.removeItem('key');
+    fetchUserData();
+    setView('signin');
+  }
 
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
@@ -246,15 +249,18 @@ const Profile = () => {
               style={styles.profilePic}
             />
             <View>
-              <Text style={{ marginLeft: 10, fontSize: 20, marginTop: 10, fontWeight: 'bold', fontFamily: 'Poppins Bold' }}> @lebron </Text>
+              <Text style={{ marginLeft: 10, fontSize: 20, marginTop: 10, fontWeight: 'bold', fontFamily: 'Poppins Bold' }}> @{username} </Text>
               <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 10 }}>
                 <Text style={{ marginRight: 5 }}> 10 Followers </Text><Text> 11 Following </Text>
               </View>
             </View>
+            <TouchableOpacity onPress={() => onLogOutPress()}>
+              <MaterialIcons name="logout" size={20} color="black" style={{ marginLeft: 45 }}/>
+            </TouchableOpacity>
           </View>
 
           <Text style={{ paddingHorizontal: 15 }}>
-              I am LeBron, the greatest basketball player of all time.
+            I am LeBron, the greatest basketball player of all time.
           </Text>
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15}}>
@@ -266,13 +272,17 @@ const Profile = () => {
             </TouchableOpacity>
           </View>
 
-          <FlatList
-            data={categories}
-            renderItem={({ item }) => <CategoryTile category_name={item.category_name} category_id={item.id} imageUri={item.imageUri}/>}
-            keyExtractor={(item, index) => index.toString()}
-            numColumns={3}
-            contentContainerStyle={styles.grid}
-          />
+          {categories.length > 0 ? (
+            <FlatList
+              data={categories}
+              renderItem={({ item }) => <CategoryTile category_name={item.category_name} category_id={item.id} imageUri={item.imageUri}/>}
+              keyExtractor={(item, index) => index.toString()}
+              numColumns={3}
+              contentContainerStyle={styles.grid}
+            />
+          ) : (
+            <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>add a list to get started...</Text>
+          )}
         </>
       )}
     </View> 

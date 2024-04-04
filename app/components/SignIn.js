@@ -2,8 +2,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, SafeAreaView, TouchableWithoutFeedback, Keyboard, Touchable } from 'react-native';
 import { useFonts } from 'expo-font';
+import { ref, set, onValue, off, query, orderByChild, push, equalTo, get } from "firebase/database";
+import { database } from '../../firebaseConfig.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SignIn = ({ onLogin }) => {
+const SignIn = ({ setView, setUserKeyIndex, setUsernameIndex }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('test');
@@ -13,6 +16,22 @@ const SignIn = ({ onLogin }) => {
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
     'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
   });
+
+  const onSignIn = async (username, password) => {
+    const newUserRef = push(ref(database, 'users'));
+    setUserKeyIndex(newUserRef.key);
+    setUsernameIndex(username);
+    await AsyncStorage.setItem('username', username);
+    await AsyncStorage.setItem('key', newUserRef.key);
+    set(newUserRef, { 
+      username: username,
+      password: password, 
+      name: '', 
+      bio: ''
+    })
+    .then(() => console.log(`New user added`))
+    .catch((error) => console.error(`Failed to add new user: ${error}`));
+  }
 
   return (
     code === 'test' && loaded ? (
@@ -27,6 +46,7 @@ const SignIn = ({ onLogin }) => {
             placeholder="username"
             value={username}
             onChangeText={setUsername}
+            placeholderTextColor={'gray'}
             style={{ 
               width: '80%', 
               fontSize: 16, 
@@ -41,6 +61,7 @@ const SignIn = ({ onLogin }) => {
             placeholder="password"
             value={password}
             onChangeText={setPassword}
+            placeholderTextColor={'gray'}
             secureTextEntry
             style={{ 
               width: '80%', 
@@ -52,7 +73,7 @@ const SignIn = ({ onLogin }) => {
               letterSpacing: 1
             }}
           />
-          <TouchableOpacity onPress={() => onLogin(username, password)} style={{ 
+          <TouchableOpacity onPress={() => onSignIn(username, password)} style={{ 
             marginTop: '25%',
             backgroundColor: 'black',
             padding: 20,
@@ -64,7 +85,7 @@ const SignIn = ({ onLogin }) => {
 
           <View style={{ flexDirection: 'row' }}>
             <Text style={{ color: 'gray', fontSize: 14, marginTop: 20 }}>Have an account? </Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => setView('login')}>
               <Text style={{ color: 'black', fontSize: 14, marginTop: 20, fontWeight: 'bold' }}>Login Here.</Text>
             </TouchableOpacity>
           </View>

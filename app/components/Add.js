@@ -100,7 +100,8 @@ const styles = StyleSheet.create({
   }
 });
 
-const Add = () => {
+const Add = ({ route }) => {
+  const { userKey, username, setView, fetchUserData } = route.params;
   const [newItem, setNewItem] = useState('');
   const [userCategories, setUserCategories] = useState([]);
   const [newItemCategory, setNewItemCategory] = useState('null');
@@ -118,11 +119,10 @@ const Add = () => {
     'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
   });
   const [rankMode, setRankMode] = useState(false);
-  const user = 'lebron';
 
   useEffect(() => {
     const categoriesRef = ref(database, 'categories');
-    const userCategoriesQuery = query(categoriesRef, orderByChild('user_id'), equalTo(user));
+    const userCategoriesQuery = query(categoriesRef, orderByChild('user_id'), equalTo(userKey));
     get(userCategoriesQuery).then((snapshot) => {
       const categories = [];
 
@@ -137,7 +137,7 @@ const Add = () => {
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
-  }, [user]);
+  }, []);
 
   const addNewItem = (rating, newBinarySearchM, isNewCard) => {
     let items = addElementAndRecalculate(itemComparisons, newItem, rating, newBinarySearchM, isNewCard);
@@ -277,6 +277,7 @@ const Add = () => {
     setBinarySearchR(0);
     setBinarySearchM(0);
     setNewItemFinalScore(0);
+    setRankMode(false);
   }
 
   if (itemAdded) {
@@ -292,8 +293,6 @@ const Add = () => {
       </View>
     )
   }
-
-  console.log(userCategories.find(item => item.id === newItemCategory))
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
