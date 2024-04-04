@@ -35,10 +35,17 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'flex-end', // Position text at the bottom of the tile
   },
+  overlayStyle: {
+    ...StyleSheet.absoluteFillObject, // This makes sure the overlay covers the whole tile
+    backgroundColor: 'rgba(0,0,0,0.4)', // Change the opacity here as needed
+    justifyContent: 'flex-end', // Keeps text at the bottom
+  },
   tileText: {
     // existing text styles...
     color: 'white', // Ensure text is visible on likely darker images
     padding: 8, // Add padding to separate text from the edges
+    fontWeight: 'bold',
+    fontSize: 15
   },
   editButtons: {
     fontWeight: 'bold',
@@ -178,7 +185,9 @@ const Profile = ({ route }) => {
           resizeMode="cover"
           style={styles.tileBackground}
         >
-          <Text style={styles.tileText}>{category_name}</Text>
+          <View style={styles.overlayStyle}>
+            <Text style={styles.tileText}>{category_name}</Text>
+          </View>
         </ImageBackground>
       </TouchableOpacity>
     );
