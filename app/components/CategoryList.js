@@ -93,18 +93,21 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       });
 
       let items = recalculateItems(similarBucketItems, item_bucket);
+      console.log(items);
 
-      items.forEach((item) => {
-        const itemRef = ref(database, `items/${item[0]}`);
-        set(itemRef, { 
-          bucket: item[1]['bucket'],
-          category_id: item[1]['category_id'],
-          content: item[1]['content'],
-          score: item[1]['score']
-        })
-        .then(() => console.log(`Score updated for ${item[0]}`))
-        .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));
-      });
+      if (items) {
+        items.forEach((item) => {
+          const itemRef = ref(database, `items/${item[0]}`);
+          set(itemRef, { 
+            bucket: item[1]['bucket'],
+            category_id: item[1]['category_id'],
+            content: item[1]['content'],
+            score: item[1]['score']
+          })
+          .then(() => console.log(`Score updated for ${item[0]}`))
+          .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));
+        });
+      }
     }
 
     // setCategoryLoading(false);
@@ -113,15 +116,16 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
     get(categoryItemsQuery).then((snapshot) => {
       let tempFocusedList = {'now': [], 'later': []};
-      for (const [key, value] of Object.entries(snapshot.val())) {
-
-        if (value.bucket === 'later') {
-          tempFocusedList['later'].push([key, value]);
-        } else {
-          tempFocusedList['now'].push([key, value]);
+      if (snapshot.exists()) {
+        for (const [key, value] of Object.entries(snapshot.val())) {
+          if (value.bucket === 'later') {
+            tempFocusedList['later'].push([key, value]);
+          } else {
+            tempFocusedList['now'].push([key, value]);
+          }
         }
+        tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
       }
-      tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
       setListData(tempFocusedList);
     }).catch((error) => {
       console.error("Error fetching categories:", error);
