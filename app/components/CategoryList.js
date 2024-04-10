@@ -1,9 +1,13 @@
 import React, {useEffect, useState} from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Linking, TextInput } from "react-native";
+import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
-import { ref, set, remove, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
-import { database } from '../../firebaseConfig';
-import { getStorage, ref as storageRef, deleteObject } from "firebase/storage";
+import { ref, set, remove, onValue, off, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
+import { database, storage } from '../../firebaseConfig';
+import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
+import Hyperlink from 'react-native-hyperlink';
+import * as ImagePicker from 'expo-image-picker';
+
 
 const styles = StyleSheet.create({
   listTileScore: {
@@ -15,24 +19,50 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     borderColor: 'green',
     borderWidth: 3
+  },
+  addedImages: {
+    height: 80,
+    width: 80,
+    borderWidth: 2,
+    marginTop: 10,
+    marginBottom: 15,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: 'gray'
   }
 });
 
-const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId }) => {
+function getScoreColorHSL(score) {
+  if (score < 0) {
+    return '#A3A3A3'; // Gray color for negative scores
+  }
+  const cappedScore = Math.max(0, Math.min(score, 10)); // Cap the score between 0 and 100
+  const hue = (cappedScore / 10) * 120; // Calculate hue from green to red
+  const lightness = 50 - score ** 1.3; // Constant lightness
+  return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
+}
+
+const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, isMyProfile }) => {
   const [listView, setListView] = useState('now');
   const [listData, setListData] = useState(focusedList);
   const [editMode, setEditMode] = useState(false);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [categoryInfo, setCategoryInfo] = useState({});
+  const [categoryImage, setCategoryImage] = useState(null);
 
-  function getScoreColorHSL(score) {
-    if (score < 0) {
-      return '#A3A3A3'; // Gray color for negative scores
-    }
-    const cappedScore = Math.max(0, Math.min(score, 10)); // Cap the score between 0 and 100
-    const hue = (cappedScore / 10) * 120; // Calculate hue from green to red
-    const lightness = 30; // Constant lightness
-    return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
-  }
+  useEffect(() => {
+    const categoryRef = ref(database, 'categories/' + focusedCategoryId);
+    get(categoryRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        setCategoryInfo(snapshot.val());
+      } else {
+        console.log("No user data.");
+      }
+    }).catch((error) => {
+      console.error(error);
+    });
+  }, [focusedCategoryId]); // ~ why do I need to put this here, why isn't it updating automatically
 
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
@@ -72,6 +102,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     }
   };
 
+  // update 1 here ***
   const onDeleteItemPress = (item_bucket, item_category_id) => {
     const delItemRef = ref(database, `items/${item_category_id}`);
     remove(delItemRef)
@@ -93,19 +124,31 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       });
 
       let items = recalculateItems(similarBucketItems, item_bucket);
-      console.log(items);
 
       if (items) {
         items.forEach((item) => {
           const itemRef = ref(database, `items/${item[0]}`);
           set(itemRef, { 
-            bucket: item[1]['bucket'],
-            category_id: item[1]['category_id'],
-            content: item[1]['content'],
-            score: item[1]['score']
+            bucket: item[1].bucket,
+            category_id: item[1].category_id,
+            category_name: item[1].category_name,
+            content: item[1].content,
+            description: item[1].description,
+            image: item[1].image,
+            score: item[1].score,
+            timestamp: item[1].timestamp,
+            user_id: item[1].user_id
           })
           .then(() => console.log(`Score updated for ${item[0]}`))
           .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));
+
+          // update category photo if its the best
+          if (item[1].score === 10.0) {
+            const categoryRef = ref(database, 'categories/' + item[1].category_id);
+            update(categoryRef, {
+              imageUri: item[1].image
+            })
+          }
         });
       }
     }
@@ -131,23 +174,49 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
+
+    const categoryRef = ref(database, 'categories/' + focusedCategoryId);
+    runTransaction(categoryRef, (currentData) => {
+      currentData.num_items = (currentData.num_items || 0) - 1;
+      return currentData; // Returns the updated data to be saved
+    })
   }
 
   const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
     return (
-      <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, flexDirection: 'row' }}>
-        {editMode && (
-          <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
-            <MaterialIcons name="do-disturb-on" size={25} color="red" />
-          </TouchableOpacity>
-        )}
-        <View>
-          <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{index + 1}) {item.content}</Text>
-          <Text style={{ color: 'grey', marginTop: 5 }}>{item.description}</Text>
-        </View>
-        <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-          <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
+      <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1 }}>
+        <View style={{ flexDirection: 'row' }}>
+          {editMode && (
+            <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
+              <MaterialIcons name="do-disturb-on" size={25} color="red" />
+            </TouchableOpacity>
+          )}
+          <View style={{ width: '70%' }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{index + 1}) {item.content}</Text>
+            <View style={{ flexDirection: 'row', marginTop: 10, }}>
+              {item.image && (
+                <Image
+                  source={{ uri: item.image }}
+                  style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                />
+              )}
+              {item.description && item.description.length > 0 && (
+                <Hyperlink
+                  linkDefault={ true }
+                  linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
+                  onPress={ (url, text) => Linking.openURL(url) }
+                >
+                  <Text style={{ color: 'grey', fontSize: 16 }}>
+                    {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
+                  </Text>
+                </Hyperlink>
+              )}
+            </View>
+          </View>
+          <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
+            <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
+          </View>
         </View>
       </View>
     );
@@ -161,8 +230,63 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     }
   }
 
-  const onEditPress = () => {
+  const onEditPress = async () => {
     setEditMode(!editMode);
+    if (editMode) {
+      if (categoryImage) {
+        const response = await fetch(categoryImage);
+        const blob = await response.blob();
+        const filename = categoryImage.substring(categoryImage.lastIndexOf('/') + 1);
+        const storageRef = storRef(storage, filename); // Use the previously renamed 'ref' function
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Upload is ' + progress + '% done');
+          }, 
+          (error) => {
+            console.error('Upload failed', error);
+          }, 
+          () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+              const categoryRef = ref(database, 'categories/' + focusedCategoryId);
+              update(categoryRef, {
+                category_name: categoryInfo.category_name,
+                category_description: categoryInfo.category_description,
+                imageUri: downloadURL
+              })
+              .then(() => {
+                console.log('Category updated successfully!');
+              })
+              .catch((error) => console.error('Error onEditPress:', error));
+            });
+          }
+        );
+      } else {
+        const categoryRef = ref(database, 'categories/' + focusedCategoryId);
+        update(categoryRef, {
+          category_name: categoryInfo.category_name,
+          category_description: categoryInfo.category_description
+        })
+        .then(() => {
+          console.log('Category updated successfully!');
+        })
+        .catch((error) => console.error('Error onEditPress:', error));
+      }
+    }
+
+    if (editMode) {
+      const categoryRef = ref(database, 'categories/' + focusedCategoryId);
+      update(categoryRef, {
+        category_name: categoryInfo.category_name,
+        category_description: categoryInfo.category_description
+      })
+      .then(() => {
+        console.log('Category updated successfully!');
+      })
+      .catch((error) => console.error('Error onEditPress:', error));
+    }
   }
 
   const deleteCategoryAndItems = () => {
@@ -202,6 +326,16 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     );
   };
 
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All, // ~ may need to change to just pictures
+      allowsEditing: true,
+      aspect: [4,3], // search up
+      quality: 1,
+    });
+    setCategoryImage(result.assets[0].uri);
+  }; 
+
   return (
     <>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -209,9 +343,11 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           <MaterialIcons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
         {editMode ? (
+          <>
           <TouchableOpacity onPress={() => onDeleteCategoryPress()}>
             <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
           </TouchableOpacity>
+          </>
         ) : (
           <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{focusedCategory}</Text>
         )}
@@ -219,13 +355,71 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         <TouchableOpacity onPress={() => onEditPress()}>
           {editMode ? (
             <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Done</Text>
-          ) : (
+          ) : isMyProfile ? (
             <Text style={{ fontSize: 15 }}>Edit</Text>
+          ) : (
+            <Text>       </Text>
           )}
         </TouchableOpacity>
       </View>
+      
+      <View style={{ padding: 10 }}>
+        {editMode ? (
+          <>
+          {categoryImage ? (
+            <Image
+              source={{ uri: categoryImage }}
+              style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
+            />
+          ) : (
+            <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
+                <MaterialIcons name="add-photo-alternate" size={40} color="gray" />
+                <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
+            </TouchableOpacity>
+          )}
+          <TextInput
+            value={categoryInfo.category_name}
+            onChangeText={(text) => {
+              setCategoryInfo(prevState => ({
+                ...prevState,
+                category_name: text
+              }))
+            }}
+            style={{ 
+              fontWeight: 'bold', 
+              fontSize: 30, 
+              fontStyle: 'italic',
+              borderColor: 'lightgrey',
+              borderBottomWidth: 1,
+              paddingBottom: 5
+            }}
+          />
+          <TextInput
+            value={categoryInfo.category_description}
+            onChangeText={(text) => {
+              setCategoryInfo(prevState => ({
+                ...prevState,
+                category_description: text
+              }))
+            }}
+            style={{ 
+              color: 'gray', 
+              marginVertical: 10,
+              borderColor: 'lightgrey',
+              borderBottomWidth: 1,
+              paddingBottom: 5
+            }}
+          />
+          </>
+        ) : (
+          <>
+          <Text style={{ fontWeight: 'bold', fontSize: 30, fontStyle: 'italic', padding: 1 }}>{categoryInfo.category_name}</Text>
+          <Text style={{ color: 'gray', marginVertical: 10 }}>{categoryInfo.category_description}</Text>
+          </>
+        )}
+      </View>
 
-      <View style={{ flexDirection: 'row' }}>
+      <View style={{ flexDirection: 'row', borderBottomWidth: 0.5, borderTopWidth: 0.5, borderColor: 'lightgrey' }}>
         <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'now' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
           <TouchableOpacity onPress={() => onIconViewPress()}>
             <MaterialIcons name="format-list-bulleted" size={listView === 'now' ? 32 : 30} color={listView === 'now' ? 'black' : 'gray'} />

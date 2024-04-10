@@ -14,14 +14,12 @@
         }
       ]
     ],
-    "name": "rova-b2c-app",
+    "name": "amborasocial",
     "slug": "rova-b2c-app",
     "version": "1.0.0",
     "ios": {
       "bundleIdentifier": "com.swing.b2capp",
-      "config": {
-        "googleServicesFile": "./GoogleService-Info.plist"
-      }
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.swing.b2capp"

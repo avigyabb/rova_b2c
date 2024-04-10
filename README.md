@@ -11,3 +11,10 @@ npx create-expo-app -e with-router
 ## 📝 Notes
 
 - [Expo Router: Docs](https://docs.expo.dev/router/introduction/)
+
+gesturehandler error
+- probably imported something from gesturehandler when shouldn't have
+
+when changing backend for items ***
+- update add.js
+- update categorylist.js

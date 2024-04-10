@@ -1,44 +1,40 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity, TextInput, SafeAreaView, Alert, ImageBackground } from 'react-native';
-
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, TextInput, SafeAreaView, Alert, ImageBackground } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
 import { useFonts } from 'expo-font';
-import profilePic from '../../assets/images/lebron_profile_pic.webp';
+// import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import { database, storage } from '../../firebaseConfig';
-import { ref, set, onValue, off, push, query, equalTo, orderByChild, get } from "firebase/database"; // Import 'ref' and 'set' from the database package
+import { ref, set, onValue, off, push, query, equalTo, orderByChild, get, remove } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import { useEffect, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
 import EditProfile from './EditProfile';
+import AddCategory from './AddCategory';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import profilePic from '../../assets/images/emptyProfilePic3.png';
+import Hyperlink from 'react-native-hyperlink';
+import FollowUsers from './FollowUsers';
 
 const styles = StyleSheet.create({
   profilePic: {
     width: 100,        // Specify the width
     height: 100,       // Specify the height
     borderRadius: 50,  // Make sure this is half of the width and height
+    borderWidth: 0.5, 
+    borderColor: 'lightgrey'
   },
   grid: {
     // alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'space-around'
   },
   tile: {
     width: 129,
     height: 129,
     margin: 1,
     overflow: 'hidden', // Ensure the image is contained within the borders of the tile
-  },
-  tileBackground: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'flex-end', // Position text at the bottom of the tile
-  },
-  overlayStyle: {
-    ...StyleSheet.absoluteFillObject, // This makes sure the overlay covers the whole tile
-    backgroundColor: 'rgba(0,0,0,0.4)', // Change the opacity here as needed
-    justifyContent: 'flex-end', // Keeps text at the bottom
   },
   tileText: {
     // existing text styles...
@@ -57,12 +53,12 @@ const styles = StyleSheet.create({
     width: '48%',
     borderRadius: 10,
     alignItems: 'center',
-    marginVertical: 20
   }
 });
 
 const Profile = ({ route }) => {
-  const { userKey, username, setView, fetchUserData } = route.params;
+  const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
+  const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
   const [focusedCategory, setFocusedCategory] = useState(null);
   const [focusedCategoryId, setFocusedCategoryId] = useState(null);
@@ -77,11 +73,26 @@ const Profile = ({ route }) => {
     'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
   });
+  const [isFollowing, setIsFollowing] = useState(false);
+
+  const getUserInfo = () => {
+    const userRef = ref(database, 'users/' + userKey);
+    get(userRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        console.log(snapshot.val());
+        setIsFollowing(snapshot.val().followers && snapshot.val().followers.hasOwnProperty(visitingUserId));
+        setProfileInfo(snapshot.val());
+      } else {
+        console.log("No user data.");
+      }
+    }).catch((error) => {
+      console.error(error);
+    });
+  }
 
   useEffect(() => {
     const categoriesRef = ref(database, 'categories');
     const userCategoriesQuery = query(categoriesRef, orderByChild('user_id'), equalTo(userKey));
-
     // Execute the query and listen for updates
     onValue(userCategoriesQuery, (snapshot) => {
       const categories = [];
@@ -91,13 +102,13 @@ const Profile = ({ route }) => {
         const categoryKey = childSnapshot.key;
         const categoryData = childSnapshot.val();
 
-        // You can now do something with each category
-        // For example, push the category data to an array
         categories.push({ id: categoryKey, ...categoryData });
       });
 
-      setCategories(categories);
+      setCategories(categories.sort((a, b) => b.latest_add - a.latest_add));
     });
+
+    getUserInfo();
   }, []);
 
   const onCategoryPress = (category_name, category_id) => {
@@ -124,44 +135,6 @@ const Profile = ({ route }) => {
     });
   }
 
-  const onAddCategoryPress = async (category_name) => {
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-    const filename = imageUri.substring(imageUri.lastIndexOf('/') + 1);
-    const storageRef = storRef(storage, filename); // Use the previously renamed 'ref' function
-    const uploadTask = uploadBytesResumable(storageRef, blob);
-    
-    uploadTask.on('state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        console.log('Upload is ' + progress + '% done');
-      }, 
-      (error) => {
-        console.error('Upload failed', error);
-      }, 
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          console.log('File available at', downloadURL);
-          const newCategoryRef = push(ref(database, 'categories'));
-          set(newCategoryRef, {
-            category_name: category_name,
-            num_items: 0,
-            user_id: userKey,
-            category_type: 'ranked_list',
-            list_num: 0,
-            imageUri: downloadURL, // Save the URI in the database
-          })
-          .then(() => {
-            console.log('New category added with image URI.')
-            setImageUri(null);
-            onBackPress();
-          })
-          .catch((error) => console.error('Error adding new category:', error));
-        });
-      }
-    );
-  }
-
   onBackPress = () => {
     setFocusedList({});
     setFocusedCategory(null);
@@ -177,18 +150,41 @@ const Profile = ({ route }) => {
     setImageUri(result.assets[0].uri);
   }; 
 
-  const CategoryTile = ({ category_name, category_id, imageUri }) => {
+  const CategoryTile = ({ category_name, category_id, imageUri, num_items }) => {
     return (
       <TouchableOpacity style={styles.tile} onPress={() => onCategoryPress(category_name, category_id)}>
-        <ImageBackground
-          source={{ uri: imageUri }} // Use the imageUri directly
-          resizeMode="cover"
-          style={styles.tileBackground}
-        >
-          <View style={styles.overlayStyle}>
-            <Text style={styles.tileText}>{category_name}</Text>
+        <View style={{
+          width: '100%', // Adjust these values as needed
+          height: '100%', // Adjust these values as needed
+          position: 'relative', // This allows the overlay to be absolutely positioned within
+        }}>
+          <Image
+            source={{ uri: imageUri }}
+            style={{
+              width: '100%',
+              height: '100%',
+              position: 'absolute', // Positions the image to fill the parent
+            }}
+            resizeMode="cover"
+          />
+          <View style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            justifyContent: 'flex-end', // Aligns child content to the bottom
+            padding: 10, // Adjust or remove padding as needed
+          }}>
+            <Text style={{ marginLeft: 'auto', color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 'auto' }}>
+              {num_items}
+            </Text>
+            <Text style={{
+              color: 'white', // Ensures the text is visible against a dark background
+              fontSize: 16, // Adjust text size as needed
+              fontWeight: 'bold', // Adjust font weight as needed
+            }}>
+              {category_name}
+            </Text>
           </View>
-        </ImageBackground>
+        </View>
       </TouchableOpacity>
     );
   };  
@@ -200,91 +196,155 @@ const Profile = ({ route }) => {
     setView('signin');
   }
 
+  const followUser = async () => {
+    const followersRef = ref(database, 'users/' + userKey + '/followers/' + visitingUserId);
+    set(followersRef, {
+      closeFriend: false
+    })
+    const followingRef = ref(database, 'users/' + visitingUserId + '/following/' + userKey);
+    set(followingRef, {
+      closeFriend: false
+    })
+    getUserInfo();
+  }
+
+  const unfollowUser = async () => {
+    const followersRef = ref(database, 'users/' + userKey + '/followers/' + visitingUserId);
+    remove(followersRef);
+    const followingRef = ref(database, 'users/' + visitingUserId + '/following/' + userKey);
+    remove(followingRef);
+    getUserInfo();
+  }
+
+  if (focusedCategory === 'Followers') {
+    return <FollowUsers 
+      userIds={Object.keys(profileInfo.followers)} 
+      setFocusedCategory={setFocusedCategory}
+      focusedCategory={'Followers'}
+      username={profileInfo.username}
+      userKey={userKey}
+      visitingUserId={visitingUserId}
+    />
+  }
+
+  if (focusedCategory === 'Following') {
+    return <FollowUsers 
+      userIds={Object.keys(profileInfo.following)} 
+      setFocusedCategory={setFocusedCategory}
+      focusedCategory={'Following'}
+      username={profileInfo.username}
+      userKey={userKey}
+      visitingUserId={visitingUserId}
+    />
+  }
+
   return (
-    <View style={{ backgroundColor: 'white', height: '100%' }}>
+    <View style={{ backgroundColor: 'white', height: '100%'}}>
       {focusedCategory === 'editProfile' ? (
-        <EditProfile profilePic={profilePic}/>
+        <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()}/>
       ) : focusedCategory === 'addList' ? (
         <>
           <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey' }}>
             <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
               <MaterialIcons name="arrow-back" size={30} color="black" />
             </TouchableOpacity>
-
             <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> {focusedCategory}</Text>
           </View>
 
-          <TextInput
-            placeholder="Enter New List Name..."
-            placeholderTextColor="#000"
-            onChangeText={setAddCategoryName}
-            style={{
-              marginTop: 20,
-              backgroundColor: 'lightgray',
-              height: 38,
-              padding: 10,
-              borderRadius: 10,
-            }}
-          />
-
-          <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-            <TouchableOpacity onPress={pickImage} style={{ width: 140, height: 70, borderRadius: 35, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center', marginTop: 35 }}>
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Pick Image</Text>
-            </TouchableOpacity>
-            <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-              {imageUri && <Image
-                source={{ uri: imageUri }}
-                style={{ width: 300, height: 300, marginTop: 35 }}
-              />}
-            </View>
-          </View>
-
-          <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-            <TouchableOpacity
-              style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center', marginTop: 35 }}
-              onPress={() => onAddCategoryPress(addCategoryName)}
-            >
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Add</Text>
-            </TouchableOpacity>
-          </View>
+          <AddCategory profilePic={profileInfo.profile_pic} onBackPress={() => onBackPress()} userKey={userKey}/>
         </>
       ) : focusedCategory ? (
-        <CategoryList focusedCategory={focusedCategory} focusedList={focusedList} focusedCategoryId={focusedCategoryId} onBackPress={() => onBackPress()}/>
+        <CategoryList 
+          focusedCategory={focusedCategory} 
+          focusedList={focusedList} 
+          focusedCategoryId={focusedCategoryId} 
+          onBackPress={() => onBackPress()}
+          isMyProfile={visitingUserId ? visitingUserId === userKey : true}
+        />
       ) : (
         <>
+          {!visitingUserId ? (
+            <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20  }}>
+              <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+              <TouchableOpacity onPress={() => onLogOutPress()} style={{ marginLeft: 'auto' }}>
+                <MaterialIcons name="logout" size={25} color="black"/>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setFeedView(null)}> 
+                <MaterialIcons name="arrow-back" size={30} color="black" />
+              </TouchableOpacity>
+            </View>
+          )}
+          
           <View style={{ flexDirection: 'row', padding: 15 }}>
-            <Image
-              source={profilePic}
-              style={styles.profilePic}
-            />
+            {profileInfo.profile_pic ? (
+              <Image
+                source={{ uri: profileInfo.profile_pic }}
+                style={styles.profilePic}
+              />
+            ) : (
+              <Image
+                source={profilePic}
+                style={styles.profilePic}
+              />
+            )}
             <View>
-              <Text style={{ marginLeft: 10, fontSize: 20, marginTop: 10, fontWeight: 'bold', fontFamily: 'Poppins Bold' }}> @{username} </Text>
-              <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 10 }}>
-                <Text style={{ marginRight: 5 }}> 10 Followers </Text><Text> 11 Following </Text>
+              <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
+                <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10 }}>{profileInfo.name}</Text>
+                <MaterialIcons name="verified" size={20} color="black" />
+              </View>
+              <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'gray' }}>@{profileInfo.username}</Text>
+              
+              <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
+                <TouchableOpacity onPress={() => setFocusedCategory('Followers')}>
+                  <Text style={{ marginRight: 30, fontWeight: 'bold' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setFocusedCategory('Following')}>
+                  <Text style={{ fontWeight: 'bold' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
+                </TouchableOpacity>
               </View>
             </View>
-            <TouchableOpacity onPress={() => onLogOutPress()}>
-              <MaterialIcons name="logout" size={20} color="black" style={{ marginLeft: 45 }}/>
-            </TouchableOpacity>
           </View>
-
-          <Text style={{ paddingHorizontal: 15 }}>
-            I am LeBron, the greatest basketball player of all time.
-          </Text>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15}}>
-            <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
-              <Text style={styles.editButtons}> Edit Profile </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('addList')}>
-              <Text style={styles.editButtons}> Add List </Text>
-            </TouchableOpacity>
-          </View>
+          
+          <Hyperlink
+            linkDefault={ true }
+            linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
+            onPress={ (url, text) => Linking.openURL(url) }
+          >
+            <Text style={{ paddingHorizontal: 15, marginBottom: 20 }}>
+              {profileInfo.bio}
+            </Text>
+          </Hyperlink>
+          
+          {!visitingUserId ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1}}>
+              <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
+                <Text style={styles.editButtons}>Edit Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('addList')}>
+                <Text style={styles.editButtons}>Add List</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+              {isFollowing ? (
+                <TouchableOpacity style={styles.editContainer} onPress={() => unfollowUser()}>
+                  <Text style={styles.editButtons}>Unfollow</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.editContainer} onPress={() => followUser()}>
+                  <Text style={styles.editButtons}>Follow</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {categories.length > 0 ? (
             <FlatList
               data={categories}
-              renderItem={({ item }) => <CategoryTile category_name={item.category_name} category_id={item.id} imageUri={item.imageUri}/>}
+              renderItem={({ item }) => <CategoryTile category_name={item.category_name} category_id={item.id} imageUri={item.imageUri} num_items={item.num_items}/>}
               keyExtractor={(item, index) => index.toString()}
               numColumns={3}
               contentContainerStyle={styles.grid}

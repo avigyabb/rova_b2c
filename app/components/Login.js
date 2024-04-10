@@ -5,9 +5,12 @@ import { useFonts } from 'expo-font';
 import { ref, set, onValue, off, query, orderByChild, push, equalTo, get } from "firebase/database";
 import { database } from '../../firebaseConfig.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 
-const Login = ({ setView, setUserKeyIndex, setUsernameIndex }) => {
-  const [username, setUsername] = useState('');
+const auth = getAuth();
+
+const Login = ({ setView, setUserKeyIndex }) => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [wrongPassword, setWrongPassword] = useState('');
   const [loaded] = useFonts({
@@ -18,35 +21,29 @@ const Login = ({ setView, setUserKeyIndex, setUsernameIndex }) => {
   });
 
   const onLogin = async () => {
-    if (username) {
-      const usersRef = ref(database, 'users');
-      const usernameQuery = query(usersRef, orderByChild('username'), equalTo(username));
-
-      get(usernameQuery).then(async (snapshot) => {
-        let userKey = null;
-        snapshot.forEach((userSnapshot) => {
-          if (userSnapshot.val().password === password) {
-            userKey = userSnapshot.key;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('User signed in:', userCredential.user);
+      setUserKeyIndex(userCredential.user.uid);
+      await AsyncStorage.setItem('key', userCredential.user.uid);
+    } catch (error) {
+      if (email) {
+        const usersRef = ref(database, 'users');
+        const emailQuery = query(usersRef, orderByChild('email'), equalTo(email));
+  
+        get(emailQuery).then(async (snapshot) => {
+          if (!snapshot.exists()) {
+            setWrongPassword('Email does not exist!');
+            return;
+          } else {
+            setWrongPassword('Wrong password!');
           }
+        }).catch((error) => {
+          console.error("Error fetching user:", error);
         });
-        
-        if (userKey) {
-          try {
-            setUserKeyIndex(userKey);
-            setUsernameIndex(username);
-            await AsyncStorage.setItem('username', username);
-            await AsyncStorage.setItem('key', userKey);
-          } catch (error) {
-            console.log(error);
-          }
-        } else {
-          setWrongPassword('User does not exist!');
-        }
-      }).catch((error) => {
-        console.error("Error fetching user:", error);
-      });
-    } else {
-      setWrongPassword('Please enter a username!');
+      } else {
+        setWrongPassword('Please enter an email!');
+      }
     }
   };
 
@@ -54,14 +51,14 @@ const Login = ({ setView, setUserKeyIndex, setUsernameIndex }) => {
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={{ flex: 1, alignItems: 'center', marginTop: '30%' }}>
         <View style={{ width: '80%' }}>
-          <Text style={{ color: 'black', fontSize: 28, fontFamily: 'Poppins Bold', marginBottom: 10, fontWeight: 'bold' }}>skaj\social</Text>
-          <Text style={{ color: 'gray', fontSize: 14, marginBottom: 50 }}>new gen social media based on rankings</Text>
+          <Text style={{ color: 'black', fontSize: 28, fontFamily: 'Poppins Bold', marginBottom: 10, fontWeight: 'bold' }}>ambora\social</Text>
+          <Text style={{ color: 'gray', fontSize: 14, marginBottom: 50 }}>new gen social platform based on rankings</Text>
           <Text style={{ color: 'black', fontSize: 20, marginBottom: 30 }}>Welcome Back! 🎉</Text>
         </View>
         <TextInput
-          placeholder="username"
-          value={username}
-          onChangeText={setUsername}
+          placeholder="email"
+          value={email}
+          onChangeText={setEmail}
           placeholderTextColor={'gray'}
           style={{ 
             width: '80%', 
@@ -106,7 +103,7 @@ const Login = ({ setView, setUserKeyIndex, setUsernameIndex }) => {
         <View style={{ flexDirection: 'row' }}>
           <Text style={{ color: 'gray', fontSize: 14, marginTop: 20 }}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => setView('signin')}>
-            <Text style={{ color: 'black', fontSize: 14, marginTop: 20, fontWeight: 'bold' }}>Sign in here.</Text>
+            <Text style={{ color: 'black', fontSize: 14, marginTop: 20, fontWeight: 'bold' }}>Sign up here.</Text>
           </TouchableOpacity>
         </View>
 
