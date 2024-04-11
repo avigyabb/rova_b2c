@@ -81,9 +81,9 @@ function MyTabs({ userKey, setView, fetchUserData }) {
         initialParams={{ 
           userKey: userKey,
           itemName: '',
+          itemCategory: 'null',
           itemDescription: '',
-          itemImage: null,
-          hello: 'hello'
+          itemImage: [],
         }}
       />
       <Tab.Screen name="Groups" component={ComingSoon} options={{headerStyle: { height: 0 }}}/>

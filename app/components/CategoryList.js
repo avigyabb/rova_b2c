@@ -7,6 +7,7 @@ import { database, storage } from '../../firebaseConfig';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
 import Hyperlink from 'react-native-hyperlink';
 import * as ImagePicker from 'expo-image-picker';
+import FeedItemTile from "./FeedItemTile";
 
 
 const styles = StyleSheet.create({
@@ -43,13 +44,14 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
 }
 
-const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, isMyProfile }) => {
+const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, isMyProfile, visitingUserId, navigation }) => {
   const [listView, setListView] = useState('now');
   const [listData, setListData] = useState(focusedList);
   const [editMode, setEditMode] = useState(false);
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [categoryInfo, setCategoryInfo] = useState({});
   const [categoryImage, setCategoryImage] = useState(null);
+  const [focusedItem, setFocusedItem] = useState(null);
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
@@ -182,43 +184,53 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     })
   }
 
+  onItemPress = (item_key) => {
+    const itemRef = ref(database, `items/${item_key}`);
+    get(itemRef).then((snapshot) => {
+      setFocusedItem(snapshot.val());
+    })
+  }
+
   const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
+
     return (
-      <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1 }}>
-        <View style={{ flexDirection: 'row' }}>
-          {editMode && (
-            <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
-              <MaterialIcons name="do-disturb-on" size={25} color="red" />
-            </TouchableOpacity>
-          )}
-          <View style={{ width: '70%' }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{index + 1}) {item.content}</Text>
-            <View style={{ flexDirection: 'row', marginTop: 10, }}>
-              {item.image && (
-                <Image
-                  source={{ uri: item.image }}
-                  style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
-                />
-              )}
-              {item.description && item.description.length > 0 && (
-                <Hyperlink
-                  linkDefault={ true }
-                  linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
-                  onPress={ (url, text) => Linking.openURL(url) }
-                >
-                  <Text style={{ color: 'grey', fontSize: 16 }}>
-                    {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
-                  </Text>
-                </Hyperlink>
-              )}
+      <TouchableOpacity onPress={() => onItemPress(item_key)}>
+        <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1 }}>
+          <View style={{ flexDirection: 'row' }}>
+            {editMode && (
+              <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
+                <MaterialIcons name="do-disturb-on" size={25} color="red" />
+              </TouchableOpacity>
+            )}
+            <View style={{ width: '70%' }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{index + 1}) {item.content}</Text>
+              <View style={{ flexDirection: 'row', marginTop: 10, }}>
+                {item.image && (
+                  <Image
+                    source={{ uri: item.image }}
+                    style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                  />
+                )}
+                {item.description && item.description.length > 0 && (
+                  <Hyperlink
+                    linkDefault={ true }
+                    linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
+                    onPress={ (url, text) => Linking.openURL(url) }
+                  >
+                    <Text style={{ color: 'grey', fontSize: 16 }}>
+                      {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
+                    </Text>
+                  </Hyperlink>
+                )}
+              </View>
+            </View>
+            <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
+              <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
             </View>
           </View>
-          <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-            <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
-          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
@@ -335,6 +347,38 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     });
     setCategoryImage(result.assets[0].uri);
   }; 
+
+  if (focusedItem) {
+    return (
+      <>
+      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => setFocusedItem(null)}> 
+          <MaterialIcons name="arrow-back" size={30} color="black" />
+        </TouchableOpacity>
+        {editMode ? (
+          <>
+          <TouchableOpacity onPress={() => {}}>
+            <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
+          </TouchableOpacity>
+          </>
+        ) : (
+          <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{focusedCategory}</Text>
+        )}
+
+        <TouchableOpacity onPress={() => {}}>
+          {editMode ? (
+            <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Done</Text>
+          ) : isMyProfile ? (
+            <Text style={{ fontSize: 15 }}>Edit</Text>
+          ) : (
+            <Text>       </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} />
+      </>
+    );
+  }
 
   return (
     <>

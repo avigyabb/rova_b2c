@@ -56,7 +56,8 @@ const styles = StyleSheet.create({
   }
 });
 
-const Profile = ({ route }) => {
+const Profile = ({ route, navigation }) => {
+  console.log(navigation)
   const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
   const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
@@ -169,7 +170,7 @@ const Profile = ({ route }) => {
           />
           <View style={{
             ...StyleSheet.absoluteFillObject,
-            backgroundColor: 'rgba(0,0,0,0.6)',
+            backgroundColor: 'rgba(0,0,0,0.4)',
             justifyContent: 'flex-end', // Aligns child content to the bottom
             padding: 10, // Adjust or remove padding as needed
           }}>
@@ -260,6 +261,8 @@ const Profile = ({ route }) => {
           focusedCategoryId={focusedCategoryId} 
           onBackPress={() => onBackPress()}
           isMyProfile={visitingUserId ? visitingUserId === userKey : true}
+          visitingUserId={visitingUserId || userKey} // in CategoryList there must always be a visitingUserId to check for showButtons
+          navigation={navigation}
         />
       ) : (
         <>

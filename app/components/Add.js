@@ -12,6 +12,7 @@ import axios from 'axios';
 import qs from 'qs';
 import { Buffer } from 'buffer';
 import { useIsFocused } from '@react-navigation/native';
+import { search } from './Search';
 
 const styles = StyleSheet.create({
   optionsContainer: {
@@ -136,7 +137,7 @@ const Add = ({ route }) => {
         categories.push({ id: categoryKey, ...categoryData });
       });
 
-      setUserCategories(categories);
+      setUserCategories(categories.sort((a, b) => b.latest_add - a.latest_add));
     }).catch((error) => {
       console.error("Error getUserCategories:", error);
     });
@@ -164,8 +165,9 @@ const Add = ({ route }) => {
     getUserCategories();
     getSpotifyAccessToken(); 
     setNewItem(route.params.itemName);
+    setNewItemCategory(route.params.itemCategory);
     setNewItemDescription(route.params.itemDescription);
-    setNewItemImageUris([route.params.itemImage]);
+    setNewItemImageUris(route.params.itemImage);
     setSearchResults([]);
   }, [route]);
 
@@ -527,64 +529,6 @@ const Add = ({ route }) => {
     )
   }
 
-  const search = async (text) => {
-    if (newItemCategoryType === 'Movies') {
-      const API_KEY = '0259695ad57c17e0c504fae2bf270bc4';
-      const BASE_URL = 'https://api.themoviedb.org/3';
-      const imgBaseURL = "https://image.tmdb.org/t/p/";
-      const imgSize = "original";
-    
-      axios.get(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(text)}`)
-        .then(response => {
-          setSearchResults(response.data.results.slice(0, 10).map(movie => ({
-            content: movie.title,
-            description: movie.release_date,
-            image: `${imgBaseURL}${imgSize}${movie.poster_path}`,
-          })));
-        })
-        .catch(error => {
-          console.error('Error:', error);
-        });
-    } else if (text && newItemCategoryType === 'Albums') {
-      const token = spotifyAccessToken; // Your Spotify API token
-      const url = 'https://api.spotify.com/v1/search';
-      const query = encodeURIComponent(text);
-
-      axios.get(`${url}?q=${query}&type=album`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(response => {
-        setSearchResults(response.data.albums.items.map(album => ({
-          content: album.name,
-          description: album.artists.map(artist => artist.name).join(', '),
-          image: album.images.length > 0 ? album.images[0].url : undefined,
-        })));
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
-    } else if (text && newItemCategoryType === 'Locations') {
-      const API_KEY = 'AIzaSyDln_j0XWKTwl9tJHdrh-R9ELSoge7mCW0';
-      const searchText = encodeURIComponent(text);
-      const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchText}&key=${API_KEY}`;
-
-      axios.get(url)
-        .then(response => {
-          const places = response.data.results.map(place => ({
-            content: place.name,
-            description: place.formatted_address,
-            image: place.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` : undefined,
-          }));
-          setSearchResults(places.slice(0, 10));
-        })
-        .catch(error => {
-          console.error('Error:', error);
-        });
-    }
-  }
-
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
@@ -650,7 +594,7 @@ const Add = ({ route }) => {
               placeholderTextColor="gray"
               onChangeText={(text) => {
                 setNewItem(text);
-                search(text);
+                search(spotifyAccessToken, newItemCategoryType, setSearchResults, text);
               }}
               onFocus={() => setAddView('')}
               style={{
@@ -685,8 +629,10 @@ const Add = ({ route }) => {
                 }}>
                   {item.image ? (
                     <Image source={{ uri: item.image }} style={{ 
-                      width: newItemCategoryType === 'Albums' || newItemCategoryType === 'Locations' ? 60 : 40, height: 60,
-                      borderRadius: 5
+                      width: newItemCategoryType === 'Albums' || newItemCategoryType === 'Locations' || newItemCategoryType === 'Songs' ? 60 : 40, height: 60,
+                      borderRadius: 5,
+                      borderWidth: 0.5,
+                      borderColor: 'lightgray'
                     }}/>
                   ) : (
                     <View style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', backgroundColor: 'lightgray', borderRadius: 5 }}>
@@ -704,7 +650,7 @@ const Add = ({ route }) => {
               key={"single-column"}
             />
             
-            {(newItemImageUris.length === 0 && newItemDescription.length === 0) ? (
+            {(newItemImageUris.length === 0 && newItemDescription.length === 0 && newItemCategory) ? (
               <TouchableOpacity onPress={() => setAddView('AddPost')} style={{ 
                   flexDirection: 'row', 
                   alignItems: 'center', 
@@ -749,7 +695,14 @@ const Add = ({ route }) => {
             )}
             
             <View style={{flexDirection: 'row', marginTop: 10, justifyContent: 'space-between', marginBottom: 5 }}>
-              <TouchableOpacity onPress={() => onAddLaterPress()} style={{ 
+              <TouchableOpacity onPress={() => {
+                if (newItemCategory === 'null' || newItemCategory === 'noCategory') {
+                  alert('Please select a category');
+                } else {
+                  onAddLaterPress()
+                }
+              }} 
+              style={{ 
                 borderWidth: 2, 
                 borderColor: 'lightgray', 
                 borderRadius: 15,
@@ -762,7 +715,14 @@ const Add = ({ route }) => {
                 <Text style={{ color: 'gray', fontWeight: 'bold', fontSize: 14, marginLeft: 8 }}>Add to 'Later'</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity onPress={() => setRankMode(true)} style={{
+              <TouchableOpacity onPress={() => {
+                if (newItemCategory === 'null' || newItemCategory === 'noCategory') {
+                  alert('Please select a category');
+                } else {
+                  setRankMode(true);
+                }
+              }} 
+              style={{
                 backgroundColor: 'black',
                 alignItems: 'center',
                 justifyContent: 'center',

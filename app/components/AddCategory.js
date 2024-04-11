@@ -39,7 +39,8 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
   const presetCategoryTypes = [
     'Movies',
     'Albums',
-    'Locations'
+    'Songs',
+    'Locations',
   ]
 
   const onAddCategoryPress = async () => { 
