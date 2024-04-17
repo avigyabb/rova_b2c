@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
 import FollowUsers from './FollowUsers';
+import CategoryTile from './CategoryTile';
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -29,12 +30,6 @@ const styles = StyleSheet.create({
   grid: {
     // alignItems: 'center',
     justifyContent: 'space-around'
-  },
-  tile: {
-    width: 129,
-    height: 129,
-    margin: 1,
-    overflow: 'hidden', // Ensure the image is contained within the borders of the tile
   },
   tileText: {
     // existing text styles...
@@ -57,7 +52,6 @@ const styles = StyleSheet.create({
 });
 
 const Profile = ({ route, navigation }) => {
-  console.log(navigation)
   const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
   const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
@@ -150,45 +144,6 @@ const Profile = ({ route, navigation }) => {
     });
     setImageUri(result.assets[0].uri);
   }; 
-
-  const CategoryTile = ({ category_name, category_id, imageUri, num_items }) => {
-    return (
-      <TouchableOpacity style={styles.tile} onPress={() => onCategoryPress(category_name, category_id)}>
-        <View style={{
-          width: '100%', // Adjust these values as needed
-          height: '100%', // Adjust these values as needed
-          position: 'relative', // This allows the overlay to be absolutely positioned within
-        }}>
-          <Image
-            source={{ uri: imageUri }}
-            style={{
-              width: '100%',
-              height: '100%',
-              position: 'absolute', // Positions the image to fill the parent
-            }}
-            resizeMode="cover"
-          />
-          <View style={{
-            ...StyleSheet.absoluteFillObject,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'flex-end', // Aligns child content to the bottom
-            padding: 10, // Adjust or remove padding as needed
-          }}>
-            <Text style={{ marginLeft: 'auto', color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 'auto' }}>
-              {num_items}
-            </Text>
-            <Text style={{
-              color: 'white', // Ensures the text is visible against a dark background
-              fontSize: 16, // Adjust text size as needed
-              fontWeight: 'bold', // Adjust font weight as needed
-            }}>
-              {category_name}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };  
 
   const onLogOutPress = async () => {
     await AsyncStorage.removeItem('username');
@@ -347,7 +302,12 @@ const Profile = ({ route, navigation }) => {
           {categories.length > 0 ? (
             <FlatList
               data={categories}
-              renderItem={({ item }) => <CategoryTile category_name={item.category_name} category_id={item.id} imageUri={item.imageUri} num_items={item.num_items}/>}
+              renderItem={({ item }) => <CategoryTile 
+                category_name={item.category_name} 
+                imageUri={item.imageUri} 
+                num_items={item.num_items} 
+                onCategoryPress={() => onCategoryPress(item.category_name, item.id)}
+              />}
               keyExtractor={(item, index) => index.toString()}
               numColumns={3}
               contentContainerStyle={styles.grid}

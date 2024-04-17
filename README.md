@@ -1,16 +1,5 @@
-# Expo Router Example
-
-Use [`expo-router`](https://docs.expo.dev/router/introduction/) to build native navigation using files in the `app/` directory.
-
-## 🚀 How to use
-
-```sh
-npx create-expo-app -e with-router
-```
-
-## 📝 Notes
-
-- [Expo Router: Docs](https://docs.expo.dev/router/introduction/)
+UNIT TESTS
+- add a category from explore, group, feed
 
 gesturehandler error
 - probably imported something from gesturehandler when shouldn't have
@@ -18,3 +7,14 @@ gesturehandler error
 when changing backend for items ***
 - update add.js
 - update categorylist.js
+
+update version number
+npx expo prebuild --platform ios
+eas login
+eas build:configure   
+eas build --platform ios    
+eas submit -p ios --latest
+
+Presets &&&
+consts.js
+Groups.js

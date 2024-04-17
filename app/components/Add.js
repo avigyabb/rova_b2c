@@ -13,6 +13,8 @@ import qs from 'qs';
 import { Buffer } from 'buffer';
 import { useIsFocused } from '@react-navigation/native';
 import { search } from './Search';
+import CategoryTile from './CategoryTile';
+import { presetTypesList } from '../consts';
 
 const styles = StyleSheet.create({
   optionsContainer: {
@@ -101,7 +103,7 @@ const Add = ({ route }) => {
   const { userKey } = route.params;
   const [newItem, setNewItem] = useState(''); // this is the item name
   const [userCategories, setUserCategories] = useState([]);
-  const [newItemCategory, setNewItemCategory] = useState('null');
+  const [newItemCategory, setNewItemCategory] = useState(null);
   const [newItemCategoryName, setNewItemCategoryName] = useState('');
   const [newItemCategoryType, setNewItemCategoryType] = useState('');
   const [newItemDescription, setNewItemDescription] = useState(''); // ~ why does this work
@@ -122,7 +124,6 @@ const Add = ({ route }) => {
   const [rankMode, setRankMode] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
-  const presetTypesList = ['Movies', 'Albums']
 
   const getUserCategories = () => {
     const categoriesRef = ref(database, 'categories');
@@ -250,14 +251,16 @@ const Add = ({ route }) => {
               // update category photo if its the best
               if (item.score === 10.0) {
                 const categoryRef = ref(database, 'categories/' + newItemCategory);
-                update(categoryRef, {
-                  imageUri: item.image
+                get(categoryRef).then((snapshot) => {
+                  if (snapshot.exists() && !snapshot.val().presetImage) {
+                    update(categoryRef, {
+                      imageUri: item.image
+                    })
+                  }
                 })
               }
             }
-        
-            setAddView('itemAdded');
-            
+            setAddView('itemAdded'); // ~ do we need this?
           });
         }
       );
@@ -298,23 +301,34 @@ const Add = ({ route }) => {
         // update category photo if its the best
         if (item.score === 10.0) {
           const categoryRef = ref(database, 'categories/' + newItemCategory);
-          update(categoryRef, {
-            imageUri: item.image
+          get(categoryRef).then((snapshot) => {
+            if (snapshot.exists() && !snapshot.val().presetImage) {
+              update(categoryRef, {
+                imageUri: item.image
+              })
+            }
           })
         }
       }
       setAddView('itemAdded');
     }
 
+    // increment counters
     const categoryRef = ref(database, 'categories/' + newItemCategory);
     runTransaction(categoryRef, (currentData) => {
       currentData.num_items = (currentData.num_items || 0) + 1;
-      // currentData.latest_add = new Date();
       return currentData; // Returns the updated data to be saved
     })
     update(categoryRef, {
       latest_add: Date.now()
     })
+
+    // const userRef = ref(database, 'users/' + userKey);
+    // runTransaction(userRef, (currentData) => {
+    //   currentData['All'] = (currentData[newItemCategoryType] || 0) + 1;
+    //   currentData[newItemCategoryType] = (currentData[newItemCategoryType] || 0) + 1;
+    //   return currentData;
+    // })
   }
 
   // update here ***
@@ -421,7 +435,7 @@ const Add = ({ route }) => {
 
   onContinuePress = () => {
     setNewItem('');
-    setNewItemCategory('null'); 
+    setNewItemCategory(null); 
     setNewItemBucket(null);
     setItemComparisons([]);
     setAddView('');
@@ -431,6 +445,7 @@ const Add = ({ route }) => {
     setNewItemFinalScore(-1);
     setNewItemDescription('');
     setNewItemImageUris([]);
+    getUserCategories();
   }
 
   // DO NOT REMOVE
@@ -495,9 +510,9 @@ const Add = ({ route }) => {
                 style={{height: 80, width: 80, borderWidth: 0.5, borderRadius: 5, borderColor: 'lightgrey' }}
               />
             )}
+            
             <View style={{ alignItems: 'center', width: 240 }}>
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{newItem}</Text>
-                <Text style={{ fontSize: 14, color: 'gray', marginTop: 5 }}>{newItemDescription}</Text> 
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', width: '100%' }}>
@@ -536,48 +551,72 @@ const Add = ({ route }) => {
 
         {!rankMode && (
           <>
-          <Text style={{ marginTop: 15, fontWeight: 'bold', fontSize: 12 }}>List: </Text>
-          <RNPickerSelect
-            onValueChange={(value) => {
-              setNewItemCategory(value)
-              if (value) {
-                const findItem = userCategories.find(item => item.id === value);
-                if (findItem) { // ~ if you do this it ends up placing the random category as the last one picked
-                  setNewItemCategoryName(findItem.category_name) // ~ condense these
-                  setNewItemCategoryType(findItem.category_type)
-                }
-              }
-            }}
-            value={newItemCategory}
-            onOpen={() => getUserCategories()}
-            items={userCategories.map((item) => ({ label: item.category_name, value: item.id }))}
-            style={{
-              inputIOS: {
-                padding: 15,
-                borderWidth: 2,
-                borderColor: 'lightgray',
-                borderRadius: 10,
-                marginTop: 5,
-                fontWeight: 'bold',
-                letterSpacing: 0.4,
-                fontSize: 16
-              },
-            }}
-          />
+          {!newItemCategory ? (
+            <>
+            {newItem ? (
+              <>
+              <Text style={{ marginTop: 20, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>SELECT A LIST TO ADD:</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10, fontStyle: 'italic', marginTop: 8, flexShrink: 1 }}>{newItem}</Text>
+              </>
+            ) : (
+              <Text style={{ marginTop: 20, fontWeight: 'bold', fontSize: 14, marginBottom: 10, color: 'gray', fontStyle: 'italic' }}>SELECT A LIST:</Text>
+            )}
+
+            {userCategories.length === 0 && (
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ marginTop: 35, fontWeight: 'bold', fontSize: 16, color: 'black' }}>You have not created any lists!</Text>
+                <Text style={{ marginTop: 15, fontWeight: 'bold', fontSize: 14, color: 'black' }}>To create a list go to: Profile → Add List</Text>
+              </View>
+            )}
+
+            <FlatList
+              data={userCategories}
+              renderItem={({ item }) => <CategoryTile 
+                category_name={item.category_name} 
+                imageUri={item.imageUri} 
+                num_items={item.num_items} 
+                onCategoryPress={() => {
+                  console.log(item.id)
+                  setNewItemCategory(item.id)
+                  setNewItemCategoryName(item.category_name)
+                  setNewItemCategoryType(item.category_type)
+                }}
+                fromPage={'Add'}
+              />}
+              keyExtractor={(item, index) => index.toString()}
+              numColumns={3}
+              contentContainerStyle={{}}
+            />
+            </>
+          ) : (
+            <>
+            <Text style={{ marginTop: 15, fontWeight: 'bold', fontSize: 12 }}>List: </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ marginTop: 5, fontWeight: 'bold', fontSize: 20 }}>{newItemCategoryName}</Text>
+              <TouchableOpacity onPress={() => setNewItemCategory(null)}>
+                <Text>Change</Text>
+              </TouchableOpacity>
+            </View>
+            </>
+          )}
           </>
         )}
 
-        {newItem.length > 0 && newItemCategory !== 'null' && rankMode && (
+        {newItem.length > 0 && newItemCategory && rankMode && (
           <TouchableOpacity style={{ marginTop: 25 }} onPress={() => {
             setRankMode(false)
             setNewItemBucket(null)
             setItemComparisons([])
+            setBinarySearchL(0)
+            setBinarySearchR(0)
+            setBinarySearchM(0)
+            setNewItemFinalScore(-1)
           }}>
             <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'black' }}>Cancel</Text>
           </TouchableOpacity>
         )}
 
-        {newItemCategory && newItemCategory !== 'null' && (
+        {newItemCategory && (
           <View style={{
             flexDirection: 'row',
             marginTop: 15,
@@ -610,7 +649,7 @@ const Add = ({ route }) => {
           </View>
         )}
 
-        {newItem.length > 0 && newItemCategory !== 'null' && !rankMode && addView === '' && (
+        {newItem.length > 0 && newItemCategory && !rankMode && addView === '' && (
           <>
             <FlatList
               data={searchResults}
@@ -696,8 +735,10 @@ const Add = ({ route }) => {
             
             <View style={{flexDirection: 'row', marginTop: 10, justifyContent: 'space-between', marginBottom: 5 }}>
               <TouchableOpacity onPress={() => {
-                if (newItemCategory === 'null' || newItemCategory === 'noCategory') {
+                if (!newItemCategory) {
                   alert('Please select a category');
+                } else if (!newItem) {
+                  alert('Please enter an item');
                 } else {
                   onAddLaterPress()
                 }
@@ -716,8 +757,10 @@ const Add = ({ route }) => {
               </TouchableOpacity>
               
               <TouchableOpacity onPress={() => {
-                if (newItemCategory === 'null' || newItemCategory === 'noCategory') {
+                if (!newItemCategory) {
                   alert('Please select a category');
+                } else if (!newItem) {
+                  alert('Please enter an item');
                 } else {
                   setRankMode(true);
                 }
@@ -737,7 +780,7 @@ const Add = ({ route }) => {
           </>
         )}
         
-        {newItem.length > 0 && newItemCategory !== 'null' && rankMode && (
+        {newItem.length > 0 && newItemCategory && rankMode && (
           <>
           <View style={{
             alignItems: 'center',
@@ -808,7 +851,7 @@ const Add = ({ route }) => {
           </>
         )}
         
-        {newItem.length > 0 && newItemCategory !== 'null' && itemComparisons.length > 0 && rankMode && (
+        {newItem.length > 0 && newItemCategory && itemComparisons.length > 0 && rankMode && (
           <View style={{
             alignItems: 'center',
             backgroundColor: 'white',

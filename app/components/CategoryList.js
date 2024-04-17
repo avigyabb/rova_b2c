@@ -52,6 +52,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [categoryInfo, setCategoryInfo] = useState({});
   const [categoryImage, setCategoryImage] = useState(null);
   const [focusedItem, setFocusedItem] = useState(null);
+  const [focusedItemDescription, setFocusedItemDescription] = useState(null);
+  const [presetImage, setPresetImage] = useState(true);
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
@@ -187,7 +189,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   onItemPress = (item_key) => {
     const itemRef = ref(database, `items/${item_key}`);
     get(itemRef).then((snapshot) => {
-      setFocusedItem(snapshot.val());
+      const tempFocusedItem = snapshot.val();
+      tempFocusedItem.key = item_key;
+      setFocusedItem(tempFocusedItem);
     })
   }
 
@@ -203,7 +207,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 <MaterialIcons name="do-disturb-on" size={25} color="red" />
               </TouchableOpacity>
             )}
-            <View style={{ width: '70%' }}>
+            <View style={{ width: '85%' }}>
               <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{index + 1}) {item.content}</Text>
               <View style={{ flexDirection: 'row', marginTop: 10, }}>
                 {item.image && (
@@ -217,6 +221,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                     linkDefault={ true }
                     linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
                     onPress={ (url, text) => Linking.openURL(url) }
+                    style={{ flex: 1 }}
                   >
                     <Text style={{ color: 'grey', fontSize: 16 }}>
                       {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
@@ -226,7 +231,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               </View>
             </View>
             <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-              <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score.toFixed(1)}</Text>
+              <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
             </View>
           </View>
         </View>
@@ -243,8 +248,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   const onEditPress = async () => {
-    setEditMode(!editMode);
-    if (editMode) {
+    if (editMode && !focusedItem) {
       if (categoryImage) {
         const response = await fetch(categoryImage);
         const blob = await response.blob();
@@ -266,7 +270,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               update(categoryRef, {
                 category_name: categoryInfo.category_name,
                 category_description: categoryInfo.category_description,
-                imageUri: downloadURL
+                imageUri: downloadURL,
+                presetImage: true
               })
               .then(() => {
                 console.log('Category updated successfully!');
@@ -279,7 +284,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         const categoryRef = ref(database, 'categories/' + focusedCategoryId);
         update(categoryRef, {
           category_name: categoryInfo.category_name,
-          category_description: categoryInfo.category_description
+          category_description: categoryInfo.category_description,
+          presetImage: presetImage
         })
         .then(() => {
           console.log('Category updated successfully!');
@@ -288,7 +294,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       }
     }
 
-    if (editMode) {
+    if (editMode && !focusedItem) {
       const categoryRef = ref(database, 'categories/' + focusedCategoryId);
       update(categoryRef, {
         category_name: categoryInfo.category_name,
@@ -299,6 +305,14 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       })
       .catch((error) => console.error('Error onEditPress:', error));
     }
+
+    if (editMode && focusedItemDescription && focusedItem) {
+      const itemRef = ref(database, `items/${focusedItem.key}`);
+      update(itemRef, {
+        description: focusedItemDescription
+      })
+    }
+    setEditMode(!editMode);
   }
 
   const deleteCategoryAndItems = () => {
@@ -352,20 +366,26 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     return (
       <>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => setFocusedItem(null)}> 
+        <TouchableOpacity onPress={() => {
+          setFocusedItem(null)
+          setEditMode(false)
+        }}> 
           <MaterialIcons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
         {editMode ? (
           <>
-          <TouchableOpacity onPress={() => {}}>
-            <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
+          <TouchableOpacity onPress={() => {
+            onDeleteItemPress(focusedItem.bucket, focusedItem.key)
+            setFocusedItem(null)
+          }}>
+            <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete Item</Text>
           </TouchableOpacity>
           </>
         ) : (
           <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{focusedCategory}</Text>
         )}
 
-        <TouchableOpacity onPress={() => {}}>
+        <TouchableOpacity onPress={() => onEditPress()}>
           {editMode ? (
             <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Done</Text>
           ) : isMyProfile ? (
@@ -375,10 +395,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           )}
         </TouchableOpacity>
       </View>
-      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} />
+      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription}/>
       </>
     );
   }
+
+  console.log(categoryInfo)
 
   return (
     <>
@@ -416,10 +438,17 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
             />
           ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
                 <MaterialIcons name="add-photo-alternate" size={40} color="gray" />
                 <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
             </TouchableOpacity>
+            {categoryInfo.presetImage && presetImage && (
+              <TouchableOpacity style={{ marginLeft: 20, borderColor: 'red', padding: 5, borderWidth: 1, borderRadius: 5}} onPress={() => setPresetImage(false)}>
+                <Text style={{ fontWeight: 'bold', fontSize: 12, color: 'red' }}>Remove Preset Image</Text>
+              </TouchableOpacity>
+            )}
+            </View>
           )}
           <TextInput
             value={categoryInfo.category_name}

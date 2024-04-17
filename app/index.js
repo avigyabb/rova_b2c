@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Feed from './components/Feed';
 import Explore from './components/Explore.js';
 import { useNavigation } from '@react-navigation/native';
+import Groups from './components/Groups.js';
 
 // Add more screens here
 const ComingSoon = () => (
@@ -81,12 +82,19 @@ function MyTabs({ userKey, setView, fetchUserData }) {
         initialParams={{ 
           userKey: userKey,
           itemName: '',
-          itemCategory: 'null',
+          itemCategory: null,
           itemDescription: '',
           itemImage: [],
         }}
       />
-      <Tab.Screen name="Groups" component={ComingSoon} options={{headerStyle: { height: 0 }}}/>
+      <Tab.Screen 
+        name="Groups" 
+        component={Groups} 
+        options={{headerStyle: { height: 0 }}}
+        initialParams={{ 
+          userKey: userKey, 
+        }}
+      />
       <Tab.Screen 
         name="Profile" 
         component={Profile} 

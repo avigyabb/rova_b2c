@@ -16,7 +16,7 @@ const Feed = ({ route, navigation }) => {
   const [listData, setListData] = useState([]);
   const [feedView, setFeedView] = useState(null);
   const [refreshed, setRefreshed] = useState(false);
-  const [numFeedItems, setNumFeedItems] = useState(10);
+  const [numFeedItems, setNumFeedItems] = useState(50);
   const { userKey } = route.params;
   const [loaded] = useFonts({
     'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 

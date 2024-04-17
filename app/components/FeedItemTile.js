@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, FlatList, TouchableOpacity } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
 import { Image } from 'expo-image';
@@ -21,11 +21,12 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId }) => {
+const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState(profilePic);
   const [dimensions, setDimensions] = useState({ width: undefined, height: undefined });
+  const [itemDescription, setItemDescription] = useState(item.description);
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -93,16 +94,35 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       </View>
           
       <View style={{ marginLeft: 60, width: 300, marginTop: 10 }}>
-        {item.description && item.description.length > 0 && (
-          <Hyperlink
-            linkDefault={ true }
-            linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
-            onPress={ (url, text) => Linking.openURL(url) }
-          >
-            <Text style={{ fontSize: 15, marginTop: 5, lineHeight: 20 }}>
-              {item.description}
-            </Text>
-          </Hyperlink>
+        {editMode ? (
+          <TextInput
+            value={itemDescription}
+            onChangeText={(text) => {
+              setItemDescription(text)
+              setFocusedItemDescription(text)
+            }}
+            multiline
+            style={{ 
+              fontSize: 15, 
+              borderColor: 'lightgrey',
+              borderBottomWidth: 1,
+              paddingBottom: 5
+            }}
+          />
+        ) : (
+          <>
+          {item.description && item.description.length > 0 && (
+            <Hyperlink
+              linkDefault={ true }
+              linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
+              onPress={ (url, text) => Linking.openURL(url) }
+            >
+              <Text style={{ fontSize: 15, marginTop: 5, lineHeight: 20 }}>
+                {itemDescription}
+              </Text>
+            </Hyperlink>
+          )}
+          </>
         )}
         {item.image && (
           <Image
@@ -135,7 +155,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
               itemName: item.content,
               itemDescription: item.description,
               itemImage: [item.image],
-              itemCategory: 'noCategory'
+              itemCategory: null
             })}>
             <MaterialIcons name="bookmark-add" size={30} color="grey" />
           </TouchableOpacity>
@@ -144,7 +164,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
               itemName: item.content,
               itemDescription: item.description,
               itemImage: [item.image],
-              itemCategory: 'noCategory'
+              itemCategory: null
             })}
           >
             <MaterialIcons style={{}} name="add-circle" size={30} color="grey" />

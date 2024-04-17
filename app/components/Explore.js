@@ -7,7 +7,7 @@ import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
 
 
-const Explore = ({ route }) => {
+const Explore = ({ route, navigation }) => {
   const { userKey } = route.params;
   const [userListData, setUserListData] = useState([]);
   const [exploreView, setExploreView] = useState(null);
@@ -49,12 +49,15 @@ const Explore = ({ route }) => {
 
   if (exploreView) {
     return (
-      <Profile route={{'params': {
-        userKey: exploreView.userKey,
-        username: exploreView.username,
-        visitingUserId: userKey,
-        setFeedView: setExploreView
-      }}}/>
+      <Profile 
+        route={{'params': {
+          userKey: exploreView.userKey,
+          username: exploreView.username,
+          visitingUserId: userKey,
+          setFeedView: setExploreView
+        }}}
+        navigation={navigation}  
+      />
     )
   }
 
@@ -66,12 +69,12 @@ const Explore = ({ route }) => {
           <Text style={{ color: 'black', fontSize: 20, fontWeight: 'bold', margin: 10, fontStyle: 'italic' }}>Users</Text>
         </View>
         <FlatList
-            data={userListData}
-            renderItem={({ item }) => <UserTile item={item} />}
-            keyExtractor={(item, index) => index.toString()}
-            numColumns={1}
-            key={"single-column"}
-          />
+          data={userListData}
+          renderItem={({ item }) => <UserTile item={item} />}
+          keyExtractor={(item, index) => index.toString()}
+          numColumns={1}
+          key={"single-column"}
+        />
       </View>
     </TouchableWithoutFeedback>
   )

@@ -51,6 +51,16 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
       return;
     }
 
+    if (username.length > 30) {
+      setErrorMessage('Username too long');
+      return;
+    }
+
+    if (username.includes(' ')) {
+      setErrorMessage('Username cannot contain spaces');
+      return;
+    }
+
     if (!isValidEmail(email)) {
       setErrorMessage('Invalid email');
       return;

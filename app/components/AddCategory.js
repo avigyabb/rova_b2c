@@ -7,6 +7,7 @@ import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from
 import { database, storage } from '../../firebaseConfig';
 import { ref, set, onValue, off, push, query, equalTo, orderByChild, get } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import RNPickerSelect from 'react-native-picker-select';
+import { presetTypesList } from '../consts';
 
 const styles = StyleSheet.create({
   postButtons: {
@@ -36,12 +37,6 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [newCategoryType, setNewCategoryType] = useState('');
   const [buttonMessage, setButtonMessage] = useState('Add Category');
-  const presetCategoryTypes = [
-    'Movies',
-    'Albums',
-    'Songs',
-    'Locations',
-  ]
 
   const onAddCategoryPress = async () => { 
     setButtonMessage('Adding Category...')  
@@ -72,6 +67,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
               category_type: newCategoryType,
               list_num: 0,
               imageUri: downloadURL,
+              presetImage: true,
             })
             .then(() => {
               console.log('New category added with image URI.')
@@ -96,6 +92,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
         list_num: 0,
         imageUri: null, // Save the URI in the database
         latest_add: 0,
+        presetImage: false,
       })
       .then(() => {
         console.log('New category added without image URI.')
@@ -186,7 +183,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
               setNewCategoryType(value)
             }}
             value={newCategoryType}
-            items={presetCategoryTypes.map((item) => ({ label: item, value: item }))}
+            items={presetTypesList.map((item) => ({ label: item, value: item }))}
             style={{
               inputIOS: {
                 fontSize: 16, 
@@ -201,7 +198,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
           />
         </View>
 
-        <TouchableOpacity onPress={() => onAddCategoryPress()} style={{ 
+        <TouchableOpacity onPress={() => buttonMessage === 'Add Category' ? onAddCategoryPress() : {}} style={{ 
           marginTop: 100, 
           backgroundColor: 'black', 
           alignItems: 'center', 
