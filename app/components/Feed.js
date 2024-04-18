@@ -33,7 +33,7 @@ const Feed = ({ route, navigation }) => {
 
     get(categoryItemsRef).then((snapshot) => {
       if (snapshot.exists()) {
-        const tempListData = Object.values(snapshot.val());
+        const tempListData = Object.entries(snapshot.val()).map(([key, value]) => ({ key, ...value }));
         setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp));
       }
       setRefreshed(false);

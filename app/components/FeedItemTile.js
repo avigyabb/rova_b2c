@@ -56,6 +56,11 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     minute: '2-digit',
   });
 
+  const onLikePress = () => {
+    console.log("ran")
+    console.log(item)
+  }
+
   return (
     <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row' }}>
@@ -143,7 +148,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       
       {visitingUserId !== item.user_id && (
         <View style={{ flexDirection: 'row', marginTop: 20 }}>
-          <TouchableOpacity style={{ marginRight: 10 }}>
+          <TouchableOpacity style={{ marginRight: 10 }} onPress={() => onLikePress()}>
             <MaterialIcons name="thumb-up" size={22} color="grey" />
           </TouchableOpacity>
           <TouchableOpacity style={{ marginRight: 10 }}>

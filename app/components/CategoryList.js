@@ -138,7 +138,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             category_name: item[1].category_name,
             content: item[1].content,
             description: item[1].description,
-            image: item[1].image,
+            image: item[1].image || null,
             score: item[1].score,
             timestamp: item[1].timestamp,
             user_id: item[1].user_id
@@ -150,7 +150,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           if (item[1].score === 10.0) {
             const categoryRef = ref(database, 'categories/' + item[1].category_id);
             update(categoryRef, {
-              imageUri: item[1].image
+              imageUri: item[1].image || null
             })
           }
         });
@@ -399,8 +399,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       </>
     );
   }
-
-  console.log(categoryInfo)
 
   return (
     <>
