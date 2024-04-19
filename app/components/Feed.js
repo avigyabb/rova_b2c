@@ -39,7 +39,7 @@ const Feed = ({ route, navigation }) => {
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
     'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
   });
-  const [feedType, setFeedType] = useState('Top Posts');
+  const [feedType, setFeedType] = useState('For You');
   const [topPostsTime, setTopPostsTime] = useState('Past Hour');
 
 

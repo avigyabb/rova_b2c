@@ -190,7 +190,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         )}
       </View>
       
-      {visitingUserId !== item.user_id && (
+      {/* {visitingUserId !== item.user_id && ( */}
         <View style={{ flexDirection: 'row', marginTop: 20 }}>
           <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
             <MaterialIcons name="thumb-up" size={22} color={visitingUserId in likes ? "black" : "grey"} />
@@ -221,7 +221,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
             <MaterialIcons style={{}} name="add-circle" size={30} color="grey" />
           </TouchableOpacity>
         </View>
-      )}
+      {/* )} */}
     </View>
   );
 })
