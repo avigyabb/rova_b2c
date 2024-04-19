@@ -170,7 +170,11 @@ const Add = ({ route }) => {
     getSpotifyAccessToken(); 
     setNewItem(route.params.itemName);
     setNewItemCategory(route.params.itemCategory);
-    setNewItemDescription(route.params.itemDescription);
+    setNewItemDescription(
+      route.params.taggedUser ?
+        'Added from ' + route.params.taggedUser + '\'s item: \n\n' + route.params.itemDescription
+      : route.params.itemDescription
+    );
     setNewItemImageUris(route.params.itemImage);
     setSearchResults([]);
   }, [route]);

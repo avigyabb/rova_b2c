@@ -21,7 +21,6 @@ function getScoreColorHSL(score) {
 }
 
 const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime }) => {
-  const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState(profilePic);
   const [dimensions, setDimensions] = useState({ width: undefined, height: undefined });
@@ -39,17 +38,18 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   };
 
   useEffect(() => {
+    const userRef = ref(database, `users/${item.user_id}`);
     get(userRef).then((snapshot) => {
       if (snapshot.exists()) {
         setUsername(snapshot.val().name)
-        setUserImage(snapshot.val().profile_pic)
+        setUserImage(snapshot.val().profile_pic || profilePic);
       }
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
 
-    item.likes && setLikes(item.likes);
-    item.dislikes && setDislikes(item.dislikes);
+    setLikes(item.likes || {});
+    setDislikes(item.dislikes || {});
     setItemDescription(item.description);
   }, [topPostsTime])
 
@@ -73,7 +73,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         const {[visitingUserId]: _, ...newLikes} = prevLikes;  // Use destructuring to exclude the `userId` key
         return newLikes;
       });
-    } else {
+    } else if (!(visitingUserId in dislikes)) {
       const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
       set(itemLikeRef, {
         userId: visitingUserId
@@ -93,7 +93,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         const {[visitingUserId]: _, ...newDislikes} = prevDislikes;  // Use destructuring to exclude the `userId` key
         return newDislikes;
       });
-    } else {
+    } else if (!(visitingUserId in likes)) {
       const itemLikeRef = ref(database, 'items/' + item.key + '/dislikes/' + visitingUserId);
       set(itemLikeRef, {
         userId: visitingUserId
@@ -206,7 +206,8 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
               itemName: item.content,
               itemDescription: item.description,
               itemImage: [item.image],
-              itemCategory: null
+              itemCategory: null,
+              taggedUser: username
             })}>
             <MaterialIcons name="bookmark-add" size={30} color="grey" />
           </TouchableOpacity>
@@ -215,7 +216,8 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
               itemName: item.content,
               itemDescription: item.description,
               itemImage: [item.image],
-              itemCategory: null
+              itemCategory: null,
+              taggedUser: username
             })}
           >
             <MaterialIcons style={{}} name="add-circle" size={30} color="grey" />

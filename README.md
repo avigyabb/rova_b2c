@@ -8,7 +8,7 @@ when changing backend for items ***
 - update add.js
 - update categorylist.js
 
-update version number
+update version number in app.json
 npx expo prebuild --platform ios
 eas login
 eas build:configure   
