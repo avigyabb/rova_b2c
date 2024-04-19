@@ -31,11 +31,12 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
       .catch(error => {
         console.error('Error:', error);
       });
-  } else if (text && (newItemCategoryType === 'Songs' || newItemCategoryType === 'Albums')) {
+  } else if (text && (newItemCategoryType === 'Songs' || newItemCategoryType === 'Albums' || newItemCategoryType === 'Artists')) { //text is used in the if statements to check if the value is not null
     const token = spotifyAccessToken; // Your Spotify API token
     const url = 'https://api.spotify.com/v1/search';
     const query = encodeURIComponent(text);
-    const type = newItemCategoryType === 'Songs' ? 'track' : 'album';
+    const type = newItemCategoryType === 'Songs' ? 'track' :
+             newItemCategoryType === 'Albums' ? 'album' : 'artist';
 
     axios.get(`${url}?q=${query}&type=${type}`, {
       headers: {
@@ -54,6 +55,12 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
           content: track.name,
           description: track.artists.map(artist => artist.name).join(', '),
           image: track.album.images.length > 0 ? track.album.images[0].url : undefined,
+        })));
+      } else if (newItemCategoryType === 'Artists') { 
+        setSearchResults(response.data.artists.items.map(artist => ({
+          content: artist.name,
+          description: artist.genres.join(', '), // Assuming you might want to show artist genres as a description
+          image: artist.images.length > 0 ? artist.images[0].url : undefined,
         })));
       }
     })
