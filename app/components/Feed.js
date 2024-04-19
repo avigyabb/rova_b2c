@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, FlatList, TouchableOpacity } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
 import { Image } from 'expo-image';
@@ -9,6 +9,21 @@ import { useFonts } from 'expo-font';
 import { MaterialIcons } from '@expo/vector-icons';
 import Profile from './Profile';
 import FeedItemTile from './FeedItemTile';
+
+const styles = StyleSheet.create({
+  timesText: {
+    color: 'black',
+    fontWeight: 'bold',
+  },
+  timesButton: {
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'lightgrey',
+    width: 85,
+    borderRadius: 5,
+  }
+});
 
 
 const Feed = ({ route, navigation }) => {
@@ -24,7 +39,8 @@ const Feed = ({ route, navigation }) => {
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
     'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
   });
-  const [feedType, setFeedType] = useState('For You');
+  const [feedType, setFeedType] = useState('Top Posts');
+  const [topPostsTime, setTopPostsTime] = useState('Past Hour');
 
 
   const getListData = () => {
@@ -85,12 +101,52 @@ const Feed = ({ route, navigation }) => {
       console.error(error);
     });
   }
+  
+  const getTopPostsListData = () => {
+    setRefreshed(true);
+    const categoryItemsRef = ref(database, 'items');
+    let tempListData = {};
+    const oneHourAgo = Date.now() - 3600000;
+    const oneDayAgo = Date.now() - 86400000;
+    const oneWeekAgo = Date.now() - 604800000;
+
+    get(categoryItemsRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        tempListDataSorted = Object.entries(snapshot.val())
+          .map(([key, value]) => ({ key, ...value }))
+          .sort((a, b) => ((b.likes ? Object.keys(b.likes).length : 0) + (b.dislikes ? Object.keys(b.dislikes).length : 0)) - ((a.likes ? Object.keys(a.likes).length : 0) + (a.dislikes ? Object.keys(a.dislikes).length : 0)));
+
+        tempListData['Past Hour'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo)
+        tempListData['Past Day'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo)
+        tempListData['Past Week'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo)
+        tempListData['All Time'] = tempListDataSorted
+        // console.log(tempListData)
+        setListData(tempListData);
+      }
+      setRefreshed(false);
+    }).catch((error) => {
+      console.error("Error fetching categories:", error);
+    });
+
+    const userRef = ref(database, 'users/' + userKey);
+    get(userRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        setProfileInfo(snapshot.val());
+      } else {
+        console.log("No user data.");
+      }
+    }).catch((error) => {
+      console.error(error);
+    });
+  }
 
   useEffect(() => {
     if (feedType === 'For You') {
       getListData();
     } else if (feedType === 'Following') {
       getFollowingListData();
+    } else if (feedType === 'Top Posts') {
+      getTopPostsListData();
     }
   }, []);
 
@@ -108,9 +164,15 @@ const Feed = ({ route, navigation }) => {
     )
   }
 
+  // try {
+  //   console.log(listData)
+  // } catch (error) {
+  //   console.log(error)
+  // }
+
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
-      <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20, justifyContent: 'space-between'  }}>
+      <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20, justifyContent: 'space-between', }}>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
           {profileInfo && profileInfo.profile_pic ? (
             <Image
@@ -132,6 +194,12 @@ const Feed = ({ route, navigation }) => {
 
       <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', padding: 20, justifyContent: 'space-evenly', borderColor: 'lightgrey', borderBottomWidth: 0.5 }}>
         <TouchableOpacity onPress={() => {
+          setFeedType('Top Posts')
+          getTopPostsListData();
+        }}>
+          <Text style={feedType === 'Top Posts' ? { color: 'black', fontSize: 16, fontWeight: 'bold' } : { color: 'gray', fontSize: 14, fontWeight: 'bold' }}>Top Posts</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => {
           setFeedType('For You')
           getListData();
         }}>
@@ -145,6 +213,23 @@ const Feed = ({ route, navigation }) => {
         </TouchableOpacity>
       </View>
       
+      {feedType === 'Top Posts' && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', paddingVertical: 10, justifyContent: 'space-evenly' }}>
+          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Hour' && {backgroundColor: 'black'}]} onPress={() => setTopPostsTime('Past Hour')}>
+            <Text style={[styles.timesText, topPostsTime === 'Past Hour' && {color: 'white'}]}>Past Hour</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Day' && {backgroundColor: 'black'}]} onPress={() => setTopPostsTime('Past Day')}>
+            <Text style={[styles.timesText, topPostsTime === 'Past Day' && {color: 'white'}]}>Past Day</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Week' && {backgroundColor: 'black'}]} onPress={() => setTopPostsTime('Past Week')}>
+            <Text style={[styles.timesText, topPostsTime === 'Past Week' && {color: 'white'}]}>Past Week</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'All Time' && {backgroundColor: 'black'}]} onPress={() => setTopPostsTime('All Time')}>
+            <Text style={[styles.timesText, topPostsTime === 'All Time' && {color: 'white'}]}>All Time</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {refreshed ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ color: 'gray', fontSize: 20, fontStyle: 'italic' }}>Loading . . . </Text>
@@ -152,8 +237,8 @@ const Feed = ({ route, navigation }) => {
       ) : (
         <>
         <FlatList
-          data={listData.slice(0, numFeedItems)}
-          renderItem={({ item }) => <FeedItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation}/>}
+          data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
+          renderItem={({ item }) => <FeedItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime}/>}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}
@@ -165,6 +250,8 @@ const Feed = ({ route, navigation }) => {
                 getListData();
               } else if (feedType === 'Following') {
                 getFollowingListData();
+              } else if (feedType === 'Top Posts') {
+                getTopPostsListData();
               }
             }
           }}
@@ -175,7 +262,7 @@ const Feed = ({ route, navigation }) => {
           style={{ zIndex: 1 }}
           showsVerticalScrollIndicator={false}
         />
-        <View style={{ position: 'absolute', width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 120 }}>
+        <View style={{ position: 'absolute', width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 170 }}>
           <MaterialIcons name='autorenew' size={60} color='lightgray' />
         </View>
         </>

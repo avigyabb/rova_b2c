@@ -132,16 +132,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       if (items) {
         items.forEach((item) => {
           const itemRef = ref(database, `items/${item[0]}`);
-          set(itemRef, { 
-            bucket: item[1].bucket,
-            category_id: item[1].category_id,
-            category_name: item[1].category_name,
-            content: item[1].content,
-            description: item[1].description,
-            image: item[1].image || null,
+          update(itemRef, { 
             score: item[1].score,
-            timestamp: item[1].timestamp,
-            user_id: item[1].user_id
           })
           .then(() => console.log(`Score updated for ${item[0]}`))
           .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));

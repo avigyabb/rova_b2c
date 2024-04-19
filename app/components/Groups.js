@@ -95,7 +95,7 @@ const Groups = ({ route, navigation }) => {
   const Chip = ({chipInfo}) => {
     const chip = chipInfo[0];
     return (
-      <TouchableOpacity onPress={() => onCategorySwitch(chip)} style={{ backgroundColor:  chip === leaderboardCategory ? 'black' : 'lightgrey', padding: 7, paddingHorizontal: 10, borderRadius: 20, marginRight: 8 }}>
+      <TouchableOpacity onPress={() => onCategorySwitch(chip)} style={{ backgroundColor:  chip === leaderboardCategory ? 'black' : 'lightgrey', height: 30, paddingHorizontal: 10, borderRadius: 20, marginRight: 8, justifyContent: 'center' }}>
         <Text style={{ color: chip === leaderboardCategory ? 'white' : 'black', fontWeight: 'bold', fontSize: 14 }}>{chip}</Text>
       </TouchableOpacity>
     )
@@ -158,13 +158,13 @@ const Groups = ({ route, navigation }) => {
       </View>
 
       {groupType === 'Global' ? (
-        <View>
+        <View style={{ flex: 1, height: '92%', alignContent: 'flex-start' }}>
           <FlatList
             data={chips}
             renderItem={({ item }) => <Chip chipInfo={item}/>}
             horizontal={true}
             showsHorizontalScrollIndicator={false}
-            style={{ padding: 10 }}
+            style={{ padding: 10, flexGrow: 0 }}
           />
           <FlatList
             data={groupsListData.filter((item) => item.map[leaderboardCategory] > 0)}
@@ -172,6 +172,7 @@ const Groups = ({ route, navigation }) => {
             keyExtractor={(item, index) => index.toString()}
             numColumns={1}
             key={"single-column"}
+            style={{ flexGrow: 1 }}
           />
         </View>
       ) : (
@@ -185,7 +186,6 @@ const Groups = ({ route, navigation }) => {
               renderItem={({ item }) => <Chip chipInfo={item}/>}
               horizontal={true}
               showsHorizontalScrollIndicator={false}
-              style={{ padding: 10 }}
             />
             <FlatList
               data={groupsListData.filter((item) => item.map[leaderboardCategory] > 0 && item.school === school)}

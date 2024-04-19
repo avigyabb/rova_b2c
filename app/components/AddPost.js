@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView }) => {
+const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView, setAddedCustomImage }) => {
   
 
   const pickImage = async () => {
@@ -38,6 +38,7 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
     });
 
     setNewItemImageUris([result.assets[0].uri]);
+    setAddedCustomImage(true);
   }; 
 
   return (

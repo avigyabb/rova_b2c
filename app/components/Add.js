@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList } from 'react-native';
+import { Image } from 'expo-image';
 import RNPickerSelect from 'react-native-picker-select';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ref, set, onValue, off, query, orderByChild, push, equalTo, get, update, runTransaction } from "firebase/database";
@@ -124,6 +125,8 @@ const Add = ({ route }) => {
   const [rankMode, setRankMode] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
+  const [addedCustomImage, setAddedCustomImage] = useState(false);
+  const [numItems, setNumItems] = useState(0);
 
   const getUserCategories = () => {
     const categoriesRef = ref(database, 'categories');
@@ -189,13 +192,13 @@ const Add = ({ route }) => {
     return array
   }
 
-  // update 3 here ***
+  // update 4 here ***
   // I've had errors where some fields in the database don't have a field causing an error that is not logged
   const addNewItem = async (newItemBucket, newBinarySearchM, isNewCard) => {
     setRankMode(false);
     setAddView('addingItem');
     // eventually have to do a for loop for all the images
-    if (newItemImageUris.length > 0 && !presetTypesList.includes(newItemCategoryType)) {
+    if (newItemImageUris.length > 0 && addedCustomImage) {
       const imageUri = newItemImageUris[0];
       const response = await fetch(imageUri);
       const blob = await response.blob();
@@ -315,20 +318,10 @@ const Add = ({ route }) => {
 
     // increment counters
     const categoryRef = ref(database, 'categories/' + newItemCategory);
-    runTransaction(categoryRef, (currentData) => {
-      currentData.num_items = (currentData.num_items || 0) + 1;
-      return currentData; // Returns the updated data to be saved
-    })
     update(categoryRef, {
-      latest_add: Date.now()
+      latest_add: Date.now(),
+      num_items: numItems + 1
     })
-
-    // const userRef = ref(database, 'users/' + userKey);
-    // runTransaction(userRef, (currentData) => {
-    //   currentData['All'] = (currentData[newItemCategoryType] || 0) + 1;
-    //   currentData[newItemCategoryType] = (currentData[newItemCategoryType] || 0) + 1;
-    //   return currentData;
-    // })
   }
 
   // update here ***
@@ -430,6 +423,14 @@ const Add = ({ route }) => {
     })
     .then(() => console.log(`New later item added`))
     .catch((error) => console.error(`Failed to add later item: ${error}`));
+
+    // increment counters
+    const categoryRef = ref(database, 'categories/' + newItemCategory);
+    update(categoryRef, {
+      latest_add: Date.now(),
+      num_items: numItems + 1
+    })
+
     setAddView('itemAdded');
   }
 
@@ -448,13 +449,6 @@ const Add = ({ route }) => {
     getUserCategories();
   }
 
-  // DO NOT REMOVE
-  // console.log('newItemCategory: ' + newItemCategory)
-  // console.log('newItem: ' + newItem)
-  // console.log('newItemDescription: ' + newItemDescription)
-  // console.log('newItemImageUris: ' + newItemImageUris)
-  // console.log('addView: ' + addView)
-
   if (addView === 'addingItem') {
     return (
       <View style={{ backgroundColor: 'white', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
@@ -472,6 +466,7 @@ const Add = ({ route }) => {
         newItemImageUris={newItemImageUris}
         setNewItemImageUris={setNewItemImageUris} 
         setAddView={setAddView}  
+        setAddedCustomImage={setAddedCustomImage}
       />
     );
   }
@@ -576,10 +571,16 @@ const Add = ({ route }) => {
                 imageUri={item.imageUri} 
                 num_items={item.num_items} 
                 onCategoryPress={() => {
-                  console.log(item.id)
                   setNewItemCategory(item.id)
                   setNewItemCategoryName(item.category_name)
                   setNewItemCategoryType(item.category_type)
+                  const categoryItemsRef = ref(database, 'items');
+                  const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(item.id));
+                  get(categoryItemsQuery).then((snapshot) => {
+                    if (snapshot.exists()) {
+                      setNumItems(Object.keys(snapshot.val()).length)
+                    }
+                  })
                 }}
                 fromPage={'Add'}
               />}

@@ -197,20 +197,22 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
             }}
           />
         </View>
-
-        <TouchableOpacity onPress={() => buttonMessage === 'Add Category' ? onAddCategoryPress() : {}} style={{ 
-          marginTop: 100, 
-          backgroundColor: 'black', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          paddingVertical: 15, 
-          paddingHorizontal: 50, 
-          borderRadius: 35,
-          width: '80%',
-          marginLeft: '10%'
-        }}>
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>{buttonMessage}</Text>
-        </TouchableOpacity>
+        
+        {newCategoryName && (
+          <TouchableOpacity onPress={() => buttonMessage === 'Add Category' ? onAddCategoryPress() : {}} style={{ 
+            marginTop: 100, 
+            backgroundColor: 'black', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            paddingVertical: 15, 
+            paddingHorizontal: 50, 
+            borderRadius: 35,
+            width: '80%',
+            marginLeft: '10%'
+          }}>
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>{buttonMessage}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );

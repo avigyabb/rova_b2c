@@ -36,7 +36,6 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
     const url = 'https://api.spotify.com/v1/search';
     const query = encodeURIComponent(text);
     const type = newItemCategoryType === 'Songs' ? 'track' : 'album';
-    console.log(type)
 
     axios.get(`${url}?q=${query}&type=${type}`, {
       headers: {
@@ -44,7 +43,6 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
       }
     })
     .then(response => {
-      console.log(response.data)
       if (newItemCategoryType === 'Albums') {
         setSearchResults(response.data.albums.items.map(album => ({
           content: album.name,

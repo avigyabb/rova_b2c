@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
 import { useFonts } from 'expo-font';
 import { MaterialIcons } from '@expo/vector-icons';
 import Profile from './Profile';
-
 
 // this function is repeated many times -> condense into one file ~
 function getScoreColorHSL(score) {
@@ -21,12 +20,14 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription }) => {
+const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState(profilePic);
   const [dimensions, setDimensions] = useState({ width: undefined, height: undefined });
   const [itemDescription, setItemDescription] = useState(item.description);
+  const [likes, setLikes] = useState({});
+  const [dislikes, setDislikes] = useState({});
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -37,14 +38,20 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     // }
   };
 
-  get(userRef).then((snapshot) => {
-    if (snapshot.exists()) {
-      setUsername(snapshot.val().name)
-      setUserImage(snapshot.val().profile_pic)
-    }
-  }).catch((error) => {
-    console.error("Error fetching categories:", error);
-  });
+  useEffect(() => {
+    get(userRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        setUsername(snapshot.val().name)
+        setUserImage(snapshot.val().profile_pic)
+      }
+    }).catch((error) => {
+      console.error("Error fetching categories:", error);
+    });
+
+    item.likes && setLikes(item.likes);
+    item.dislikes && setDislikes(item.dislikes);
+    setItemDescription(item.description);
+  }, [topPostsTime])
 
   let scoreColor = getScoreColorHSL(Number(item.score));
   const date = new Date(item.timestamp);
@@ -56,9 +63,46 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     minute: '2-digit',
   });
 
-  const onLikePress = () => {
-    console.log("ran")
-    console.log(item)
+  const onLikePress = (item) => {
+    console.log("loc6")
+    console.log(likes)
+    if (visitingUserId in likes) {
+      const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
+      remove(itemLikeRef);
+      setLikes(prevLikes => {
+        const {[visitingUserId]: _, ...newLikes} = prevLikes;  // Use destructuring to exclude the `userId` key
+        return newLikes;
+      });
+    } else {
+      const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
+      set(itemLikeRef, {
+        userId: visitingUserId
+      })
+      setLikes(prevLikes => ({
+        ...prevLikes,
+        [visitingUserId]: visitingUserId
+      }));
+    }
+  }
+
+  const onDislikePress = (item) => {
+    if (visitingUserId in dislikes) {
+      const itemDislikeRef = ref(database, 'items/' + item.key + '/dislikes/' + visitingUserId);
+      remove(itemDislikeRef);
+      setDislikes(prevDislikes => {
+        const {[visitingUserId]: _, ...newDislikes} = prevDislikes;  // Use destructuring to exclude the `userId` key
+        return newDislikes;
+      });
+    } else {
+      const itemLikeRef = ref(database, 'items/' + item.key + '/dislikes/' + visitingUserId);
+      set(itemLikeRef, {
+        userId: visitingUserId
+      })
+      setDislikes(prevDislikes => ({
+        ...prevDislikes,
+        [visitingUserId]: visitingUserId
+      }));
+    }
   }
 
   return (
@@ -148,11 +192,13 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       
       {visitingUserId !== item.user_id && (
         <View style={{ flexDirection: 'row', marginTop: 20 }}>
-          <TouchableOpacity style={{ marginRight: 10 }} onPress={() => onLikePress()}>
-            <MaterialIcons name="thumb-up" size={22} color="grey" />
+          <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
+            <MaterialIcons name="thumb-up" size={22} color={visitingUserId in likes ? "black" : "grey"} />
+            <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ marginRight: 10 }}>
-            <MaterialIcons name="thumb-down" size={22} color="grey" />
+          <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onDislikePress(item)}>
+            <MaterialIcons name="thumb-down" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
+            <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={{ marginLeft: 'auto', marginRight: 10 }} 

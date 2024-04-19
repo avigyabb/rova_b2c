@@ -133,6 +133,8 @@ const Profile = ({ route, navigation }) => {
   onBackPress = () => {
     setFocusedList({});
     setFocusedCategory(null);
+    setFocusedCategoryId(null);
+    setFocusedList({});
   }
 
   const pickImage = async () => {
@@ -185,7 +187,7 @@ const Profile = ({ route, navigation }) => {
 
   if (focusedCategory === 'Following') {
     return <FollowUsers 
-      userIds={Object.keys(profileInfo.following)} 
+      userIds={profileInfo.following ? Object.keys(profileInfo.following) : []} 
       setFocusedCategory={setFocusedCategory}
       focusedCategory={'Following'}
       username={profileInfo.username}
@@ -209,7 +211,7 @@ const Profile = ({ route, navigation }) => {
 
           <AddCategory profilePic={profileInfo.profile_pic} onBackPress={() => onBackPress()} userKey={userKey}/>
         </>
-      ) : focusedCategory ? (
+      ) : focusedCategoryId ? (
         <CategoryList 
           focusedCategory={focusedCategory} 
           focusedList={focusedList} 
