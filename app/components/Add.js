@@ -237,7 +237,7 @@ const Add = ({ route }) => {
                 setNewItemFinalScore(item.score.toFixed(1));
                 itemRef = push(ref(database, 'items'));
               }
-              set(itemRef, { 
+              update(itemRef, { 
                 bucket: newItemBucket,
                 category_id: newItemCategory,
                 category_name: newItemCategoryName,
@@ -287,7 +287,7 @@ const Add = ({ route }) => {
           setNewItemFinalScore(item.score.toFixed(1));
           itemRef = push(ref(database, 'items'));
         }
-        set(itemRef, { 
+        update(itemRef, { 
           bucket: newItemBucket,
           category_id: newItemCategory,
           category_name: newItemCategoryName,
@@ -410,7 +410,7 @@ const Add = ({ route }) => {
   // update here ***
   onAddLaterPress = () => {
     const newLaterItemRef = push(ref(database, 'items'));
-    set(newLaterItemRef, { 
+    update(newLaterItemRef, { 
       category_id: newItemCategory,
       category_name: newItemCategoryName,
       content: newItem, 
