@@ -89,7 +89,8 @@ const Groups = ({ route, navigation }) => {
 
   const onCategorySwitch = (chip) => {
     setLeaderboardCategory(chip);
-    setGroupsListData(groupsListData.sort((a, b) => b.map[chip] - a.map[chip]));
+    const sortedData = [...groupsListData].sort((a, b) => (b.map[chip] || 0) - (a.map[chip] || 0));
+    setGroupsListData(sortedData);
   }
 
   const Chip = ({chipInfo}) => {
