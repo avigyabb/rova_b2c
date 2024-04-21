@@ -188,12 +188,24 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   const ListItemTile = ({ item, item_key, index }) => {
+    console.log(item)
     let scoreColor = getScoreColorHSL(Number(item.score));
+
+    // ~ eventually want to get this function to delete the extra item as well
+    const onRerankItemPress = () => {
+      navigation.navigate('Add', {
+        itemName: item.content,
+        itemDescription: item.description,
+        itemImage: [item.image],
+        itemCategory: item.category_id,
+        taggedUser: null
+      })
+    }
 
     return (
       <TouchableOpacity onPress={() => onItemPress(item_key)}>
-        <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1 }}>
-          <View style={{ flexDirection: 'row' }}>
+        <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
+          <View style={{ flexDirection: 'row', paddingHorizontal: editMode && 10 }}>
             {editMode && (
               <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
                 <MaterialIcons name="do-disturb-on" size={25} color="red" />
@@ -226,6 +238,11 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
             </View>
           </View>
+          {editMode && (
+            <TouchableOpacity onPress={() => onRerankItemPress(item_key)} style={{ flexDirection: 'row', marginTop: 10, borderColor: 'lightgrey', borderWidth: 3, padding: 3, borderRadius: 5 }}>
+              <Text style={{ color: 'grey', fontSize: 16, fontWeight: 'bold' }}>Rerank Item</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
