@@ -118,11 +118,13 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       const itemCommentRef = push(ref(database, 'items/' + item.key + '/comments/'));
       set(itemCommentRef, {
         userId: visitingUserId,
-        comment: newComment
+        comment: newComment,
+        timestamp: Date.now()
       })
       setComments([...comments, {
         userId: visitingUserId,
-        comment: newComment
+        comment: newComment,
+        timestamp: Date.now()
       }]);
       setNewComment(''); // Clear the input after submission
   }
@@ -133,7 +135,10 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
 
   const CommentTile = ({ item }) => {
     return (
+      <>
       <Text>{item.comment}</Text>
+      <Text>{item.timestamp}</Text>
+      </>
     );
   }
 
