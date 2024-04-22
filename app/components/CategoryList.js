@@ -404,7 +404,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           )}
         </TouchableOpacity>
       </View>
-      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription}/>
+      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription} showComments={true}/>
       </>
     );
   }

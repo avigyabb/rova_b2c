@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -20,13 +20,16 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime }) => {
+const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false }) => {
+  const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState(profilePic);
   const [dimensions, setDimensions] = useState({ width: undefined, height: undefined });
   const [itemDescription, setItemDescription] = useState(item.description);
   const [likes, setLikes] = useState({});
   const [dislikes, setDislikes] = useState({});
+  const [comments, setComments] = useState({});
+  const [newComment, setNewComment] = useState('');
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -50,6 +53,12 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
 
     setLikes(item.likes || {});
     setDislikes(item.dislikes || {});
+    setComments( item.comments ? 
+      Object.keys(item.comments).map(key => ({
+        id: key,
+        ...item.comments[key]
+      })) : []
+    );    
     setItemDescription(item.description);
   }, [topPostsTime])
 
@@ -103,6 +112,28 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         [visitingUserId]: visitingUserId
       }));
     }
+  }
+
+  const onNewCommentSubmit = (item) => {
+      const itemCommentRef = push(ref(database, 'items/' + item.key + '/comments/'));
+      set(itemCommentRef, {
+        userId: visitingUserId,
+        comment: newComment
+      })
+      setComments(prevComments => ({
+        ...prevComments,
+        [visitingUserId]: visitingUserId
+      }));
+  }
+
+  const onCommentPress = () => {
+    setItemInfo(item);
+  }  
+
+  const CommentTile = ({ item }) => {
+    return (
+      <Text>{item.comment}</Text>
+    );
   }
 
   return (
@@ -200,6 +231,14 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
             <MaterialIcons name="thumb-down" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
             <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
           </TouchableOpacity>
+          
+          {!showComments && (
+            <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
+              <MaterialIcons name="comment" size={22} color="grey" />
+              <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(comments).length}</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity 
             style={{ marginLeft: 'auto', marginRight: 10 }} 
             onPress={() => navigation.navigate('Add', {
@@ -223,6 +262,47 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
             <MaterialIcons style={{}} name="add-circle" size={30} color="grey" />
           </TouchableOpacity>
         </View>
+
+        {showComments && (
+            <View style={{ padding: 10 }}>
+              {/* Render your comments section here */}
+              <View style={{
+                flexDirection: 'row',
+                marginTop: 15,
+                backgroundColor: 'lightgray',
+                paddingHorizontal: 15,
+                borderRadius: 10,
+                alignItems: 'center', // Aligns the TextInput and the icon vertically
+                marginBottom: 10
+              }}>
+                <MaterialIcons name="comment" size={24} color="black" />
+                <TextInput
+                  placeholder={`Add a comment for ${username}...`}
+                  placeholderTextColor="gray"
+                  style={{
+                    flex: 1, // Takes up the maximum space leaving the icon on the far side
+                    fontSize: 15,
+                    letterSpacing: 0.4,
+                    paddingLeft: 10, // Optional: Adds some space between the icon and the text input
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    height: 50
+                  }}
+                  value={newComment} // Binds the text input to your state
+                  onChangeText={text => setNewComment(text)} // Updates state upon every keystroke
+                  onSubmitEditing={() => onNewCommentSubmit(item)} // Calls your function when the user presses return
+                />
+              </View>
+              <FlatList
+                data={comments}
+                renderItem={({ item }) => <CommentTile item={item} />}
+                keyExtractor={(item, index) => index.toString()}
+                numColumns={1}
+                key={"single-column"}
+              />
+            </View>
+          )}
+
       {/* )} */}
     </View>
   );

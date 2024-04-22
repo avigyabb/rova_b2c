@@ -41,6 +41,7 @@ const Feed = ({ route, navigation }) => {
   });
   const [feedType, setFeedType] = useState('For You');
   const [topPostsTime, setTopPostsTime] = useState('Past Hour');
+  const [itemInfo, setItemInfo] = useState(null);
 
 
   const getListData = () => {
@@ -150,6 +151,19 @@ const Feed = ({ route, navigation }) => {
     }
   }, []);
 
+  if (itemInfo) {
+    return (
+      <>
+      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+      <TouchableOpacity onPress={() => setItemInfo(null)}> 
+        <MaterialIcons name="arrow-back" size={30} color="black" />
+      </TouchableOpacity>
+      </View>
+      <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true}/>
+      </>
+    );
+  }
+
   if (feedView) {
     return (
       <Profile 
@@ -240,7 +254,7 @@ const Feed = ({ route, navigation }) => {
         <>
         <FlatList
           data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
-          renderItem={({ item }) => <FeedItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime}/>}
+          renderItem={({ item }) => <FeedItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo}/>}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}
