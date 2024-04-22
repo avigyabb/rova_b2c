@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push } from "firebase/database";
 import { Image } from 'expo-image';
@@ -28,8 +28,9 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   const [itemDescription, setItemDescription] = useState(item.description);
   const [likes, setLikes] = useState({});
   const [dislikes, setDislikes] = useState({});
-  const [comments, setComments] = useState({});
+  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+  const [commentTypingMode, setCommentTypingMode] = useState(false);
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -134,16 +135,51 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   }  
 
   const CommentTile = ({ item }) => {
+    const [userInfo, setUserInfo] = useState({});
+
+    useEffect(() => {
+      const userRef = ref(database, `users/${item.userId}`);
+      get(userRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          setUserInfo(snapshot.val());
+        }
+      })
+    }, [])
+
+    const date = new Date(item.timestamp);
+    const dateString = date ? date.toLocaleDateString("en-US", {
+      year: 'numeric',
+      month: '2-digit',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }) : 'N/A';
+
     return (
-      <>
-      <Text>{item.comment}</Text>
-      <Text>{item.timestamp}</Text>
-      </>
+        <View style={{ flexDirection: 'row', borderBottomWidth: 0.5, borderColor: 'lightgrey', paddingVertical: 10 }}>
+          <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: userInfo.username})}>
+            <Image
+              source={userInfo.profile_pic || profilePic}
+              style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            />
+          </TouchableOpacity>
+          <View>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
+              <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
+            </View>
+            <Text style={{ marginTop: 5 }}>{item.comment}</Text>
+          </View>
+        </View>
     );
   }
 
   return (
+    <ScrollView>
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
     <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white' }}>
+      {!commentTypingMode && (
+      <>
       <View style={{ flexDirection: 'row' }}>
         <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: username})}>
           <Image
@@ -228,89 +264,88 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       </View>
       
       {/* {visitingUserId !== item.user_id && ( */}
-        <View style={{ flexDirection: 'row', marginTop: 20 }}>
-          <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
-            <MaterialIcons name="thumb-up" size={22} color={visitingUserId in likes ? "black" : "grey"} />
-            <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
+      <View style={{ flexDirection: 'row', marginTop: 20 }}>
+        <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
+          <MaterialIcons name="thumb-up" size={22} color={visitingUserId in likes ? "black" : "grey"} />
+          <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onDislikePress(item)}>
+          <MaterialIcons name="thumb-down" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
+          <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
+        </TouchableOpacity>
+        
+        {!showComments && (
+          <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
+            <MaterialIcons name="comment" size={22} color="grey" />
+            <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(comments).length}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onDislikePress(item)}>
-            <MaterialIcons name="thumb-down" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
-            <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
-          </TouchableOpacity>
-          
-          {!showComments && (
-            <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
-              <MaterialIcons name="comment" size={22} color="grey" />
-              <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(comments).length}</Text>
+        )}
+
+        <TouchableOpacity 
+          style={{ marginLeft: 'auto', marginRight: 10 }} 
+          onPress={() => navigation.navigate('Add', {
+            itemName: item.content,
+            itemDescription: item.description,
+            itemImage: [item.image],
+            itemCategory: null,
+            taggedUser: username
+          })}>
+          <MaterialIcons name="bookmark-add" size={30} color="grey" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Add', {
+            itemName: item.content,
+            itemDescription: item.description,
+            itemImage: [item.image],
+            itemCategory: null,
+            taggedUser: username
+          })}
+        >
+          <MaterialIcons style={{}} name="add-circle" size={30} color="grey" />
+        </TouchableOpacity>
+      </View>
+      </>
+      )}
+
+      {showComments && (
+        <View style={{ padding: 5 }}>
+          {/* Render your comments section here */}
+          <View style={{
+            flexDirection: 'row',
+            marginTop: 15,
+            paddingHorizontal: 15,
+            borderWidth: 0.5,
+            borderRadius: 25,
+            alignItems: 'center', // Aligns the TextInput and the icon vertically
+            marginBottom: 10
+          }}>
+            <TextInput
+              placeholder={`Add a comment for ${username}...`}
+              placeholderTextColor="gray"
+              style={{
+                flex: 1, // Takes up the maximum space leaving the icon on the far side
+                fontSize: 15,
+                paddingLeft: 10, // Optional: Adds some space between the icon and the text input
+                fontSize: 16,
+                height: 50
+              }}
+              value={newComment} // Binds the text input to your state
+              onChangeText={text => setNewComment(text)} // Updates state upon every keystroke
+              onFocus={() => setCommentTypingMode(true)}
+              onBlur={() => setCommentTypingMode(false)}
+            />
+            <TouchableOpacity onPress={() => onNewCommentSubmit(item)}>
+              <MaterialIcons name="send" size={24} color="black" />
             </TouchableOpacity>
-          )}
-
-          <TouchableOpacity 
-            style={{ marginLeft: 'auto', marginRight: 10 }} 
-            onPress={() => navigation.navigate('Add', {
-              itemName: item.content,
-              itemDescription: item.description,
-              itemImage: [item.image],
-              itemCategory: null,
-              taggedUser: username
-            })}>
-            <MaterialIcons name="bookmark-add" size={30} color="grey" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Add', {
-              itemName: item.content,
-              itemDescription: item.description,
-              itemImage: [item.image],
-              itemCategory: null,
-              taggedUser: username
-            })}
-          >
-            <MaterialIcons style={{}} name="add-circle" size={30} color="grey" />
-          </TouchableOpacity>
+          </View>
+          {comments.map(( item ) => <CommentTile item={item} />)}
         </View>
-
-        {showComments && (
-            <View style={{ padding: 10 }}>
-              {/* Render your comments section here */}
-              <View style={{
-                flexDirection: 'row',
-                marginTop: 15,
-                backgroundColor: 'lightgray',
-                paddingHorizontal: 15,
-                borderRadius: 10,
-                alignItems: 'center', // Aligns the TextInput and the icon vertically
-                marginBottom: 10
-              }}>
-                <MaterialIcons name="comment" size={24} color="black" />
-                <TextInput
-                  placeholder={`Add a comment for ${username}...`}
-                  placeholderTextColor="gray"
-                  style={{
-                    flex: 1, // Takes up the maximum space leaving the icon on the far side
-                    fontSize: 15,
-                    letterSpacing: 0.4,
-                    paddingLeft: 10, // Optional: Adds some space between the icon and the text input
-                    fontWeight: 'bold',
-                    fontSize: 14,
-                    height: 50
-                  }}
-                  value={newComment} // Binds the text input to your state
-                  onChangeText={text => setNewComment(text)} // Updates state upon every keystroke
-                  onSubmitEditing={() => onNewCommentSubmit(item)} // Calls your function when the user presses return
-                />
-              </View>
-              <FlatList
-                data={comments}
-                renderItem={({ item }) => <CommentTile item={item} />}
-                keyExtractor={(item, index) => index.toString()}
-                numColumns={1}
-                key={"single-column"}
-              />
-            </View>
-          )}
+      )}
 
       {/* )} */}
     </View>
+    </TouchableWithoutFeedback>
+    </ScrollView>
   );
 })
 

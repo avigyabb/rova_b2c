@@ -154,10 +154,10 @@ const Feed = ({ route, navigation }) => {
   if (itemInfo) {
     return (
       <>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
-      <TouchableOpacity onPress={() => setItemInfo(null)}> 
-        <MaterialIcons name="arrow-back" size={30} color="black" />
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+        <TouchableOpacity onPress={() => setItemInfo(null)}> 
+          <MaterialIcons name="arrow-back" size={30} color="black" />
+        </TouchableOpacity>
       </View>
       <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true}/>
       </>
