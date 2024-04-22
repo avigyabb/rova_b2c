@@ -120,10 +120,11 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         userId: visitingUserId,
         comment: newComment
       })
-      setComments(prevComments => ({
-        ...prevComments,
-        [visitingUserId]: visitingUserId
-      }));
+      setComments([...comments, {
+        userId: visitingUserId,
+        comment: newComment
+      }]);
+      setNewComment(''); // Clear the input after submission
   }
 
   const onCommentPress = () => {
