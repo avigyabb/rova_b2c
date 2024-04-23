@@ -46,28 +46,35 @@ const Feed = ({ route, navigation }) => {
 
   const getListData = () => {
     setRefreshed(true);
-    const categoryItemsRef = ref(database, 'items');
+    const constsRef = ref(database, 'consts');
+    get(constsRef).then((snapshot0) => {
+      const categoryItemsRef = ref(database, 'items');
 
-    get(categoryItemsRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        const tempListData = Object.entries(snapshot.val()).map(([key, value]) => ({ key, ...value }));
-        setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp));
-      }
-      setRefreshed(false);
-    }).catch((error) => {
-      console.error("Error fetching categories:", error);
-    });
-
-    const userRef = ref(database, 'users/' + userKey);
-    get(userRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        setProfileInfo(snapshot.val());
-      } else {
-        console.log("No user data.");
-      }
-    }).catch((error) => {
-      console.error(error);
-    });
+      get(categoryItemsRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const tempListData = Object.entries(snapshot.val())
+          .filter(([key, value]) => {
+            return snapshot0.val().feedType === 'customDescription' ? value.description && !value.description.startsWith(": ") : true;
+          })
+          .map(([key, value]) => ({ key, ...value }));
+          setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp));
+        }
+        setRefreshed(false);
+      }).catch((error) => {
+        console.error("Error fetching categories:", error);
+      });
+  
+      const userRef = ref(database, 'users/' + userKey);
+      get(userRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          setProfileInfo(snapshot.val());
+        } else {
+          console.log("No user data.");
+        }
+      }).catch((error) => {
+        console.error(error);
+      });
+    })
   }
 
   const getFollowingListData = () => {
@@ -153,14 +160,17 @@ const Feed = ({ route, navigation }) => {
 
   if (itemInfo) {
     return (
-      <>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
-        <TouchableOpacity onPress={() => setItemInfo(null)}> 
-          <MaterialIcons name="arrow-back" size={30} color="black" />
-        </TouchableOpacity>
+      <View style={{ backgroundColor: 'white', height: '100%' }}>
+        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+          <TouchableOpacity onPress={() => {
+            setItemInfo(null) 
+            getListData();
+          }}> 
+            <MaterialIcons name="arrow-back" size={30} color="black" />
+          </TouchableOpacity>
+        </View>
+        <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true}/>
       </View>
-      <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true}/>
-      </>
     );
   }
 

@@ -127,6 +127,7 @@ const Add = ({ route }) => {
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
   const [addedCustomImage, setAddedCustomImage] = useState(false);
   const [numItems, setNumItems] = useState(0);
+  const [presetDescription, setPresetDescription] = useState('');
 
   const getUserCategories = () => {
     const categoriesRef = ref(database, 'categories');
@@ -171,6 +172,11 @@ const Add = ({ route }) => {
     setNewItem(route.params.itemName);
     setNewItemCategory(route.params.itemCategory);
     setNewItemDescription(
+      route.params.taggedUser ?
+        'Added from ' + route.params.taggedUser + '\'s item: \n\n' + route.params.itemDescription
+      : route.params.itemDescription
+    );
+    setPresetDescription(
       route.params.taggedUser ?
         'Added from ' + route.params.taggedUser + '\'s item: \n\n' + route.params.itemDescription
       : route.params.itemDescription
@@ -225,7 +231,7 @@ const Add = ({ route }) => {
             const newItemObj = {
               'bucket': newItemBucket, // can't remove
               'content': newItem, 
-              'description': newItemDescription, 
+              'description': (presetDescription === newItemDescription ? ': ' : '') + newItemDescription, 
               'image': downloadURL, 
               'score': null,
               'timestamp': Date.now(),
@@ -275,7 +281,7 @@ const Add = ({ route }) => {
       const newItemObj = {
         'bucket': newItemBucket, 
         'content': newItem, 
-        'description': newItemDescription, 
+        'description': (presetDescription === newItemDescription ? ': ' : '') + newItemDescription, 
         'image': newItemImageUris[0]|| '', 
         'score': null,
         'timestamp': Date.now(),
@@ -457,6 +463,7 @@ const Add = ({ route }) => {
     return (
       <View style={{ backgroundColor: 'white', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Adjusting rankings...</Text>
+        <Text style={{ fontSize: 12, fontWeight: 'bold', color: 'grey', marginTop: 5, fontStyle: 'italic' }}>Custom Images May Take Longer to Load</Text>
         <Text style={{ fontSize: 40, fontWeight: 'bold', marginTop: 20 }}>🌐</Text>
       </View>
     )
@@ -598,7 +605,10 @@ const Add = ({ route }) => {
             <Text style={{ marginTop: 15, fontWeight: 'bold', fontSize: 12 }}>List: </Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ marginTop: 5, fontWeight: 'bold', fontSize: 20 }}>{newItemCategoryName}</Text>
-              <TouchableOpacity onPress={() => setNewItemCategory(null)}>
+              <TouchableOpacity onPress={() => {
+                setNewItemCategory(null)
+                setSearchResults([])
+              }}>
                 <Text>Change</Text>
               </TouchableOpacity>
             </View>
@@ -663,6 +673,7 @@ const Add = ({ route }) => {
                   setNewItem(item.content)
                   setNewItemImageUris([item.image])
                   setNewItemDescription(item.description)
+                  setPresetDescription(item.description)
                 }} 
                 style={{ 
                   flexDirection: 'row', 
@@ -695,10 +706,12 @@ const Add = ({ route }) => {
             />
             
             {(newItemImageUris.length === 0 && newItemDescription.length === 0 && newItemCategory) ? (
+              <>
+              <Text style={{ marginTop: 10, fontWeight: 'bold', fontSize: 10, color: 'gray', fontStyle: 'italic' }}>Add a custom description or image to appear in the feed!</Text>
               <TouchableOpacity onPress={() => setAddView('AddPost')} style={{ 
                   flexDirection: 'row', 
                   alignItems: 'center', 
-                  marginTop: 10, 
+                  marginTop: 5, 
                   borderWidth: 2,
                   padding: 5,
                   paddingHorizontal: 10,
@@ -707,6 +720,7 @@ const Add = ({ route }) => {
                 <MaterialIcons name="add-circle-outline" size={30} color="black" />
                 <Text style={{ marginLeft: 10, fontWeight: 'bold' }}>Add Post</Text>
               </TouchableOpacity>
+              </>
             ) : (
               <>
               <Text style={{ marginTop: 10, fontWeight: 'bold', fontSize: 12 }}>My Post:</Text>
@@ -901,21 +915,28 @@ const Add = ({ route }) => {
               
               <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(false)}>
                 <Text style={styles.itemContent}>{itemComparisons[binarySearchM].content}</Text>
-                <View style={{
-                  borderWidth: 1.5,
-                  height: 40,
-                  width: 40,
-                  borderRadius: 20,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderColor: getScoreColorHSL(itemComparisons[binarySearchM].score),
-                  marginTop: 10
-                }}>
-                  <Text style={{
-                    color: getScoreColorHSL(itemComparisons[binarySearchM].score)
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
+                  {itemComparisons[binarySearchM].image && (
+                    <Image
+                      source={{ uri: itemComparisons[binarySearchM].image }}
+                      style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                    />
+                  )}
+                  <View style={{
+                    borderWidth: 1.5,
+                    height: 40,
+                    width: 40,
+                    borderRadius: 20,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderColor: getScoreColorHSL(itemComparisons[binarySearchM].score),
                   }}>
-                    {itemComparisons[binarySearchM].score.toFixed(1)}
-                  </Text>
+                    <Text style={{
+                      color: getScoreColorHSL(itemComparisons[binarySearchM].score)
+                    }}>
+                      {itemComparisons[binarySearchM].score.toFixed(1)}
+                    </Text>
+                  </View>
                 </View>
               </TouchableOpacity>
             </View>

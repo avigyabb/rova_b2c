@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push } from "firebase/database";
@@ -58,10 +58,10 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       Object.keys(item.comments).map(key => ({
         id: key,
         ...item.comments[key]
-      })) : []
+      })).sort((a, b) => b.timestamp - a.timestamp) : []
     );    
     setItemDescription(item.description);
-  }, [topPostsTime])
+  }, [topPostsTime, item])
 
   let scoreColor = getScoreColorHSL(Number(item.score));
   const date = new Date(item.timestamp);
@@ -122,11 +122,11 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         comment: newComment,
         timestamp: Date.now()
       })
-      setComments([...comments, {
+      setComments([{
         userId: visitingUserId,
         comment: newComment,
         timestamp: Date.now()
-      }]);
+      }, ...comments]);
       setNewComment(''); // Clear the input after submission
   }
 
@@ -156,7 +156,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     }) : 'N/A';
 
     return (
-        <View style={{ flexDirection: 'row', borderBottomWidth: 0.5, borderColor: 'lightgrey', paddingVertical: 10 }}>
+        <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
           <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: userInfo.username})}>
             <Image
               source={userInfo.profile_pic || profilePic}
@@ -174,11 +174,14 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     );
   }
 
+  const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
+
   return (
     <ScrollView>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+    <>
+    {!commentTypingMode && (
     <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white' }}>
-      {!commentTypingMode && (
       <>
       <View style={{ flexDirection: 'row' }}>
         <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: username})}>
@@ -305,45 +308,46 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         </TouchableOpacity>
       </View>
       </>
-      )}
-
-      {showComments && (
-        <View style={{ padding: 5 }}>
-          {/* Render your comments section here */}
-          <View style={{
-            flexDirection: 'row',
-            marginTop: 15,
-            paddingHorizontal: 15,
-            borderWidth: 0.5,
-            borderRadius: 25,
-            alignItems: 'center', // Aligns the TextInput and the icon vertically
-            marginBottom: 10
-          }}>
-            <TextInput
-              placeholder={`Add a comment for ${username}...`}
-              placeholderTextColor="gray"
-              style={{
-                flex: 1, // Takes up the maximum space leaving the icon on the far side
-                fontSize: 15,
-                paddingLeft: 10, // Optional: Adds some space between the icon and the text input
-                fontSize: 16,
-                height: 50
-              }}
-              value={newComment} // Binds the text input to your state
-              onChangeText={text => setNewComment(text)} // Updates state upon every keystroke
-              onFocus={() => setCommentTypingMode(true)}
-              onBlur={() => setCommentTypingMode(false)}
-            />
-            <TouchableOpacity onPress={() => onNewCommentSubmit(item)}>
-              <MaterialIcons name="send" size={24} color="black" />
-            </TouchableOpacity>
-          </View>
-          {comments.map(( item ) => <CommentTile item={item} />)}
-        </View>
-      )}
-
-      {/* )} */}
     </View>
+    )}
+
+    {showComments && (
+      <View style={{ paddingHorizontal: 15 }}>
+        {/* Render your comments section here */}
+        <View style={{
+          flexDirection: 'row',
+          marginTop: 15,
+          paddingHorizontal: 10,
+          borderWidth: 0.5,
+          borderColor: 'lightgrey',
+          borderRadius: 25,
+          alignItems: 'center', // Aligns the TextInput and the icon vertically
+          marginBottom: 10,
+          paddingTop: 7,
+          paddingBottom: 10
+        }}>
+          <TextInput
+            placeholder={`Add a comment for ${username}...`}
+            placeholderTextColor="gray"
+            style={{
+              flex: 1, // Takes up the maximum space leaving the icon on the far side
+              paddingHorizontal: 10, // Optional: Adds some space between the icon and the text input
+              fontSize: 15,
+            }}
+            value={newComment} // Binds the text input to your state
+            onChangeText={text => setNewComment(text)} // Updates state upon every keystroke
+            onFocus={() => setCommentTypingMode(true)}
+            onBlur={() => setCommentTypingMode(false)}
+            multiline={true}
+          />
+          <TouchableOpacity onPress={() => newComment.length > 0 && onNewCommentSubmit(item)}>
+            <MaterialIcons name="send" size={24} color="black" />
+          </TouchableOpacity>
+        </View>
+        {memoizedComments}
+      </View>
+    )}
+    </>
     </TouchableWithoutFeedback>
     </ScrollView>
   );

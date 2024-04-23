@@ -188,7 +188,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   const ListItemTile = ({ item, item_key, index }) => {
-    console.log(item)
     let scoreColor = getScoreColorHSL(Number(item.score));
 
     // ~ eventually want to get this function to delete the extra item as well
@@ -315,7 +314,10 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       .catch((error) => console.error('Error onEditPress:', error));
     }
 
+    console.log(editMode, focusedItemDescription, focusedItem);
+
     if (editMode && focusedItemDescription && focusedItem) {
+      console.log('focusedItemDescription:', focusedItemDescription);
       const itemRef = ref(database, `items/${focusedItem.key}`);
       update(itemRef, {
         description: focusedItemDescription
