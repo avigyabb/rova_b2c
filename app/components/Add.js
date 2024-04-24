@@ -231,10 +231,11 @@ const Add = ({ route }) => {
             const newItemObj = {
               'bucket': newItemBucket, // can't remove
               'content': newItem, 
-              'description': (presetDescription === newItemDescription ? ': ' : '') + newItemDescription, 
+              'description': newItemDescription, 
               'image': downloadURL, 
               'score': null,
               'timestamp': Date.now(),
+              'custom': true
             };
             // make sure any changes to newItemObj are also reflected in itemComparisons
             let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -256,7 +257,8 @@ const Add = ({ route }) => {
                 image: item.image,
                 score: item.score,
                 timestamp: item.timestamp || 0,
-                user_id: userKey
+                user_id: userKey,
+                custom: item.custom
               })
               .then(() => console.log(`Score updated for ${item.content} ${items}`))
               .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -281,10 +283,11 @@ const Add = ({ route }) => {
       const newItemObj = {
         'bucket': newItemBucket, 
         'content': newItem, 
-        'description': (presetDescription === newItemDescription ? ': ' : '') + newItemDescription, 
+        'description': newItemDescription, 
         'image': newItemImageUris[0]|| '', 
         'score': null,
         'timestamp': Date.now(),
+        'custom': presetDescription !== newItemDescription
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
       let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -306,7 +309,8 @@ const Add = ({ route }) => {
           image: item.image,
           score: item.score,
           timestamp: item.timestamp || 0,
-          user_id: userKey
+          user_id: userKey,
+          custom: item.custom
         })
         .then(() => console.log(`Score updated for ${item.content} ${items}`))
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -351,7 +355,8 @@ const Add = ({ route }) => {
               'image': childSnapshot.val().image || null, 
               'score': childSnapshot.val().score,
               'timestamp': childSnapshot.val().timestamp || 0, // do this for new fields where previous items may not have
-              'user_id': childSnapshot.val().user_id
+              'user_id': childSnapshot.val().user_id,
+              'custom': childSnapshot.val().custom || false
             });
           }
         });
@@ -417,6 +422,8 @@ const Add = ({ route }) => {
     }
   }
 
+  console.log(presetDescription !== newItemDescription);
+
   // update here ***
   onAddLaterPress = () => {
     const newLaterItemRef = push(ref(database, 'items'));
@@ -430,6 +437,7 @@ const Add = ({ route }) => {
       image: newItemImageUris[0] || '',
       timestamp: Date.now(),
       user_id: userKey,
+      custom: presetDescription !== newItemDescription
     })
     .then(() => console.log(`New later item added`))
     .catch((error) => console.error(`Failed to add later item: ${error}`));

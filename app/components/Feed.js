@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
@@ -42,6 +42,7 @@ const Feed = ({ route, navigation }) => {
   const [feedType, setFeedType] = useState('For You');
   const [topPostsTime, setTopPostsTime] = useState('Past Hour');
   const [itemInfo, setItemInfo] = useState(null);
+  const [notifications, setNotifications] = useState(null);
 
 
   const getListData = () => {
@@ -54,7 +55,8 @@ const Feed = ({ route, navigation }) => {
         if (snapshot.exists()) {
           const tempListData = Object.entries(snapshot.val())
           .filter(([key, value]) => {
-            return snapshot0.val().feedType === 'customDescription' ? value.description && !value.description.startsWith(": ") : true;
+            // return snapshot0.val().feedType === 'customDescription' ? value.description && !value.description.startsWith(": ") : true;
+            return snapshot0.val().feedType === 'customDescription' ? value?.custom ?? true : true;
           })
           .map(([key, value]) => ({ key, ...value }));
           setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp));
@@ -148,6 +150,20 @@ const Feed = ({ route, navigation }) => {
     });
   }
 
+  const getNotifications = () => {
+    const notificationsRef = ref(database, 'events/' + userKey);
+    get(notificationsRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        setNotifications(snapshot.val() ? 
+          Object.keys(snapshot.val()).map(key => ({
+            id: key,
+            ...snapshot.val()[key]
+          })).sort((a, b) => b.timestamp - a.timestamp) : []
+        );
+      }
+    })
+  }
+
   useEffect(() => {
     if (feedType === 'For You') {
       getListData();
@@ -158,12 +174,74 @@ const Feed = ({ route, navigation }) => {
     }
   }, []);
 
+  const NotificationsTile = ({ item }) => {
+    const [userInfo, setUserInfo] = useState({});
+
+    useEffect(() => {
+      const userRef = ref(database, `users/${item.evokerId}`);
+      get(userRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          setUserInfo(snapshot.val());
+        }
+      })
+    }, [])
+
+    const date = new Date(item.timestamp);
+    const dateString = date ? date.toLocaleDateString("en-US", {
+      year: 'numeric',
+      month: '2-digit',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }) : 'N/A';
+
+    return (
+        <View style={{ flexDirection: 'row', padding: 10 }}>
+          <TouchableOpacity onPress={() => setFeedView({userKey: item.evokerId, username: userInfo.username})}>
+            <Image
+              source={userInfo.profile_pic || profilePic}
+              style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            />
+          </TouchableOpacity>
+          <View>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
+              <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
+            </View>
+            <Text style={{ marginTop: 5 }}>{item.content}</Text>
+          </View>
+        </View>
+    );
+  }
+
+  if (notifications) {
+    return (
+      <View style={{ backgroundColor: 'white', height: '100%' }}>
+        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+          <TouchableOpacity onPress={() => {
+            setNotifications(null)
+            setFeedType('For You')
+            getListData();
+          }}> 
+            <MaterialIcons name="arrow-back" size={30} color="black" />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Notifications</Text>
+        </View>
+        <FlatList
+          data={notifications}
+          renderItem={({ item}) => <NotificationsTile item={item} />}
+        />
+      </View>
+    )
+  }
+
   if (itemInfo) {
     return (
       <View style={{ backgroundColor: 'white', height: '100%' }}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
           <TouchableOpacity onPress={() => {
             setItemInfo(null) 
+            setFeedType('For You')
             getListData();
           }}> 
             <MaterialIcons name="arrow-back" size={30} color="black" />
@@ -188,12 +266,6 @@ const Feed = ({ route, navigation }) => {
     )
   }
 
-  // try {
-  //   console.log(listData)
-  // } catch (error) {
-  //   console.log(error)
-  // }
-
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
       <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20, justifyContent: 'space-between', }}>
@@ -211,8 +283,8 @@ const Feed = ({ route, navigation }) => {
           )}
         </TouchableOpacity>
         <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
-        <TouchableOpacity>
-          <MaterialIcons name="settings" size={25} color="black"/>
+        <TouchableOpacity onPress={() => getNotifications()}>
+          <MaterialIcons name="notifications-none" size={28} color="gray"/>
         </TouchableOpacity>
       </View>
 

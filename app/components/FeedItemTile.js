@@ -74,17 +74,21 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   });
 
   const onLikePress = (item) => {
-    console.log("loc6")
-    console.log(likes)
+    const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
+    const eventsRef = push(ref(database, 'events/' + item.user_id));
+
     if (visitingUserId in likes) {
-      const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
       remove(itemLikeRef);
       setLikes(prevLikes => {
         const {[visitingUserId]: _, ...newLikes} = prevLikes;  // Use destructuring to exclude the `userId` key
         return newLikes;
       });
+      set(eventsRef, {
+        evokerId: visitingUserId,
+        content: 'removed a like on your post!',
+        timestamp: Date.now()
+      })
     } else if (!(visitingUserId in dislikes)) {
-      const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
       set(itemLikeRef, {
         userId: visitingUserId
       })
@@ -92,19 +96,30 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         ...prevLikes,
         [visitingUserId]: visitingUserId
       }));
+      set(eventsRef, {
+        evokerId: visitingUserId,
+        content: 'liked your post!',
+        timestamp: Date.now()
+      })
     }
   }
 
   const onDislikePress = (item) => {
+    const itemDislikeRef = ref(database, 'items/' + item.key + '/dislikes/' + visitingUserId);
+    const eventsRef = push(ref(database, 'events/' + item.user_id));
+
     if (visitingUserId in dislikes) {
-      const itemDislikeRef = ref(database, 'items/' + item.key + '/dislikes/' + visitingUserId);
       remove(itemDislikeRef);
       setDislikes(prevDislikes => {
         const {[visitingUserId]: _, ...newDislikes} = prevDislikes;  // Use destructuring to exclude the `userId` key
         return newDislikes;
       });
+      set(eventsRef, {
+        evokerId: visitingUserId,
+        content: 'removed a dislike on your post!',
+        timestamp: Date.now()
+      })
     } else if (!(visitingUserId in likes)) {
-      const itemLikeRef = ref(database, 'items/' + item.key + '/dislikes/' + visitingUserId);
       set(itemLikeRef, {
         userId: visitingUserId
       })
@@ -112,22 +127,35 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         ...prevDislikes,
         [visitingUserId]: visitingUserId
       }));
+      set(eventsRef, {
+        evokerId: visitingUserId,
+        content: 'disliked on your post!',
+        timestamp: Date.now()
+      })
     }
   }
 
   const onNewCommentSubmit = (item) => {
-      const itemCommentRef = push(ref(database, 'items/' + item.key + '/comments/'));
-      set(itemCommentRef, {
-        userId: visitingUserId,
-        comment: newComment,
-        timestamp: Date.now()
-      })
-      setComments([{
-        userId: visitingUserId,
-        comment: newComment,
-        timestamp: Date.now()
-      }, ...comments]);
-      setNewComment(''); // Clear the input after submission
+    const itemCommentRef = push(ref(database, 'items/' + item.key + '/comments/'));
+    set(itemCommentRef, {
+      userId: visitingUserId,
+      comment: newComment,
+      timestamp: Date.now()
+    })
+    setComments([{
+      userId: visitingUserId,
+      comment: newComment,
+      timestamp: Date.now()
+    }, ...comments]);
+    setNewComment(''); // Clear the input after submission
+
+    console.log('comment:');
+    const eventsRef = push(ref(database, 'events/' + item.user_id));
+    set(eventsRef, {
+      evokerId: visitingUserId,
+      content: 'someone commented on your post: ' + item.content + '!',
+      timestamp: Date.now()
+    })
   }
 
   const onCommentPress = () => {
