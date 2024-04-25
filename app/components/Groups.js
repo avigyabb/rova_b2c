@@ -8,6 +8,7 @@ import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
 import RNPickerSelect from 'react-native-picker-select';
 import { emailSchoolMap, schoolIdMap } from '../consts';
+import { largerCategories } from '../consts';
 
 
 const Groups = ({ route, navigation }) => {
@@ -39,7 +40,8 @@ const Groups = ({ route, navigation }) => {
           'All Categories': [0, 0], // first index is number of people, 2nd is number of rankings
           Songs: [0, 0],
           Albums: [0, 0],
-          Movies: [0, 0]
+          Movies: [0, 0],
+          Artists: [0, 0],
         }
         snapshot.forEach((userInfo) => {
           const map = { // &&&
@@ -47,6 +49,7 @@ const Groups = ({ route, navigation }) => {
             Songs: 0,
             Albums: 0,
             Movies: 0,
+            Artists: 0,
           }
           const userCategoryQuery = query(categoryRef, orderByChild('user_id'), equalTo(userInfo.key));
           get(userCategoryQuery).then((userCategoriesSnap) => {
@@ -61,9 +64,10 @@ const Groups = ({ route, navigation }) => {
                   overallMap[catInfo.category_type][1] += catInfo.num_items;
                   overallMap[catInfo.category_type][0] += 1;
                 } else {
-                  map[catInfo.category_name] ? map[catInfo.category_name] += catInfo.num_items : map[catInfo.category_name] = catInfo.num_items; 
-                  overallMap[catInfo.category_name] ? overallMap[catInfo.category_name][1] += catInfo.num_items : overallMap[catInfo.category_name] = [0, catInfo.num_items]; 
-                  overallMap[catInfo.category_name] ? overallMap[catInfo.category_name][0] += 1 : overallMap[catInfo.category_name][0] = 1;                 
+                  const largerCategory = largerCategories[catInfo.category_name] || catInfo.category_name;
+                  map[largerCategory] ? map[largerCategory] += catInfo.num_items : map[largerCategory] = catInfo.num_items; 
+                  overallMap[largerCategory] ? overallMap[largerCategory][1] += catInfo.num_items : overallMap[largerCategory] = [0, catInfo.num_items]; 
+                  overallMap[largerCategory] ? overallMap[largerCategory][0] += 1 : overallMap[largerCategory][0] = 1;                 
                 }
               })
             }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, update } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -69,6 +69,7 @@ const Feed = ({ route, navigation }) => {
       const userRef = ref(database, 'users/' + userKey);
       get(userRef).then((snapshot) => {
         if (snapshot.exists()) {
+          console.log(snapshot.val());
           setProfileInfo(snapshot.val());
         } else {
           console.log("No user data.");
@@ -158,9 +159,17 @@ const Feed = ({ route, navigation }) => {
           Object.keys(snapshot.val()).map(key => ({
             id: key,
             ...snapshot.val()[key]
-          })).sort((a, b) => b.timestamp - a.timestamp) : []
+          }))
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 50)
+          : []
         );
       }
+    })
+
+    const userRef = ref(database, 'users/' + userKey);
+    update(userRef, {
+      unreadNotifications: false
     })
   }
 
@@ -196,7 +205,7 @@ const Feed = ({ route, navigation }) => {
     }) : 'N/A';
 
     return (
-        <View style={{ flexDirection: 'row', padding: 10 }}>
+        <View style={{ width: '90%', flexDirection: 'row', padding: 10 }}>
           <TouchableOpacity onPress={() => setFeedView({userKey: item.evokerId, username: userInfo.username})}>
             <Image
               source={userInfo.profile_pic || profilePic}
@@ -208,7 +217,7 @@ const Feed = ({ route, navigation }) => {
               <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
               <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
             </View>
-            <Text style={{ marginTop: 5 }}>{item.content}</Text>
+            <Text style={{ marginTop: 5, flexShrink: 1 }}>{item.content}</Text>
           </View>
         </View>
     );
@@ -236,6 +245,10 @@ const Feed = ({ route, navigation }) => {
   }
 
   if (itemInfo) {
+    const onBackPress = (params) => {
+      setFeedView(params)
+      setItemInfo(null)
+    }
     return (
       <View style={{ backgroundColor: 'white', height: '100%' }}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
@@ -247,7 +260,7 @@ const Feed = ({ route, navigation }) => {
             <MaterialIcons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
         </View>
-        <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true}/>
+        <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} />
       </View>
     );
   }
@@ -284,7 +297,11 @@ const Feed = ({ route, navigation }) => {
         </TouchableOpacity>
         <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
         <TouchableOpacity onPress={() => getNotifications()}>
-          <MaterialIcons name="notifications-none" size={28} color="gray"/>
+          {profileInfo.unreadNotifications ? (
+            <MaterialIcons name="notifications-active" size={28} color="#eb4034"/>
+          ) : (
+            <MaterialIcons name="notifications-none" size={28} color="gray"/>
+          )}
         </TouchableOpacity>
       </View>
 

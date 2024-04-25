@@ -163,6 +163,14 @@ const Profile = ({ route, navigation }) => {
     set(followingRef, {
       closeFriend: false
     })
+
+    const eventsRef = push(ref(database, 'events/' + userKey));
+    set(eventsRef, {
+      evokerId: visitingUserId,
+      content: 'followed you!',
+      timestamp: Date.now()
+    })
+
     getUserInfo();
   }
 
@@ -258,10 +266,10 @@ const Profile = ({ route, navigation }) => {
               <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'gray' }}>@{profileInfo.username}</Text>
               
               <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
-                <TouchableOpacity onPress={() => setFocusedCategory('Followers')}>
+                <TouchableOpacity onPress={() => profileInfo.followers && setFocusedCategory('Followers')}>
                   <Text style={{ marginRight: 30, fontWeight: 'bold' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setFocusedCategory('Following')}>
+                <TouchableOpacity onPress={() => profileInfo.following && setFocusedCategory('Following')}>
                   <Text style={{ fontWeight: 'bold' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
                 </TouchableOpacity>
               </View>

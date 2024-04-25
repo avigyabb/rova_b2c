@@ -68,6 +68,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
               list_num: 0,
               imageUri: downloadURL,
               presetImage: true,
+              num_items: 0
             })
             .then(() => {
               console.log('New category added with image URI.')
@@ -93,6 +94,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
         imageUri: null, // Save the URI in the database
         latest_add: 0,
         presetImage: false,
+        num_items: 0
       })
       .then(() => {
         console.log('New category added without image URI.')

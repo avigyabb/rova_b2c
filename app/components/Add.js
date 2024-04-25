@@ -171,6 +171,7 @@ const Add = ({ route }) => {
     getSpotifyAccessToken(); 
     setNewItem(route.params.itemName);
     setNewItemCategory(route.params.itemCategory);
+    setNewItemCategoryName(route.params.itemCategoryName);
     setNewItemDescription(
       route.params.taggedUser ?
         'Added from ' + route.params.taggedUser + '\'s item: \n\n' + route.params.itemDescription
@@ -197,7 +198,7 @@ const Add = ({ route }) => {
 
     const step = (minMaxMap[newItemObj.bucket][0] - minMaxMap[newItemObj.bucket][1]) / (array.length + isLike);
     for (let i = 0; i < array.length; i++) {
-        array[i].score = minMaxMap[newItemObj.bucket][0] - step * (i + isLike);
+      array[i].score = minMaxMap[newItemObj.bucket][0] - step * (i + isLike);
     }
     return array
   }
@@ -336,6 +337,20 @@ const Add = ({ route }) => {
       latest_add: Date.now(),
       num_items: numItems + 1
     })
+
+    // notify user if item was added from another post
+    if (route.params.taggedUserId) {
+      const eventsRef = push(ref(database, 'events/' + route.params.taggedUserId));
+      const userRef = ref(database, 'users/' + route.params.taggedUserId);
+      set(eventsRef, {
+        evokerId: userKey,
+        content: 'added [' + newItem + '] from your post!',
+        timestamp: Date.now()
+      })
+      update(userRef, {
+        unreadNotifications: true
+      })
+    }
   }
 
   // update here ***
@@ -422,7 +437,8 @@ const Add = ({ route }) => {
     }
   }
 
-  console.log(presetDescription !== newItemDescription);
+  // console.log(presetDescription, "|",  newItemDescription);
+  // console.log(presetDescription !== newItemDescription);
 
   // update here ***
   onAddLaterPress = () => {
@@ -448,6 +464,20 @@ const Add = ({ route }) => {
       latest_add: Date.now(),
       num_items: numItems + 1
     })
+
+    // notify user if item was added from another post
+    if (route.params.taggedUserId) {
+      const eventsRef = push(ref(database, 'events/' + route.params.taggedUserId));
+      const userRef = ref(database, 'users/' + route.params.taggedUserId);
+      set(eventsRef, {
+        evokerId: userKey,
+        content: 'added [' + newItem + '] from your post!',
+        timestamp: Date.now()
+      })
+      update(userRef, {
+        unreadNotifications: true
+      })
+    }
 
     setAddView('itemAdded');
   }
@@ -715,7 +745,7 @@ const Add = ({ route }) => {
             
             {(newItemImageUris.length === 0 && newItemDescription.length === 0 && newItemCategory) ? (
               <>
-              <Text style={{ marginTop: 10, fontWeight: 'bold', fontSize: 10, color: 'gray', fontStyle: 'italic' }}>Add a custom description or image to appear in the feed!</Text>
+              <Text style={{ marginTop: 10, marginLeft: 5, fontSize: 11, color: 'gray', fontStyle: 'italic' }}>Add a custom description or image to appear in the feed!</Text>
               <TouchableOpacity onPress={() => setAddView('AddPost')} style={{ 
                   flexDirection: 'row', 
                   alignItems: 'center', 
@@ -726,7 +756,7 @@ const Add = ({ route }) => {
                   borderRadius: 10
                 }}>
                 <MaterialIcons name="add-circle-outline" size={30} color="black" />
-                <Text style={{ marginLeft: 10, fontWeight: 'bold' }}>Add Post</Text>
+                <Text style={{ marginLeft: 10, fontWeight: 'bold' }}>Add Image or Description</Text>
               </TouchableOpacity>
               </>
             ) : (
@@ -950,7 +980,7 @@ const Add = ({ route }) => {
             </View>
             <View style={styles.actionsContainer}>
               <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionText}>Undo</Text>
+                <Text style={styles.actionText}>      </Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButton} onPress={() => onTooToughPress()}>
                 <Text style={styles.actionText}>Too Tough</Text>

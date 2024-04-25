@@ -197,6 +197,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         itemDescription: item.description,
         itemImage: [item.image],
         itemCategory: item.category_id,
+        itemCategoryName: item.category_name,
         taggedUser: null
       })
     }
@@ -237,11 +238,11 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
             </View>
           </View>
-          {editMode && (
+          {/* {editMode && (
             <TouchableOpacity onPress={() => onRerankItemPress(item_key)} style={{ flexDirection: 'row', marginTop: 10, borderColor: 'lightgrey', borderWidth: 3, padding: 3, borderRadius: 5 }}>
               <Text style={{ color: 'grey', fontSize: 16, fontWeight: 'bold' }}>Rerank Item</Text>
             </TouchableOpacity>
-          )}
+          )} */}
         </View>
       </TouchableOpacity>
     );

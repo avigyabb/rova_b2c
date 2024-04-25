@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -58,7 +58,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       Object.keys(item.comments).map(key => ({
         id: key,
         ...item.comments[key]
-      })).sort((a, b) => b.timestamp - a.timestamp) : []
+      })).sort((a, b) => a.timestamp - b.timestamp) : []
     );    
     setItemDescription(item.description);
   }, [topPostsTime, item])
@@ -76,6 +76,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   const onLikePress = (item) => {
     const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
     const eventsRef = push(ref(database, 'events/' + item.user_id));
+    const userRef = ref(database, 'users/' + item.user_id);
 
     if (visitingUserId in likes) {
       remove(itemLikeRef);
@@ -87,6 +88,9 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         evokerId: visitingUserId,
         content: 'removed a like on your post!',
         timestamp: Date.now()
+      })
+      update(userRef, {
+        unreadNotifications: true
       })
     } else if (!(visitingUserId in dislikes)) {
       set(itemLikeRef, {
@@ -101,12 +105,16 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         content: 'liked your post!',
         timestamp: Date.now()
       })
+      update(userRef, {
+        unreadNotifications: true
+      })
     }
   }
 
   const onDislikePress = (item) => {
     const itemDislikeRef = ref(database, 'items/' + item.key + '/dislikes/' + visitingUserId);
     const eventsRef = push(ref(database, 'events/' + item.user_id));
+    const userRef = ref(database, 'users/' + item.user_id);
 
     if (visitingUserId in dislikes) {
       remove(itemDislikeRef);
@@ -119,8 +127,11 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         content: 'removed a dislike on your post!',
         timestamp: Date.now()
       })
+      update(userRef, {
+        unreadNotifications: true
+      })
     } else if (!(visitingUserId in likes)) {
-      set(itemLikeRef, {
+      set(itemDislikeRef, {
         userId: visitingUserId
       })
       setDislikes(prevDislikes => ({
@@ -129,8 +140,11 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       }));
       set(eventsRef, {
         evokerId: visitingUserId,
-        content: 'disliked on your post!',
+        content: 'disliked your post!',
         timestamp: Date.now()
+      })
+      update(userRef, {
+        unreadNotifications: true
       })
     }
   }
@@ -149,12 +163,15 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     }, ...comments]);
     setNewComment(''); // Clear the input after submission
 
-    console.log('comment:');
     const eventsRef = push(ref(database, 'events/' + item.user_id));
+    const userRef = ref(database, 'users/' + item.user_id);
     set(eventsRef, {
       evokerId: visitingUserId,
-      content: 'someone commented on your post: ' + item.content + '!',
+      content: 'commented on your post: ' + item.content + '!',
       timestamp: Date.now()
+    })
+    update(userRef, {
+      unreadNotifications: true
     })
   }
 
@@ -319,7 +336,9 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
             itemDescription: item.description,
             itemImage: [item.image],
             itemCategory: null,
-            taggedUser: username
+            itemCategoryName: '',
+            taggedUser: username,
+            taggedUserId: item.user_id
           })}>
           <MaterialIcons name="bookmark-add" size={30} color="grey" />
         </TouchableOpacity>
@@ -329,7 +348,8 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
             itemDescription: item.description,
             itemImage: [item.image],
             itemCategory: null,
-            taggedUser: username
+            taggedUser: username,
+            taggedUserId: item.user_id,
           })}
         >
           <MaterialIcons style={{}} name="add-circle" size={30} color="grey" />
