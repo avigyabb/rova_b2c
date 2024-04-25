@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, TextInput, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, Image, TouchableOpacity, TextInput, StyleSheet, TouchableWithoutFeedback, Keyboard, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -61,6 +61,20 @@ const EditProfile = ({ userKey, onBackPress, getUserInfo }) => {
   }
 
   const saveProfile = async () => {
+
+    if (name.length > 12 || name.length < 4) {
+      Alert.alert(
+        "Invalid Name Length, name must be between 4 and 12 characters long."
+      );
+      return;
+    }
+    if (bio.length > 200) {
+      Alert.alert(
+        "Invalid Bio Length, bio can be up to 200 characters long."
+      );
+      return;
+    }
+
     setButtonMessage('Saving...');
     if (profilePicUri) {
       const response = await fetch(profilePicUri);
