@@ -267,6 +267,8 @@ const Feed = ({ route, navigation }) => {
   }
 
   if (feedView) {
+    console.log(feedView)
+    
     return (
       <Profile 
         route={{'params': {

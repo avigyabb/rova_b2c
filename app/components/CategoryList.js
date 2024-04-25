@@ -375,6 +375,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }; 
 
   if (focusedItem) {
+    console.log('focusedItem:', focusedItem);
+    
     return (
       <>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>

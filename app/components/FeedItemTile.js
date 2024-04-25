@@ -134,6 +134,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   }
 
   const onNewCommentSubmit = (item) => {
+    console.log(item)
     const itemCommentRef = push(ref(database, 'items/' + item.key + '/comments/'));
     set(itemCommentRef, {
       userId: visitingUserId,
@@ -186,7 +187,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
 
     return (
         <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
-          <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: userInfo.username})}>
+          <TouchableOpacity onPress={() => visitingUserId === item.userId ? navigation.navigate('Profile') : setFeedView({userKey: item.userId, username: userInfo.username})}>
             <Image
               source={userInfo.profile_pic || profilePic}
               style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
