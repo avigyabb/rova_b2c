@@ -250,6 +250,7 @@ const Feed = ({ route, navigation }) => {
       setFeedView(params)
       setItemInfo(null)
     }
+    
     return (
       <View style={{ backgroundColor: 'white', height: '100%' }}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
@@ -268,7 +269,7 @@ const Feed = ({ route, navigation }) => {
 
   if (feedView) {
     console.log(feedView)
-    
+
     return (
       <Profile 
         route={{'params': {

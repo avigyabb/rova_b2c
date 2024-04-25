@@ -94,7 +94,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       }));
       set(eventsRef, {
         evokerId: visitingUserId,
-        content: 'liked your post!',
+        content: 'liked your post: ' + item.content + '!',
         timestamp: Date.now()
       })
       update(userRef, {
@@ -124,7 +124,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       }));
       set(eventsRef, {
         evokerId: visitingUserId,
-        content: 'disliked your post!',
+        content: 'disliked your post: ' + item.content + '!',
         timestamp: Date.now()
       })
       update(userRef, {
