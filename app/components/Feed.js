@@ -160,6 +160,7 @@ const Feed = ({ route, navigation }) => {
             id: key,
             ...snapshot.val()[key]
           }))
+          .filter(notification => notification.evokerId !== userKey) // Filter notifications by evokerId
           .sort((a, b) => b.timestamp - a.timestamp)
           .slice(0, 50)
           : []

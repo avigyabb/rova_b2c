@@ -84,14 +84,6 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         const {[visitingUserId]: _, ...newLikes} = prevLikes;  // Use destructuring to exclude the `userId` key
         return newLikes;
       });
-      set(eventsRef, {
-        evokerId: visitingUserId,
-        content: 'removed a like on your post!',
-        timestamp: Date.now()
-      })
-      update(userRef, {
-        unreadNotifications: true
-      })
     } else if (!(visitingUserId in dislikes)) {
       set(itemLikeRef, {
         userId: visitingUserId
@@ -122,14 +114,6 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         const {[visitingUserId]: _, ...newDislikes} = prevDislikes;  // Use destructuring to exclude the `userId` key
         return newDislikes;
       });
-      set(eventsRef, {
-        evokerId: visitingUserId,
-        content: 'removed a dislike on your post!',
-        timestamp: Date.now()
-      })
-      update(userRef, {
-        unreadNotifications: true
-      })
     } else if (!(visitingUserId in likes)) {
       set(itemDislikeRef, {
         userId: visitingUserId
