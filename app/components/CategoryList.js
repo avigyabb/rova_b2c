@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Linking, TextInput } from "react-native";
+import React, {useEffect, useState, useMemo} from "react";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Linking, TextInput, ScrollView } from "react-native";
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ref, set, remove, onValue, off, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
@@ -374,9 +374,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     setCategoryImage(result.assets[0].uri);
   }; 
 
+  const memoizedList = useMemo(() => listData[listView].map((item, index) => <ListItemTile item={item[1]} item_key={item[0]} index={index} key={index} />), [listData, listView, editMode]);
+
   if (focusedItem) {
-    console.log('focusedItem:', focusedItem);
-    
     return (
       <>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -441,6 +441,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         </TouchableOpacity>
       </View>
       
+      <ScrollView>
       <View style={{ padding: 10 }}>
         {editMode ? (
           <>
@@ -517,17 +518,14 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         </View>
       </View>
 
-      {listData[listView].length > 0 ? (           
-        <FlatList
-          data={listData[listView]}
-          renderItem={({ item, index }) => <ListItemTile item={item[1]} item_key={item[0]} index={index} />}
-          keyExtractor={(item, index) => index.toString()}
-          numColumns={1}
-          key={"single-column"}
-        />
+      {listData[listView].length > 0 ? (  
+        <>         
+        {memoizedList}
+        </>
       ) : (
         <Text style={{ textAlign: 'center', fontWeight: 'bold', color: 'gray', fontSize: 16, marginTop: '50%' }}>Add items to see your rankings... 😶‍🌫️</Text>
       )}
+      </ScrollView>
     </>
   )
 }
