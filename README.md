@@ -18,3 +18,7 @@ eas submit -p ios --latest
 Presets &&&
 consts.js
 Groups.js
+
+TO START
+npm install
+npm start

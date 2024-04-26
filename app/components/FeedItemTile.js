@@ -198,7 +198,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
               <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
               <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
             </View>
-            <Text style={{ marginTop: 5 }}>{item.comment}</Text>
+            <Text style={{ marginTop: 5, width: 320 }}>{item.comment}</Text>
           </View>
         </View>
     );

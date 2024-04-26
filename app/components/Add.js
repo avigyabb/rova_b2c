@@ -628,6 +628,8 @@ const Add = ({ route }) => {
                   get(categoryItemsQuery).then((snapshot) => {
                     if (snapshot.exists()) {
                       setNumItems(Object.keys(snapshot.val()).length)
+                    } else {
+                      setNumItems(0)
                     }
                   })
                 }}
