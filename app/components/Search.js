@@ -14,17 +14,20 @@ import { Buffer } from 'buffer';
 import { useIsFocused } from '@react-navigation/native';
 
 export const search = async (spotifyAccessToken, newItemCategoryType, setSearchResults, text) => {
-  if (newItemCategoryType === 'Movies') {
+  if (newItemCategoryType === 'Movies' || newItemCategoryType === 'Shows') {
     const API_KEY = '0259695ad57c17e0c504fae2bf270bc4';
     const BASE_URL = 'https://api.themoviedb.org/3';
     const imgBaseURL = "https://image.tmdb.org/t/p/";
     const imgSize = "original";
+
+    const type = newItemCategoryType === 'Movies' ? 'movie' : 'tv';
   
-    axios.get(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(text)}`)
+    axios.get(`${BASE_URL}/search/${type}?api_key=${API_KEY}&query=${encodeURIComponent(text)}`)
       .then(response => {
+        console.log(response.data.results);
         setSearchResults(response.data.results.slice(0, 10).map(movie => ({
-          content: movie.title,
-          description: movie.release_date,
+          content: newItemCategoryType === 'Movies' ? movie.title : movie.name,
+          description: newItemCategoryType === 'Movies' ? movie.release_date : movie.first_air_date,
           image: `${imgBaseURL}${imgSize}${movie.poster_path}`,
         })));
       })

@@ -1,5 +1,5 @@
 export const presetTypesList = [
-  'Movies', 'Albums', 'Locations', 'Songs', 'Artists'
+  'Movies', 'Albums', 'Locations', 'Songs', 'Artists', 'Shows'
 ]
 
 export const emailSchoolMap = {

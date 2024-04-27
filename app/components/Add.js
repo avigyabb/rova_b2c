@@ -724,7 +724,7 @@ const Add = ({ route }) => {
                 }}>
                   {item.image ? (
                     <Image source={{ uri: item.image }} style={{ 
-                      width: newItemCategoryType === 'Movies' ? 40 : 60, height: 60,
+                      width: newItemCategoryType === 'Movies' || newItemCategoryType === 'Shows' ? 40 : 60, height: 60,
                       borderRadius: 5,
                       borderWidth: 0.5,
                       borderColor: 'lightgray'
