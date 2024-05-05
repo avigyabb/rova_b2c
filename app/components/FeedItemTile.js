@@ -8,6 +8,9 @@ import Hyperlink from 'react-native-hyperlink';
 import { useFonts } from 'expo-font';
 import { MaterialIcons } from '@expo/vector-icons';
 import Profile from './Profile';
+import axios from 'axios';
+import { generateRandom, deriveChallenge } from 'expo-auth-session';
+import { Video } from 'expo-av';
 
 // this function is repeated many times -> condense into one file ~
 function getScoreColorHSL(score) {
@@ -20,7 +23,7 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false }) => {
+const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState(profilePic);
@@ -31,14 +34,11 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [commentTypingMode, setCommentTypingMode] = useState(false);
+    
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
-    // if (width < 260 ) {
-    //   setDimensions({ width: 80, height: 80 * height / width });
-    // } else {
-      setDimensions({ width: 260, height: 260 * height / width });
-    // }
+    setDimensions({ width: 260, height: 260 * height / width });
   };
 
   useEffect(() => {
@@ -204,6 +204,45 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     );
   }
 
+  const fetchDevices = async () => {
+    const devicesUrl = 'https://api.spotify.com/v1/me/player/devices';
+    try {
+      const response = await axios.get(devicesUrl, {
+        headers: {
+          'Authorization': `Bearer ${individualSpotifyAccessToken}`
+        }
+      });
+      console.log("Available devices: ", response.data.devices);
+    } catch (error) {
+      console.error("Error fetching devices: ", error.response);
+    }
+  };
+
+  const onItemImagePress = async (item) => {
+    if (!individualSpotifyAccessToken) {
+      promptAsync();
+      return;
+    }
+    const playUrl = 'https://api.spotify.com/v1/me/player/play';
+    
+    try {
+      await axios.put(playUrl, {
+        uris: [item.trackUri],
+      }, {
+        headers: {
+          'Authorization': `Bearer ${individualSpotifyAccessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (error) {
+        console.log("error: ", error.response);
+        if (error.response && error.response.data && error.response.data.error && error.response.data.error.reason === "NO_ACTIVE_DEVICE") {
+          alert("No active Spotify devices found. Please open Spotify and start playback, or select a device.");
+          fetchDevices(); // Optional: Implement device selection here
+        }
+    }
+  }
+
   const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
 
   return (
@@ -279,20 +318,38 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
           )}
           </>
         )}
-        {item.image && (
-          <Image
-            source={{ uri: item.image }}
-            style={{
-              height: dimensions.height, 
-              width: dimensions.width, 
-              borderWidth: 0.5, 
-              marginRight: 10, 
-              borderRadius: 5, 
-              borderColor: 'lightgrey' ,
-              marginTop: 10
-            }}
-            onLoad={onImageLoad}
-          />
+        {item.image && ( 
+          <>
+          {item.imageType && item.imageType === 'video' ? (
+            <Video
+              source={{ uri: item.image }}        // Can be a URL or a local file.
+              rate={0}                            // 0 is paused, 1 is normal.
+              volume={1.0}                        // 0 is muted, 1 is normal.
+              isMuted={false}                     // Mutes the audio.
+              resizeMode="cover"                  // Cover, contain, stretch, etc.
+              shouldPlay                          // Can be set to true to play automatically.
+              isLooping                           // Repeat the video when it ends.
+              useNativeControls                   // Show the native controls.
+              style={{ width: 300, height: 300 }} // You can adjust the size.
+            />
+          ) : (
+            <TouchableOpacity onPress={() => onItemImagePress(item)}>
+              <Image
+                source={{ uri: item.image }}
+                style={{
+                  height: dimensions.height, 
+                  width: dimensions.width, 
+                  borderWidth: 0.5, 
+                  marginRight: 10, 
+                  borderRadius: 5, 
+                  borderColor: 'lightgrey' ,
+                  marginTop: 10
+                }}
+                onLoad={onImageLoad}
+              />
+            </TouchableOpacity>
+          )}
+          </>
         )}
       </View>
       

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "scheme": "acme",
+    "scheme": "amborasocial",
     "web": {
       "bundler": "metro"
     },
@@ -25,7 +25,7 @@
     ],
     "name": "ambora",
     "slug": "rova-b2c-app",
-    "version": "1.0.8",
+    "version": "1.0.10",
     "ios": {
       "bundleIdentifier": "com.swing.b2capp",
       "googleServicesFile": "./GoogleService-Info.plist",

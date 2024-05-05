@@ -15,7 +15,6 @@ import { Buffer } from 'buffer';
 import { useIsFocused } from '@react-navigation/native';
 import { search } from './Search';
 import CategoryTile from './CategoryTile';
-import { presetTypesList } from '../consts';
 
 const styles = StyleSheet.create({
   optionsContainer: {
@@ -128,6 +127,8 @@ const Add = ({ route }) => {
   const [addedCustomImage, setAddedCustomImage] = useState(false);
   const [numItems, setNumItems] = useState(0);
   const [presetDescription, setPresetDescription] = useState('');
+  const [trackUri, setTrackUri] = useState(null);
+  const [itemsInCategory, setItemsInCategory] = useState(null);
 
   const getUserCategories = () => {
     const categoriesRef = ref(database, 'categories');
@@ -148,6 +149,7 @@ const Add = ({ route }) => {
     });
   }
 
+  // replace with function in consts ~
   const getSpotifyAccessToken = async () => {
     const client_id = '3895cb48f70545b898a65747b63b430d';
     const client_secret = '8d70ee092b614f58b488ce149e827ab1';
@@ -183,6 +185,8 @@ const Add = ({ route }) => {
       : route.params.itemDescription
     );
     setNewItemImageUris(route.params.itemImage);
+    setTrackUri(route.params.trackUri);
+    setNumItems(route.params.numItems);
     setSearchResults([]);
   }, [route]);
 
@@ -216,6 +220,10 @@ const Add = ({ route }) => {
       const filename = imageUri.substring(imageUri.lastIndexOf('/') + 1);
       const storageRef = storRef(storage, filename);
       const uploadTask = uploadBytesResumable(storageRef, blob);
+      let imageType = 'image';
+      if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
+        imageType = 'video';
+      }
 
       uploadTask.on('state_changed',
         (snapshot) => {
@@ -236,7 +244,9 @@ const Add = ({ route }) => {
               'image': downloadURL, 
               'score': null,
               'timestamp': Date.now(),
-              'custom': true
+              'custom': true,
+              'trackUri': trackUri,
+              'imageType': imageType
             };
             // make sure any changes to newItemObj are also reflected in itemComparisons
             let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -259,7 +269,9 @@ const Add = ({ route }) => {
                 score: item.score,
                 timestamp: item.timestamp || 0,
                 user_id: userKey,
-                custom: item.custom
+                custom: item.custom,
+                trackUri: item.trackUri || null,
+                imageType: item.imageType || null
               })
               .then(() => console.log(`Score updated for ${item.content} ${items}`))
               .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -269,6 +281,7 @@ const Add = ({ route }) => {
                 const categoryRef = ref(database, 'categories/' + newItemCategory);
                 get(categoryRef).then((snapshot) => {
                   if (snapshot.exists() && !snapshot.val().presetImage) {
+                    console.log("switched photos")
                     update(categoryRef, {
                       imageUri: item.image
                     })
@@ -288,7 +301,8 @@ const Add = ({ route }) => {
         'image': newItemImageUris[0]|| '', 
         'score': null,
         'timestamp': Date.now(),
-        'custom': presetDescription !== newItemDescription
+        'custom': presetDescription !== newItemDescription,
+        'trackUri': trackUri,
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
       let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -311,7 +325,8 @@ const Add = ({ route }) => {
           score: item.score,
           timestamp: item.timestamp || 0,
           user_id: userKey,
-          custom: item.custom
+          custom: item.custom,
+          trackUri: item.trackUri || null,
         })
         .then(() => console.log(`Score updated for ${item.content} ${items}`))
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -321,6 +336,7 @@ const Add = ({ route }) => {
           const categoryRef = ref(database, 'categories/' + newItemCategory);
           get(categoryRef).then((snapshot) => {
             if (snapshot.exists() && !snapshot.val().presetImage) {
+              console.log("switched photos")
               update(categoryRef, {
                 imageUri: item.image
               })
@@ -371,7 +387,9 @@ const Add = ({ route }) => {
               'score': childSnapshot.val().score,
               'timestamp': childSnapshot.val().timestamp || 0, // do this for new fields where previous items may not have
               'user_id': childSnapshot.val().user_id,
-              'custom': childSnapshot.val().custom || false
+              'custom': childSnapshot.val().custom || false,
+              'trackUri': childSnapshot.val().trackUri || null,
+              'imageType': childSnapshot.val().imageType || null,
             });
           }
         });
@@ -437,13 +455,15 @@ const Add = ({ route }) => {
     }
   }
 
-  // console.log(presetDescription, "|",  newItemDescription);
-  // console.log(presetDescription !== newItemDescription);
-
   // update here ***
   onAddLaterPress = () => {
     const newLaterItemRef = push(ref(database, 'items'));
-    update(newLaterItemRef, { 
+    let imageType = 'image';
+    // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
+    //   imageType = 'video';
+    // }
+
+    let updateObject = {
       category_id: newItemCategory,
       category_name: newItemCategoryName,
       content: newItem, 
@@ -453,8 +473,15 @@ const Add = ({ route }) => {
       image: newItemImageUris[0] || '',
       timestamp: Date.now(),
       user_id: userKey,
-      custom: presetDescription !== newItemDescription
-    })
+      custom: presetDescription !== newItemDescription,
+      imageType: imageType
+    };
+
+    if (trackUri) {
+      updateObject.trackUri = trackUri;
+    }
+
+    update(newLaterItemRef, updateObject)
     .then(() => console.log(`New later item added`))
     .catch((error) => console.error(`Failed to add later item: ${error}`));
 
@@ -627,7 +654,13 @@ const Add = ({ route }) => {
                   const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(item.id));
                   get(categoryItemsQuery).then((snapshot) => {
                     if (snapshot.exists()) {
+                      let items = new Set();
+                      snapshot.forEach((childSnapshot) => {
+                        let item = childSnapshot.val();
+                        items.add(item.content);
+                      })
                       setNumItems(Object.keys(snapshot.val()).length)
+                      setItemsInCategory(items)
                     } else {
                       setNumItems(0)
                     }
@@ -714,6 +747,7 @@ const Add = ({ route }) => {
                   setNewItemImageUris([item.image])
                   setNewItemDescription(item.description)
                   setPresetDescription(item.description)
+                  setTrackUri(item.uri || null)
                 }} 
                 style={{ 
                   flexDirection: 'row', 
@@ -735,9 +769,10 @@ const Add = ({ route }) => {
                     </View>
                   )}
                   <View style={{ marginLeft: 10 }}>
-                    <Text style={{ fontWeight: 'bold', width: 275 }}>{item.content}</Text>
-                    <Text style={{ color: 'gray', fontSize: 12, width: 275 }}>{item.description}</Text>
+                    <Text style={{ fontWeight: 'bold', width: 265 }}>{item.content}</Text>
+                    <Text style={{ color: 'gray', fontSize: 12, width: 265 }}>{item.description}</Text>
                   </View>
+                  { itemsInCategory.has(item.content) && <MaterialIcons name="playlist-add-check" size={30} />}
                 </TouchableOpacity>
               )}
               keyExtractor={(item, index) => index.toString()}

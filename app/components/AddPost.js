@@ -34,7 +34,6 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
       aspect: [4,3], // search up
       quality: 1,
     });
-
     setNewItemImageUris([result.assets[0].uri]);
     setAddedCustomImage(true);
   }; 

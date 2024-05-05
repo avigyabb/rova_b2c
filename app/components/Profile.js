@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, TextInput, SafeAreaView, Alert, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -69,6 +69,7 @@ const Profile = ({ route, navigation }) => {
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
   });
   const [isFollowing, setIsFollowing] = useState(false);
+  const [numItems, setNumItems] = useState(0);
 
   const getUserInfo = () => {
     const userRef = ref(database, 'users/' + userKey);
@@ -106,7 +107,7 @@ const Profile = ({ route, navigation }) => {
     getUserInfo();
   }, []);
 
-  const onCategoryPress = (category_name, category_id) => {
+  const onCategoryPress = (category_name, category_id, num_items) => {
     const categoryItemsRef = ref(database, 'items');
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(category_id));
 
@@ -125,6 +126,7 @@ const Profile = ({ route, navigation }) => {
       setFocusedList(tempFocusedList);
       setFocusedCategory(category_name);
       setFocusedCategoryId(category_id);
+      setNumItems(num_items);
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
@@ -205,7 +207,7 @@ const Profile = ({ route, navigation }) => {
   }
 
   return (
-    <View style={{ backgroundColor: 'white', height: '100%'}}>
+    <ScrollView style={{ backgroundColor: 'white', height: '100%'}}>
       {focusedCategory === 'editProfile' ? (
         <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()}/>
       ) : focusedCategory === 'addList' ? (
@@ -224,9 +226,11 @@ const Profile = ({ route, navigation }) => {
           focusedCategory={focusedCategory} 
           focusedList={focusedList} 
           focusedCategoryId={focusedCategoryId} 
+          numItems={numItems}
           onBackPress={() => onBackPress()}
           isMyProfile={visitingUserId ? visitingUserId === userKey : true}
           visitingUserId={visitingUserId || userKey} // in CategoryList there must always be a visitingUserId to check for showButtons
+          userKey={userKey}
           navigation={navigation}
         />
       ) : (
@@ -316,9 +320,9 @@ const Profile = ({ route, navigation }) => {
                 category_name={item.category_name} 
                 imageUri={item.imageUri} 
                 num_items={item.num_items} 
-                onCategoryPress={() => onCategoryPress(item.category_name, item.id)}
+                onCategoryPress={() => onCategoryPress(item.category_name, item.id, item.num_items)}
               />}
-              keyExtractor={(item, index) => index.toString()}
+              scrollEnabled={false}
               numColumns={3}
               contentContainerStyle={styles.grid}
             />
@@ -327,7 +331,7 @@ const Profile = ({ route, navigation }) => {
           )}
         </>
       )}
-    </View> 
+    </ScrollView> 
   )
 };
 

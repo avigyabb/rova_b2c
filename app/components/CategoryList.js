@@ -8,7 +8,7 @@ import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from
 import Hyperlink from 'react-native-hyperlink';
 import * as ImagePicker from 'expo-image-picker';
 import FeedItemTile from "./FeedItemTile";
-
+import Profile from './Profile';
 
 const styles = StyleSheet.create({
   listTileScore: {
@@ -44,7 +44,7 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
 }
 
-const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, isMyProfile, visitingUserId, navigation }) => {
+const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey }) => {
   const [listView, setListView] = useState('now');
   const [listData, setListData] = useState(focusedList);
   const [editMode, setEditMode] = useState(false);
@@ -54,6 +54,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [focusedItem, setFocusedItem] = useState(null);
   const [focusedItemDescription, setFocusedItemDescription] = useState(null);
   const [presetImage, setPresetImage] = useState(true);
+  const [profileView, setProfileView] = useState(null);
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
@@ -189,18 +190,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
   const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
-
-    // ~ eventually want to get this function to delete the extra item as well
-    const onRerankItemPress = () => {
-      navigation.navigate('Add', {
-        itemName: item.content,
-        itemDescription: item.description,
-        itemImage: [item.image],
-        itemCategory: item.category_id,
-        itemCategoryName: item.category_name,
-        taggedUser: null
-      })
-    }
 
     return (
       <TouchableOpacity onPress={() => onItemPress(item_key)}>
@@ -374,6 +363,22 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     setCategoryImage(result.assets[0].uri);
   }; 
 
+  // ~ eventually want to get this function to delete the extra item as well
+  // ***
+  const onRerankItemPress = () => {
+    onDeleteItemPress(focusedItem.bucket, focusedItem.key);
+    navigation.navigate('Add', {
+      itemName: focusedItem.content,
+      itemDescription: focusedItem.description,
+      itemImage: [focusedItem.image],
+      itemCategory: focusedItem.category_id,
+      itemCategoryName: focusedItem.category_name,
+      trackUri: focusedItem.trackUri,
+      numItems: numItems,
+      taggedUser: null
+    })
+  }
+
   const memoizedList = useMemo(() => listData[listView].map((item, index) => <ListItemTile item={item[1]} item_key={item[0]} index={index} key={index} />), [listData, listView, editMode]);
 
   if (focusedItem) {
@@ -386,7 +391,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         }}> 
           <MaterialIcons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
-        {editMode ? (
+        {editMode && (
           <>
           <TouchableOpacity onPress={() => {
             onDeleteItemPress(focusedItem.bucket, focusedItem.key)
@@ -395,23 +400,42 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete Item</Text>
           </TouchableOpacity>
           </>
-        ) : (
-          <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{focusedCategory}</Text>
         )}
-
-        <TouchableOpacity onPress={() => onEditPress()}>
-          {editMode ? (
+        
+        {editMode ? (
+          <TouchableOpacity onPress={() => onEditPress()}>
             <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Done</Text>
-          ) : isMyProfile ? (
+          </TouchableOpacity>
+        ) : isMyProfile ? (
+          <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity onPress={() => onRerankItemPress()}>
+            <Text style={{ fontSize: 15, marginRight: 30 }}>Rerank</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onEditPress()}>
             <Text style={{ fontSize: 15 }}>Edit</Text>
-          ) : (
-            <Text>       </Text>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+          </View>
+        ) : (
+          <Text>       </Text>
+        )}
       </View>
-      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription} showComments={true}/>
+      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription} showComments={true} setFeedView={setProfileView}/>
       </>
     );
+  }
+
+  if (profileView) {
+    return (
+      <Profile 
+        route={{'params': {
+          userKey: profileView.userKey,
+          username: profileView.username,
+          visitingUserId: userKey,
+          setFeedView: setProfileView
+        }}}
+        navigation={navigation}
+      />
+    )
   }
 
   return (

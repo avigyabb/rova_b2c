@@ -9,6 +9,11 @@ import { useFonts } from 'expo-font';
 import { MaterialIcons } from '@expo/vector-icons';
 import Profile from './Profile';
 import FeedItemTile from './FeedItemTile';
+import { getSpotifyAccessToken } from '../consts';
+import axios from 'axios';
+import qs from 'qs';
+import { Buffer } from 'buffer';
+import * as AuthSession from 'expo-auth-session';
 
 const styles = StyleSheet.create({
   timesText: {
@@ -25,6 +30,21 @@ const styles = StyleSheet.create({
   }
 });
 
+const useSpotifyAuth = (clientId, redirectUri) => {
+  return AuthSession.useAuthRequest({
+    redirectUri,
+    clientId,
+    scopes: ['user-modify-playback-state', 'user-read-playback-state'],
+    usePKCE: true,
+    responseType: AuthSession.ResponseType.Code,
+    extraParams: {
+      show_dialog: 'true',
+    },
+  }, {
+    authorizationEndpoint: 'https://accounts.spotify.com/authorize',
+    tokenEndpoint: 'https://accounts.spotify.com/api/token',
+  });
+};
 
 const Feed = ({ route, navigation }) => {
   const [profileInfo, setProfileInfo] = useState({});
@@ -39,11 +59,13 @@ const Feed = ({ route, navigation }) => {
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
     'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
   });
-  const [feedType, setFeedType] = useState('For You');
+  const [feedType, setFeedType] = useState('Following');
   const [topPostsTime, setTopPostsTime] = useState('Past Hour');
   const [itemInfo, setItemInfo] = useState(null);
   const [notifications, setNotifications] = useState(null);
-
+  const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
+  const [request, response, promptAsync] = useSpotifyAuth('3895cb48f70545b898a65747b63b430d', 'exp://10.0.0.187:8081'); // how do I do this on my actual app
+  const [individualSpotifyAccessToken, setIndividualSpotifyAccessToken] = useState(null);
 
   const getListData = () => {
     setRefreshed(true);
@@ -174,7 +196,46 @@ const Feed = ({ route, navigation }) => {
     })
   }
 
+  // replace with function in consts ~
+  const getSpotifyAccessToken = async () => {
+    const client_id = '3895cb48f70545b898a65747b63b430d';
+    const client_secret = '8d70ee092b614f58b488ce149e827ab1';
+    const url = 'https://accounts.spotify.com/api/token';
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
+    };
+    const data = qs.stringify({'grant_type': 'client_credentials'});
+
+    try {
+      const response = await axios.post(url, data, {headers});
+      setSpotifyAccessToken(response.data.access_token);
+    } catch (error) {
+      console.error('Error obtaining token:', error);
+    }
+  }
+
   useEffect(() => {
+    getSpotifyAccessToken()
+    if (response?.type === 'success') {
+      AuthSession.exchangeCodeAsync({
+        clientId: '3895cb48f70545b898a65747b63b430d',
+        redirectUri: 'exp://10.0.0.187:8081',
+        code: response.params.code,
+        extraParams: {
+          code_verifier: request.codeVerifier,  // Ensure this is correctly captured
+        }
+      }, {
+        tokenEndpoint: 'https://accounts.spotify.com/api/token',
+      })
+      .then(result => {
+        console.log('Access Token:', result.accessToken);
+        setIndividualSpotifyAccessToken(result.accessToken);
+      })
+      .catch(error => {
+        console.error("Failed to exchange token:", error);
+      });
+    }
     if (feedType === 'For You') {
       getListData();
     } else if (feedType === 'Following') {
@@ -182,7 +243,7 @@ const Feed = ({ route, navigation }) => {
     } else if (feedType === 'Top Posts') {
       getTopPostsListData();
     }
-  }, []);
+  }, [response]);
 
   const NotificationsTile = ({ item }) => {
     const [userInfo, setUserInfo] = useState({});
@@ -206,21 +267,24 @@ const Feed = ({ route, navigation }) => {
     }) : 'N/A';
 
     return (
-        <View style={{ width: '90%', flexDirection: 'row', padding: 10 }}>
-          <TouchableOpacity onPress={() => setFeedView({userKey: item.evokerId, username: userInfo.username})}>
-            <Image
-              source={userInfo.profile_pic || profilePic}
-              style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
-            />
-          </TouchableOpacity>
-          <View>
-            <View style={{ flexDirection: 'row' }}>
-              <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
-              <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
-            </View>
-            <Text style={{ marginTop: 5, flexShrink: 1 }}>{item.content}</Text>
+      <View style={{ width: '90%', flexDirection: 'row', padding: 10 }}>
+        <TouchableOpacity onPress={() => {
+          setFeedView({userKey: item.evokerId, username: userInfo.username})
+          setNotifications(null)
+        }}>
+          <Image
+            source={userInfo.profile_pic || profilePic}
+            style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+          />
+        </TouchableOpacity>
+        <View>
+          <View style={{ flexDirection: 'row' }}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
+            <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
           </View>
+          <Text style={{ marginTop: 5, flexShrink: 1 }}>{item.content}</Text>
         </View>
+      </View>
     );
   }
 
@@ -250,7 +314,7 @@ const Feed = ({ route, navigation }) => {
       setFeedView(params)
       setItemInfo(null)
     }
-    
+
     return (
       <View style={{ backgroundColor: 'white', height: '100%' }}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
@@ -262,14 +326,12 @@ const Feed = ({ route, navigation }) => {
             <MaterialIcons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
         </View>
-        <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} />
+        <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync}/>
       </View>
     );
   }
 
   if (feedView) {
-    console.log(feedView)
-
     return (
       <Profile 
         route={{'params': {
@@ -357,7 +419,7 @@ const Feed = ({ route, navigation }) => {
         <>
         <FlatList
           data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
-          renderItem={({ item }) => <FeedItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo}/>}
+          renderItem={({ item }) => <FeedItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} />}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}

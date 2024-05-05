@@ -54,10 +54,12 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
           image: album.images.length > 0 ? album.images[0].url : undefined,
         })));
       } else if (newItemCategoryType === 'Songs') { 
+        console.log(response.data.tracks.items);
         setSearchResults(response.data.tracks.items.map(track => ({
           content: track.name,
           description: track.artists.map(artist => artist.name).join(', '),
           image: track.album.images.length > 0 ? track.album.images[0].url : undefined,
+          uri: track.uri
         })));
       } else if (newItemCategoryType === 'Artists') { 
         setSearchResults(response.data.artists.items.map(artist => ({
@@ -87,5 +89,20 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
       .catch(error => {
         console.error('Error:', error);
       });
+  } else {
+    // const API_KEY = '43545255-2ce8252df331f629bb4ae8719';
+    // const URL = `https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(text)}&image_type=photo`;
+    
+    // axios.get(URL).then((res) => {
+    // if (res.data.hits){
+    //   setSearchResults(res.data.hits.map(item => ({
+    //     content: item.user,
+    //     description: item.tags,
+    //     image: item.previewURL,
+    //   })));
+    // }
+    //  }).catch(error => {
+    //   console.error('Error: ', error);
+    // }); 
   }
 }
