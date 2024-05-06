@@ -383,7 +383,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
   if (focusedItem) {
     return (
-      <>
+      <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => {
           setFocusedItem(null)
@@ -420,7 +420,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         )}
       </View>
       <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription} showComments={true} setFeedView={setProfileView}/>
-      </>
+      </View>
     );
   }
 
@@ -439,7 +439,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={onBackPress}> 
           <MaterialIcons name="arrow-back" size={30} color="black" />
@@ -550,7 +550,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         <Text style={{ textAlign: 'center', fontWeight: 'bold', color: 'gray', fontSize: 16, marginTop: '50%' }}>Add items to see your rankings... 😶‍🌫️</Text>
       )}
       </ScrollView>
-    </>
+    </View>
   )
 }
 

@@ -316,7 +316,7 @@ const Feed = ({ route, navigation }) => {
     }
 
     return (
-      <View style={{ backgroundColor: 'white', height: '100%' }}>
+      <View style={{ backgroundColor: 'black', height: '100%' }}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
           <TouchableOpacity onPress={() => {
             setItemInfo(null) 

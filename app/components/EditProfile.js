@@ -127,7 +127,7 @@ const EditProfile = ({ userKey, onBackPress, getUserInfo }) => {
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View>
+      <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={onBackPress}> 
           <MaterialIcons name="arrow-back" size={30} color="black" />

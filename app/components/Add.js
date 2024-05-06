@@ -768,11 +768,11 @@ const Add = ({ route }) => {
                       <MaterialIcons name="location-pin" size={40} color="black" />
                     </View>
                   )}
-                  <View style={{ marginLeft: 10 }}>
-                    <Text style={{ fontWeight: 'bold', width: 265 }}>{item.content}</Text>
-                    <Text style={{ color: 'gray', fontSize: 12, width: 265 }}>{item.description}</Text>
+                  <View style={{ marginLeft: 10, width: 250 }}>
+                    <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
+                    <Text style={{ color: 'gray', fontSize: 12 }}>{item.description}</Text>
                   </View>
-                  { itemsInCategory.has(item.content) && <MaterialIcons name="playlist-add-check" size={30} />}
+                  { itemsInCategory.has(item.content) && <MaterialIcons name="playlist-add-check" size={25} />}
                 </TouchableOpacity>
               )}
               keyExtractor={(item, index) => index.toString()}
@@ -965,7 +965,9 @@ const Add = ({ route }) => {
             </Text>
             <View style={styles.cardsContainer}>
               <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(true)}>
-                <Text style={styles.itemContent}>{newItem}</Text>
+                <Text style={styles.itemContent}>
+                  {newItem.length > 30 ? newItem.slice(0, 30) + '...' : newItem}
+                </Text>
                 <View style={{
                   borderWidth: 1.5,
                   height: 40,
@@ -989,7 +991,9 @@ const Add = ({ route }) => {
               </View>
               
               <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(false)}>
-                <Text style={styles.itemContent}>{itemComparisons[binarySearchM].content}</Text>
+                <Text style={styles.itemContent}>
+                  {itemComparisons[binarySearchM].content.length > 30 ? itemComparisons[binarySearchM].content.slice(0, 30) + '...' : itemComparisons[binarySearchM].content}
+                </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
                   {itemComparisons[binarySearchM].image && (
                     <Image

@@ -35,6 +35,7 @@
       "package": "com.swing.b2capp"
     },
     "extra": {
+      "firebaseApiKey": "AIzaSyAHmo5zkdpph4xa-CgO2eWrwpq56tzC9hE",
       "router": {
         "origin": false
       },

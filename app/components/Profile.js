@@ -207,7 +207,7 @@ const Profile = ({ route, navigation }) => {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: 'white', height: '100%'}}>
+      <>
       {focusedCategory === 'editProfile' ? (
         <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()}/>
       ) : focusedCategory === 'addList' ? (
@@ -234,7 +234,7 @@ const Profile = ({ route, navigation }) => {
           navigation={navigation}
         />
       ) : (
-        <>
+        <ScrollView style={{ backgroundColor: 'white', height: '100%'}}>
           {!visitingUserId ? (
             <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20  }}>
               <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
@@ -329,9 +329,9 @@ const Profile = ({ route, navigation }) => {
           ) : (
             <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>add a list to get started...</Text>
           )}
-        </>
+        </ScrollView> 
       )}
-    </ScrollView> 
+      </>
   )
 };
 
