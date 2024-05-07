@@ -212,7 +212,7 @@ const Profile = ({ route, navigation }) => {
         <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()}/>
       ) : focusedCategory === 'addList' ? (
         <>
-          <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey' }}>
+          <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
             <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
               <MaterialIcons name="arrow-back" size={30} color="black" />
             </TouchableOpacity>

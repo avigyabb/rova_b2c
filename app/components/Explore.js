@@ -81,10 +81,10 @@ const Explore = ({ route, navigation }) => {
             style={{ 
               fontSize: 16, 
               borderColor: 'lightgrey',
-              borderWidth: 1,
+              borderWidth: 0.5,
               borderRadius: 30,
               padding: 10,
-              paddingTop: 10,
+              paddingHorizontal: 20,
               marginVertical: 15
             }}
           /> 

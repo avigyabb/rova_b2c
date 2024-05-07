@@ -772,7 +772,7 @@ const Add = ({ route }) => {
                     <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
                     <Text style={{ color: 'gray', fontSize: 12 }}>{item.description}</Text>
                   </View>
-                  { itemsInCategory.has(item.content) && <MaterialIcons name="playlist-add-check" size={25} />}
+                  { itemsInCategory && itemsInCategory.has(item.content) && <MaterialIcons name="playlist-add-check" size={25} />}
                 </TouchableOpacity>
               )}
               keyExtractor={(item, index) => index.toString()}

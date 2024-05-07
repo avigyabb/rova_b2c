@@ -12,7 +12,7 @@ import Feed from './components/Feed';
 import Explore from './components/Explore.js';
 import { useNavigation } from '@react-navigation/native';
 import Groups from './components/Groups.js';
-import * as Analytics from 'expo-firebase-analytics';
+// import * as Analytics from 'expo-firebase-analytics';
 // import analytics from '@react-native-firebase/analytics';
 
 // Add more screens here
@@ -120,15 +120,15 @@ const App = () => {
     setUserKey(await AsyncStorage.getItem('key'));
   }
 
-  const logAppOpen = async () => {
-    console.log("loc7")
-    console.log(Analytics)
-    try {
-      await Analytics.logEvent('app_open');
-    } catch (error) {
-        console.error("Error logging the app open event:", error);
-    }
-  };
+  // const logAppOpen = async () => {
+  //   console.log("loc7")
+  //   console.log(Analytics)
+  //   try {
+  //     await Analytics.logEvent('app_open');
+  //   } catch (error) {
+  //       console.error("Error logging the app open event:", error);
+  //   }
+  // };
 
   useEffect(() => {
     fetchUserData();

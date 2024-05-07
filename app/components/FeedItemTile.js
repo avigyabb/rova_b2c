@@ -246,7 +246,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
 
   return (
-    <ScrollView>
+    <ScrollView style={{ backgroundColor: 'white' }}>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
     <>
     {!commentTypingMode && (
@@ -333,7 +333,8 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
               style={{ width: 300, height: 300 }} // You can adjust the size.
             />
           ) : (
-            <TouchableOpacity onPress={() => onItemImagePress(item)}>
+            <>
+            {/* <TouchableOpacity onPress={() => onItemImagePress(item)}> */}
               <Image
                 source={{ uri: item.image }}
                 style={{
@@ -347,7 +348,8 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
                 }}
                 onLoad={onImageLoad}
               />
-            </TouchableOpacity>
+            {/* </TouchableOpacity> */}
+            </>
           )}
           </>
         )}
