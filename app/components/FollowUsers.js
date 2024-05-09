@@ -5,7 +5,7 @@ import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/d
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
 
 const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, userKey, visitingUserId }) => {
@@ -71,7 +71,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
       <>
       <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
         <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
-          <MaterialIcons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
         <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}>{username}'s   {focusedCategory}</Text>
       </View>

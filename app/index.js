@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Text, View, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import Add from './components/Add';
 import Profile from './components/Profile';
 import SignIn from './components/SignIn.js';
@@ -34,13 +34,13 @@ function MyTabs({ userKey, setView, fetchUserData }) {
           let iconName;
 
           if (route.name === 'Feed') {
-            iconName = 'feed';
+            iconName = 'newspaper';
           } else if (route.name === 'Explore') {
-            iconName = 'explore';
+            iconName = 'search';
           } else if (route.name === 'Add') {
             iconName = 'add-circle';
           } else if (route.name === 'Groups') {
-            iconName = 'groups';
+            iconName = 'people';
           } else if (route.name === 'Profile') {
             iconName = 'person';
           }
@@ -48,7 +48,7 @@ function MyTabs({ userKey, setView, fetchUserData }) {
 
           return (
             <TouchableOpacity onPress={() => navigation.navigate(route.name)}>
-              <MaterialIcons name={iconName} size={size} color={color} />
+              <Ionicons name={iconName} size={size} color={color} />
             </TouchableOpacity>
           );
         },

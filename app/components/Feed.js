@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
 import { useFonts } from 'expo-font';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import Profile from './Profile';
 import FeedItemTile from './FeedItemTile';
 import { getSpotifyAccessToken } from '../consts';
@@ -297,7 +297,7 @@ const Feed = ({ route, navigation }) => {
             setFeedType('For You')
             getListData();
           }}> 
-            <MaterialIcons name="arrow-back" size={30} color="black" />
+            <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
           <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Notifications</Text>
         </View>
@@ -323,7 +323,7 @@ const Feed = ({ route, navigation }) => {
             setFeedType('For You')
             getListData();
           }}> 
-            <MaterialIcons name="arrow-back" size={30} color="black" />
+            <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
         </View>
         <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync}/>
@@ -364,9 +364,9 @@ const Feed = ({ route, navigation }) => {
         <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
         <TouchableOpacity onPress={() => getNotifications()}>
           {profileInfo.unreadNotifications ? (
-            <MaterialIcons name="notifications-active" size={28} color="#eb4034"/>
+            <Ionicons name="notifications-sharp" size={28} color="#eb4034"/>
           ) : (
-            <MaterialIcons name="notifications-none" size={28} color="gray"/>
+            <Ionicons name="notifications-outline" size={28} color="gray"/>
           )}
         </TouchableOpacity>
       </View>
@@ -444,7 +444,7 @@ const Feed = ({ route, navigation }) => {
           showsVerticalScrollIndicator={false}
         />
         <View style={{ position: 'absolute', width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 170 }}>
-          <MaterialIcons name='autorenew' size={60} color='lightgray' />
+          <Ionicons name='reload' size={60} color='lightgray' />
         </View>
         </>
       )}

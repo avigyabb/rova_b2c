@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, TextInput, StyleSheet, TouchableWithoutFeedback, Keyboard, Alert } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../firebaseConfig';
@@ -130,7 +130,7 @@ const EditProfile = ({ userKey, onBackPress, getUserInfo }) => {
       <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={onBackPress}> 
-          <MaterialIcons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
 
         <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Edit Profile</Text>

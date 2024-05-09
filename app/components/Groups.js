@@ -3,7 +3,7 @@ import { Text, View, TouchableOpacity, FlatList, Keyboard, TouchableWithoutFeedb
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, update } from "firebase/database";
 import { Image } from 'expo-image';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
 import RNPickerSelect from 'react-native-picker-select';
@@ -153,11 +153,11 @@ const Groups = ({ route, navigation }) => {
     <View style={{ backgroundColor: 'white', height: '100%' }}>
       <View style={{ padding: 20, flexDirection: 'row', alignItems: 'center', width: '100%', paddingBottom: 10, justifyContent: 'space-evenly', borderColor: 'lightgrey', borderBottomWidth: 0.5 }}>
         <TouchableOpacity onPress={() => {setGroupType('Global');}} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <MaterialIcons name="language" size={24} color="black" style={groupType === 'Global' ? { color: 'black', fontSize: 24, fontWeight: 'bold', marginRight: 5 } : { color: 'gray', fontSize: 20, fontWeight: 'bold', marginRight: 5 }}/>
+          <Ionicons name="earth" size={24} color="black" style={groupType === 'Global' ? { color: 'black', fontSize: 24, fontWeight: 'bold', marginRight: 5 } : { color: 'gray', fontSize: 20, fontWeight: 'bold', marginRight: 5 }}/>
           <Text style={groupType === 'Global' ? { color: 'black', fontSize: 18, fontWeight: 'bold' } : { color: 'gray', fontSize: 16, fontWeight: 'bold' }}>Global</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {setGroupType('School');}} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <MaterialIcons name="school" color="black" style={groupType === 'School' ? { color: 'black', fontSize: 24, fontWeight: 'bold', marginRight: 5 } : { color: 'gray', fontSize: 20, fontWeight: 'bold', marginRight: 5 }}/>
+          <Ionicons name="school" color="black" style={groupType === 'School' ? { color: 'black', fontSize: 24, fontWeight: 'bold', marginRight: 5 } : { color: 'gray', fontSize: 20, fontWeight: 'bold', marginRight: 5 }}/>
           <Text style={groupType === 'School' ? { color: 'black', fontSize: 18, fontWeight: 'bold' } : { color: 'gray', fontSize: 16, fontWeight: 'bold' }}>School</Text>
         </TouchableOpacity>
       </View>

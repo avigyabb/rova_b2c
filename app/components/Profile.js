@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
+import { Image as ReactImage } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
@@ -9,7 +10,7 @@ import { useFonts } from 'expo-font';
 import { database, storage } from '../../firebaseConfig';
 import { ref, set, onValue, off, push, query, equalTo, orderByChild, get, remove } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import { useEffect, useState } from 'react';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
 import EditProfile from './EditProfile';
 import AddCategory from './AddCategory';
@@ -52,6 +53,8 @@ const styles = StyleSheet.create({
 });
 
 const Profile = ({ route, navigation }) => {
+  console.log("ran")
+  console.log(profilePic)
   const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
   const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
@@ -214,7 +217,7 @@ const Profile = ({ route, navigation }) => {
         <>
           <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
             <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
-              <MaterialIcons name="arrow-back" size={30} color="black" />
+              <Ionicons name="arrow-back" size={30} color="black" />
             </TouchableOpacity>
             <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> {focusedCategory}</Text>
           </View>
@@ -239,13 +242,13 @@ const Profile = ({ route, navigation }) => {
             <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20  }}>
               <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
               <TouchableOpacity onPress={() => onLogOutPress()} style={{ marginLeft: 'auto' }}>
-                <MaterialIcons name="logout" size={25} color="black"/>
+                <Ionicons name="exit-outline" size={25} color="black"/>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
               <TouchableOpacity onPress={() => setFeedView(null)}> 
-                <MaterialIcons name="arrow-back" size={30} color="black" />
+                <Ionicons name="arrow-back" size={30} color="black" />
               </TouchableOpacity>
             </View>
           )}
@@ -265,7 +268,7 @@ const Profile = ({ route, navigation }) => {
             <View>
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
                 <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10 }}>{profileInfo.name}</Text>
-                <MaterialIcons name="verified" size={20} color="black" />
+                {/* <Ionicons name="verified" size={20} color="black" /> */}
               </View>
               <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'gray' }}>@{profileInfo.username}</Text>
               

@@ -1,7 +1,7 @@
 import React, {useEffect, useState, useMemo} from "react";
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Linking, TextInput, ScrollView } from "react-native";
 import { Image } from 'expo-image';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ref, set, remove, onValue, off, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
 import { database, storage } from '../../firebaseConfig';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
@@ -197,7 +197,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           <View style={{ flexDirection: 'row', paddingHorizontal: editMode && 10 }}>
             {editMode && (
               <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
-                <MaterialIcons name="do-disturb-on" size={25} color="red" />
+                <Ionicons name="remove-circle" size={25} color="red" />
               </TouchableOpacity>
             )}
             <View style={{ width: '85%' }}>
@@ -389,7 +389,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           setFocusedItem(null)
           setEditMode(false)
         }}> 
-          <MaterialIcons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
         {editMode && (
           <>
@@ -442,7 +442,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={onBackPress}> 
-          <MaterialIcons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
         {editMode ? (
           <>
@@ -477,7 +477,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-                <MaterialIcons name="add-photo-alternate" size={40} color="gray" />
+                <Ionicons name="image" size={40} color="gray" />
                 <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
             </TouchableOpacity>
             {categoryInfo.presetImage && presetImage && (
@@ -532,12 +532,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       <View style={{ flexDirection: 'row', borderBottomWidth: 0.5, borderTopWidth: 0.5, borderColor: 'lightgrey' }}>
         <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'now' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
           <TouchableOpacity onPress={() => onIconViewPress()}>
-            <MaterialIcons name="format-list-bulleted" size={listView === 'now' ? 32 : 30} color={listView === 'now' ? 'black' : 'gray'} />
+            <Ionicons name="podium" size={listView === 'now' ? 32 : 30} color={listView === 'now' ? 'black' : 'gray'} />
           </TouchableOpacity>
         </View>
         <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'later' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
           <TouchableOpacity onPress={() => onIconViewPress()}>
-            <MaterialIcons name="watch-later" size={listView === 'later' ? 32 : 30} color={listView === 'later' ? 'black' : 'gray'} />
+            <Ionicons name="bookmarks" size={listView === 'later' ? 30 : 28} color={listView === 'later' ? 'black' : 'gray'} />
           </TouchableOpacity>
         </View>
       </View>

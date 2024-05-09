@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
 import { useFonts } from 'expo-font';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Profile from './Profile';
 import axios from 'axios';
 import { generateRandom, deriveChallenge } from 'expo-auth-session';
@@ -358,17 +358,17 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       {/* {visitingUserId !== item.user_id && ( */}
       <View style={{ flexDirection: 'row', marginTop: 20 }}>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
-          <MaterialIcons name="thumb-up" size={22} color={visitingUserId in likes ? "black" : "grey"} />
+          <Ionicons name="thumbs-up-sharp" size={22} color={visitingUserId in likes ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onDislikePress(item)}>
-          <MaterialIcons name="thumb-down" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
+          <Ionicons name="thumbs-down-sharp" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
         </TouchableOpacity>
         
         {!showComments && (
           <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
-            <MaterialIcons name="comment" size={22} color="grey" />
+            <Ionicons name="chatbubble-sharp" size={22} color="grey" />
             <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(comments).length}</Text>
           </TouchableOpacity>
         )}
@@ -384,7 +384,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
             taggedUser: username,
             taggedUserId: item.user_id
           })}>
-          <MaterialIcons name="bookmark-add" size={30} color="grey" />
+          <Ionicons name="bookmark" size={30} color="grey" />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => navigation.navigate('Add', {
@@ -433,7 +433,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
             multiline={true}
           />
           <TouchableOpacity onPress={() => newComment.length > 0 && onNewCommentSubmit(item)}>
-            <MaterialIcons name="send" size={24} color="black" />
+            <Ionicons name="send" size={24} color="black" />
           </TouchableOpacity>
         </View>
         {memoizedComments}
