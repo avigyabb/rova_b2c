@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
 import { useFonts } from 'expo-font';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import Profile from './Profile';
 import axios from 'axios';
 import { generateRandom, deriveChallenge } from 'expo-auth-session';
@@ -396,7 +396,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
             taggedUserId: item.user_id,
           })}
         >
-          <MaterialIcons style={{}} name="add-circle" size={30} color="grey" />
+          <Ionicons style={{}} name="add-circle" size={30} color="grey" />
         </TouchableOpacity>
       </View>
       </>

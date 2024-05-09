@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import RNPickerSelect from 'react-native-picker-select';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ref, set, onValue, off, query, orderByChild, push, equalTo, get, update, runTransaction } from "firebase/database";
 import { database, storage } from '../../firebaseConfig';
 import { useFonts } from 'expo-font';
@@ -714,7 +714,7 @@ const Add = ({ route }) => {
             alignItems: 'center', // Aligns the TextInput and the icon vertically
             marginBottom: 10
           }}>
-            <MaterialIcons name="search" size={24} color="black" style={styles.icon} />
+            <Ionicons name="search" size={24} color="black" style={styles.icon} />
             <TextInput
               placeholder={`Add to ${userCategories.find(item => item.id === newItemCategory)?.category_name || ''}`}
               value={newItem}
@@ -765,14 +765,14 @@ const Add = ({ route }) => {
                     }}/>
                   ) : (
                     <View style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', backgroundColor: 'lightgray', borderRadius: 5 }}>
-                      <MaterialIcons name="location-pin" size={40} color="black" />
+                      <Ionicons name="location-sharp" size={40} color="black" />
                     </View>
                   )}
                   <View style={{ marginLeft: 10, width: 250 }}>
                     <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
                     <Text style={{ color: 'gray', fontSize: 12 }}>{item.description}</Text>
                   </View>
-                  { itemsInCategory && itemsInCategory.has(item.content) && <MaterialIcons name="playlist-add-check" size={25} />}
+                  { itemsInCategory && itemsInCategory.has(item.content) && <Ionicons name="list" size={25} />}
                 </TouchableOpacity>
               )}
               keyExtractor={(item, index) => index.toString()}
@@ -792,7 +792,7 @@ const Add = ({ route }) => {
                   paddingHorizontal: 10,
                   borderRadius: 10
                 }}>
-                <MaterialIcons name="add-circle-outline" size={30} color="black" />
+                <Ionicons name="add-circle-outline" size={30} color="black" />
                 <Text style={{ marginLeft: 10, fontWeight: 'bold' }}>Add Image or Description</Text>
               </TouchableOpacity>
               </>
@@ -821,7 +821,7 @@ const Add = ({ route }) => {
                   width: 40,
                   borderRadius: 10
                 }}>
-                  <MaterialIcons name="edit" size={25} color="black" />
+                  <Ionicons name="pencil" size={25} color="black" />
                 </TouchableOpacity>
               </View>
               </>
@@ -846,7 +846,7 @@ const Add = ({ route }) => {
                 justifyContent: 'center',
                 width: 170
               }}>
-                <MaterialIcons name="watch-later" size={20} color="gray" />
+                <Ionicons name="bookmark" size={20} color="gray" />
                 <Text style={{ color: 'gray', fontWeight: 'bold', fontSize: 14, marginLeft: 8 }}>Add to 'Later'</Text>
               </TouchableOpacity>
               
@@ -903,7 +903,7 @@ const Add = ({ route }) => {
                   onPress={() => newItemBucket ? {} : onBucketPress('like')}
                 >
                   {newItemBucket === 'like' && (
-                    <MaterialIcons name="check" size={24} color="white" />
+                    <Ionicons name="checkmark" size={24} color="white" />
                   )}
                 </TouchableOpacity>
                 <Text style={styles.optionText}>Good!</Text>
@@ -919,7 +919,7 @@ const Add = ({ route }) => {
                   onPress={() => newItemBucket ? {} : onBucketPress('neutral')}
                 >
                   {newItemBucket === 'neutral' && (
-                    <MaterialIcons name="check" size={24} color="white" />
+                    <Ionicons name="checkmark" size={24} color="white" />
                   )}
                 </TouchableOpacity>
                 <Text style={styles.optionText}>Mid</Text>
@@ -935,7 +935,7 @@ const Add = ({ route }) => {
                   onPress={() => newItemBucket ? {} : onBucketPress('dislike')}
                 >
                   {newItemBucket === 'dislike' && (
-                    <MaterialIcons name="check" size={24} color="white" />
+                    <Ionicons name="checkmark" size={24} color="white" />
                   )}
                 </TouchableOpacity>
                 <Text style={styles.optionText}>Bad.</Text>

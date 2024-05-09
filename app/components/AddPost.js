@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -67,7 +67,7 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
             />
           )}
           <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-              <MaterialIcons name="add-photo-alternate" size={40} color="gray" />
+              <Ionicons name="duplicate" size={40} color="gray" />
               <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Add Image</Text>
           </TouchableOpacity>
         </View>
@@ -98,11 +98,11 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
 
         <View style={{ flexDirection: 'row', borderTopWidth: 1, borderColor: 'lightgray', paddingTop: 15 }}>
           <TouchableOpacity style={styles.postButtons}>
-            <MaterialIcons name="person-pin" size={20} color="black" />
+            <Ionicons name="person-circle" size={20} color="black" />
             <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Friends</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.postButtons}>
-            <MaterialIcons name="add-location" size={20} color="black" />
+            <Ionicons name="location-sharp" size={20} color="black" />
             <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Location</Text>
           </TouchableOpacity>
         </View>

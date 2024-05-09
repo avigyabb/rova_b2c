@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
@@ -129,13 +129,13 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
               style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
             />
             <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-                <MaterialIcons name="edit" size={30} color="gray" />
+                <Ionicons name="pencil" size={30} color="gray" />
                 <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Change Image</Text>
             </TouchableOpacity>
             </>
           ) : (
             <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-                <MaterialIcons name="add-photo-alternate" size={40} color="gray" />
+                <Ionicons name="duplicate" size={40} color="gray" />
                 <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Add Image</Text>
             </TouchableOpacity>
           )}
@@ -143,7 +143,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
         </View>
 
         <View style={{ flexDirection: 'row', marginTop: 15 }}>
-          <MaterialIcons name='add-circle' size={30} color="black" />
+          <Ionicons name='add-circle' size={30} color="black" />
           <TextInput
             placeholder={'Add a list title...'}
             onChangeText={setNewCategoryName}
