@@ -26,7 +26,7 @@ function getScoreColorHSL(score) {
 const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
-  const [userImage, setUserImage] = useState(profilePic);
+  const [userImage, setUserImage] = useState('https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
   const [dimensions, setDimensions] = useState({ width: undefined, height: undefined });
   const [itemDescription, setItemDescription] = useState(item.description);
   const [likes, setLikes] = useState({});
@@ -46,7 +46,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     get(userRef).then((snapshot) => {
       if (snapshot.exists()) {
         setUsername(snapshot.val().name)
-        setUserImage(snapshot.val().profile_pic || profilePic);
+        setUserImage(snapshot.val().profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
       }
     }).catch((error) => {
       console.error("Error fetching categories:", error);
@@ -189,7 +189,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
           <TouchableOpacity onPress={() => visitingUserId === item.userId ? navigation.navigate('Profile') : setFeedView({userKey: item.userId, username: userInfo.username})}>
             <Image
-              source={userInfo.profile_pic || profilePic}
+              source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
               style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
             />
           </TouchableOpacity>

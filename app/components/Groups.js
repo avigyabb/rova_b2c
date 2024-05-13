@@ -8,13 +8,13 @@ import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
 import RNPickerSelect from 'react-native-picker-select';
 import { emailSchoolMap, schoolIdMap } from '../consts';
-import { largerCategories } from '../consts';
+import { largerCategories, notIncludedCategories } from '../consts';
 
 
 const Groups = ({ route, navigation }) => {
   const { userKey } = route.params;
   const [groupType, setGroupType] = useState('Global');
-  const [chips, setChips] = useState(['All Categories', 'Albums', 'Movies']); // &&&
+  const [chips, setChips] = useState([]); // &&&
   const [groupsListData, setGroupsListData] = useState([]);
   const [leaderboardCategory, setLeaderboardCategory] = useState('All Categories');
   const [groupView, setGroupView] = useState(null);
@@ -31,51 +31,19 @@ const Groups = ({ route, navigation }) => {
     })
 
     const usersRef = ref(database, 'users');
-    const categoryRef = ref(database, 'categories');
     const tempGroupsListData = [];
+    const overallMap = { // &&&
+      'All Categories': [0, 0], // first index is number of people, 2nd is number of rankings
+      Songs: [0, 0],
+      Albums: [0, 0],
+      Movies: [0, 0],
+      Artists: [0, 0],
+    }
 
     get(usersRef).then((snapshot) => {
       if (snapshot.exists()) {  
-        const overallMap = { // &&&
-          'All Categories': [0, 0], // first index is number of people, 2nd is number of rankings
-          Songs: [0, 0],
-          Albums: [0, 0],
-          Movies: [0, 0],
-          Artists: [0, 0],
-        }
-        snapshot.forEach((userInfo) => {
-          const map = { // &&&
-            'All Categories': 0,
-            Songs: 0,
-            Albums: 0,
-            Movies: 0,
-            Artists: 0,
-          }
-          const userCategoryQuery = query(categoryRef, orderByChild('user_id'), equalTo(userInfo.key));
-          get(userCategoryQuery).then((userCategoriesSnap) => {
-            if (userCategoriesSnap.exists()) {
-              userCategoriesSnap.forEach((categoryInfo) => {
-                const catInfo = categoryInfo.val();
-                map['All Categories'] += catInfo.num_items;
-                overallMap['All Categories'][1] += catInfo.num_items;
-                overallMap['All Categories'][0] += 1;
-                if (Object.keys(map).includes(catInfo.category_type) && catInfo.category_type !== 'Locations') {
-                  map[catInfo.category_type] += catInfo.num_items;
-                  overallMap[catInfo.category_type][1] += catInfo.num_items;
-                  overallMap[catInfo.category_type][0] += 1;
-                } else {
-                  const largerCategory = largerCategories[catInfo.category_name] || catInfo.category_name;
-                  map[largerCategory] ? map[largerCategory] += catInfo.num_items : map[largerCategory] = catInfo.num_items; 
-                  overallMap[largerCategory] ? overallMap[largerCategory][1] += catInfo.num_items : overallMap[largerCategory] = [0, catInfo.num_items]; 
-                  overallMap[largerCategory] ? overallMap[largerCategory][0] += 1 : overallMap[largerCategory][0] = 1;                 
-                }
-              })
-            }
-            tempGroupsListData.push({
-              key: userInfo.key,
-              ...userInfo.val(),
-              map: map
-            });
+        processUsers(snapshot, tempGroupsListData, overallMap)
+          .then(() => {
             setGroupsListData(tempGroupsListData.filter((item) => item.map['All Categories'] > 0).sort((a, b) => b.map['All Categories'] - a.map['All Categories'])); // ~ CAUSES TONS OF REFRESHES MUST FIX
             setChips(Object.entries(overallMap).filter(([key, value]) => !Number.isNaN(value) && key !== '').sort((a, b) => {
               if (a[1][0] !== b[1][0]) {
@@ -84,12 +52,57 @@ const Groups = ({ route, navigation }) => {
               return b[1][1] - a[1][1];
             }));
           })
-        })
+          .catch((error) => {
+              console.error('An error occurred:', error);
+          });
       }
     }).catch((error) => {
       console.error("Error:", error);
     })
   }, []);
+
+  const processUsers = (snapshot, tempGroupsListData, overallMap) => {
+    const categoryRef = ref(database, 'categories');
+    const promises = [];
+
+    snapshot.forEach((userInfo) => {
+      const map = { // &&&
+        'All Categories': 0,
+        Songs: 0,
+        Albums: 0,
+        Movies: 0,
+        Artists: 0,
+      }
+      const userCategoryQuery = query(categoryRef, orderByChild('user_id'), equalTo(userInfo.key));
+      promises.push(get(userCategoryQuery).then((userCategoriesSnap) => {
+        if (userCategoriesSnap.exists()) {
+          userCategoriesSnap.forEach((categoryInfo) => {
+            const catInfo = categoryInfo.val();
+            map['All Categories'] += catInfo.num_items;
+            overallMap['All Categories'][1] += catInfo.num_items;
+            overallMap['All Categories'][0] += 1;
+            if (Object.keys(map).includes(catInfo.category_type) && catInfo.category_type !== 'Locations') {
+              map[catInfo.category_type] += catInfo.num_items;
+              overallMap[catInfo.category_type][1] += catInfo.num_items;
+              overallMap[catInfo.category_type][0] += 1;
+            } else if (!notIncludedCategories.includes(catInfo.category_name.trim())) {
+              const largerCategory = largerCategories[catInfo.category_name.trim()] || catInfo.category_name.trim();
+              map[largerCategory] ? map[largerCategory] += catInfo.num_items : map[largerCategory] = catInfo.num_items; 
+              overallMap[largerCategory] ? overallMap[largerCategory][1] += catInfo.num_items : overallMap[largerCategory] = [0, catInfo.num_items]; 
+              overallMap[largerCategory] ? overallMap[largerCategory][0] += 1 : overallMap[largerCategory][0] = 1;                 
+            }
+          })
+        }
+        tempGroupsListData.push({
+          key: userInfo.key,
+          ...userInfo.val(),
+          map: map
+        });
+      }));
+    })
+
+    return Promise.all(promises);
+  }
 
   const onCategorySwitch = (chip) => {
     setLeaderboardCategory(chip);
@@ -113,7 +126,7 @@ const Groups = ({ route, navigation }) => {
         <View style={{ flexDirection: 'row', padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white', alignItems: 'center' }}>
           <Text style={{ color: 'black', marginRight: 20, fontWeight: 'bold', fontSize: 16 }}>{index + 1}</Text>
           <Image
-            source={item.profile_pic ? { uri: item.profile_pic } : profilePic}
+            source={item.profile_pic ? { uri: item.profile_pic } : 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
             style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 20, borderColor: 'lightgrey' }}
           />
           <View>
@@ -182,7 +195,7 @@ const Groups = ({ route, navigation }) => {
         </View>
       ) : (
         <>
-        {school ? (
+        {/* {school ? (
           <View>
             <Text style={{ color: 'black', fontSize: 20, margin: 10, fontWeight: 'bold' }}>{schoolIdMap[school].name}</Text>
             <Text style={{ color: 'gray', fontSize: 16, marginLeft: 10 }}>{schoolIdMap[school].district}</Text>
@@ -200,10 +213,11 @@ const Groups = ({ route, navigation }) => {
               key={"single-column"}
             />
           </View>
-        ) : (
+        ) : ( */}
           <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
             <View style={{ flex: 1, alignItems: 'center', marginTop: '30%' }}>
-              <View style={{ width: '80%' }}>
+              <Text style={{ color: 'gray', fontSize: 20, marginBottom: 30 }}>Coming Soon! 📚</Text>
+              {/* <View style={{ width: '80%' }}>
                 <Text style={{ color: 'black', fontSize: 20, marginBottom: 30 }}>Enter Your School Email! 📚</Text>
               </View>
               <TextInput
@@ -248,10 +262,10 @@ const Groups = ({ route, navigation }) => {
                   }}
                 />
                 </>
-              )}
+              )} */}
             </View>
           </TouchableWithoutFeedback>
-        )}
+        {/* )} */}
         </>
       )}
     </View>

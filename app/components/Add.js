@@ -618,7 +618,7 @@ const Add = ({ route }) => {
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
-        <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
+        <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
 
         {!rankMode && (
           <>
@@ -784,14 +784,14 @@ const Add = ({ route }) => {
               <>
               <Text style={{ marginTop: 10, marginLeft: 5, fontSize: 11, color: 'gray', fontStyle: 'italic' }}>Add a custom description or image to appear in the feed!</Text>
               <TouchableOpacity onPress={() => setAddView('AddPost')} style={{ 
-                  flexDirection: 'row', 
-                  alignItems: 'center', 
-                  marginTop: 5, 
-                  borderWidth: 2,
-                  padding: 5,
-                  paddingHorizontal: 10,
-                  borderRadius: 10
-                }}>
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                marginTop: 5, 
+                borderWidth: 2,
+                padding: 5,
+                paddingHorizontal: 10,
+                borderRadius: 10
+              }}>
                 <Ionicons name="add-circle-outline" size={30} color="black" />
                 <Text style={{ marginLeft: 10, fontWeight: 'bold' }}>Add Image or Description</Text>
               </TouchableOpacity>

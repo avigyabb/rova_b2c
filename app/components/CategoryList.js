@@ -363,7 +363,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     setCategoryImage(result.assets[0].uri);
   }; 
 
-  // ~ eventually want to get this function to delete the extra item as well
   // ***
   const onRerankItemPress = () => {
     onDeleteItemPress(focusedItem.bucket, focusedItem.key);
@@ -374,7 +373,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       itemCategory: focusedItem.category_id,
       itemCategoryName: focusedItem.category_name,
       trackUri: focusedItem.trackUri,
-      numItems: numItems,
+      numItems: numItems - 1,
       taggedUser: null
     })
   }

@@ -146,6 +146,7 @@ const Feed = ({ route, navigation }) => {
     get(categoryItemsRef).then((snapshot) => {
       if (snapshot.exists()) {
         tempListDataSorted = Object.entries(snapshot.val())
+          .filter(([key, value]) => key !== 'undefined')
           .map(([key, value]) => ({ key, ...value }))
           .sort((a, b) => ((b.likes ? Object.keys(b.likes).length : 0) + (b.dislikes ? Object.keys(b.dislikes).length : 0)) - ((a.likes ? Object.keys(a.likes).length : 0) + (a.dislikes ? Object.keys(a.dislikes).length : 0)));
 
@@ -273,7 +274,7 @@ const Feed = ({ route, navigation }) => {
           setNotifications(null)
         }}>
           <Image
-            source={userInfo.profile_pic || profilePic}
+            source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
             style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
           />
         </TouchableOpacity>
@@ -345,6 +346,8 @@ const Feed = ({ route, navigation }) => {
     )
   }
 
+  // console.log(listData['All Time'][1])
+
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
       <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20, justifyContent: 'space-between', }}>
@@ -356,12 +359,12 @@ const Feed = ({ route, navigation }) => {
             />
           ) : (
             <Image
-              source={profilePic}
+              source={'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
               style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: 'lightgrey' }}
             />
           )}
         </TouchableOpacity>
-        <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+        <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
         <TouchableOpacity onPress={() => getNotifications()}>
           {profileInfo.unreadNotifications ? (
             <Ionicons name="notifications-sharp" size={28} color="#eb4034"/>
@@ -394,12 +397,10 @@ const Feed = ({ route, navigation }) => {
       
       {feedType === 'Top Posts' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', paddingVertical: 10, justifyContent: 'space-evenly' }}>
-          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Hour' && {backgroundColor: 'black'}]} onPress={() => {setTopPostsTime('Past Hour') 
-          console.log("loc2")}}>
+          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Hour' && {backgroundColor: 'black'}]} onPress={() => {setTopPostsTime('Past Hour') }}>
             <Text style={[styles.timesText, topPostsTime === 'Past Hour' && {color: 'white'}]}>Past Hour</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Day' && {backgroundColor: 'black'}]} onPress={() => {setTopPostsTime('Past Day') 
-          console.log("loc2")}}>
+          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Day' && {backgroundColor: 'black'}]} onPress={() => {setTopPostsTime('Past Day')}}>
             <Text style={[styles.timesText, topPostsTime === 'Past Day' && {color: 'white'}]}>Past Day</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Week' && {backgroundColor: 'black'}]} onPress={() => setTopPostsTime('Past Week')}>

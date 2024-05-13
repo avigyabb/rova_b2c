@@ -14,13 +14,20 @@ const styles = StyleSheet.create({
     height: 116,
     margin: 1,
     overflow: 'hidden',
+  },
+  tile3: {
+    width: 114,
+    height: 114,
+    margin: 5,
+    overflow: 'hidden',
+    borderRadius: 10
   }
 })
 
 const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fromPage }) => {
   // console.log(pageFrom)
   return (
-    <TouchableOpacity style={fromPage === 'Add' ? styles.tile2 : styles.tile} onPress={() => onCategoryPress()}>
+    <TouchableOpacity style={fromPage === 'Add' ? styles.tile2 : fromPage === 'PickCategory' ? styles.tile3 : styles.tile } onPress={() => onCategoryPress()}>
       <View style={{
         width: '100%', // Adjust these values as needed
         height: '100%', // Adjust these values as needed
@@ -41,9 +48,9 @@ const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fro
           justifyContent: 'flex-end', // Aligns child content to the bottom
           padding: 10, // Adjust or remove padding as needed
         }}>
-          <Text style={{ marginLeft: 'auto', color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 'auto' }}>
-            {num_items}
-          </Text>
+          { num_items >= 0 && (
+            <Text style={{ marginLeft: 'auto', color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 'auto' }}>{num_items}</Text>
+          )}
           <Text style={{
             color: 'white', // Ensures the text is visible against a dark background
             fontSize: fromPage === 'Add' ? 14 : 16, // Adjust text size as needed

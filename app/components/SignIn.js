@@ -93,6 +93,7 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
 
     const newUserRef = ref(database, 'users/' + user.uid);
     setUserKeyIndex(user.uid);
+    setView('pickCategory');
     await AsyncStorage.setItem('username', username);
     await AsyncStorage.setItem('key', user.uid);
     set(newUserRef, { 

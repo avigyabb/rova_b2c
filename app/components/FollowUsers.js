@@ -43,7 +43,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
       <TouchableOpacity onPress={() => visitingUserId === item.id ? {} : setFollowUsersView({userKey: item.id, username: item.username })}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white', alignItems: 'center' }}>
           <Image
-            source={item.profile_pic ? { uri: item.profile_pic } : profilePic}
+            source={item.profile_pic ? { uri: item.profile_pic } : 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
             style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
           />
           <View>

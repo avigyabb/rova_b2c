@@ -35,12 +35,12 @@ const Explore = ({ route, navigation }) => {
   }, []);
 
   const UserTile = ({ item }) => {
-    if (item.username.toLowerCase().includes(searchVal.toLowerCase())){
+    if (item.username && item.username.toLowerCase().includes(searchVal.toLowerCase())){
       return (
         <TouchableOpacity onPress={() => userKey === item.id ? {} : setExploreView({userKey: item.id, username: item.username })}>
           <View style={{ flexDirection: 'row', padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white', alignItems: 'center' }}>
             <Image
-              source={item.profile_pic ? { uri: item.profile_pic } : profilePic}
+              source={item.profile_pic ? { uri: item.profile_pic } : 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
               style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
             />
             <View>
@@ -72,7 +72,7 @@ const Explore = ({ route, navigation }) => {
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}> 
       <View style={{ backgroundColor: 'white', paddingHOrizontal: 20, height: '100%' }}>
         <View style={{ paddingHorizontal: 20 }}>
-          <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
+          <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
           <TextInput
             placeholder={'Search Users...'}
             value={searchVal} 

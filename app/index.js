@@ -12,6 +12,7 @@ import Feed from './components/Feed';
 import Explore from './components/Explore.js';
 import { useNavigation } from '@react-navigation/native';
 import Groups from './components/Groups.js';
+import PickCategory from './components/LoginFlow/PickCategory.js';
 // import * as Analytics from 'expo-firebase-analytics';
 // import analytics from '@react-native-firebase/analytics';
 
@@ -29,6 +30,7 @@ function MyTabs({ userKey, setView, fetchUserData }) {
 
   return (
     <Tab.Navigator
+      initialRouteName="Profile"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
@@ -44,7 +46,7 @@ function MyTabs({ userKey, setView, fetchUserData }) {
           } else if (route.name === 'Profile') {
             iconName = 'person';
           }
-          size = focused ? 35 : 30;
+          size = focused ? 33 : 30;
 
           return (
             <TouchableOpacity onPress={() => navigation.navigate(route.name)}>
@@ -143,7 +145,13 @@ const App = () => {
   return (
     <NavigationContainer independent={true}>
       {userKey ? (
-        <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData}/>
+        <>
+        {view === 'pickCategory' ? (
+          <PickCategory userKey={userKey} setView={() => setView(null)}/>
+        ) : (
+          <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData}/>
+        )}
+        </>
       ) : view === 'signin' ? (
         <SignIn setView={setView} setUserKeyIndex={setUserKey} />
       ) : (

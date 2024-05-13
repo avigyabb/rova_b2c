@@ -60,7 +60,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
             console.log('File available at', downloadURL);
             const newCategoryRef = push(ref(database, 'categories'));
             set(newCategoryRef, {
-              category_name: newCategoryName,
+              category_name: newCategoryName.trim(),
               category_description: newCategoryDescription,
               num_items: 0,
               user_id: userKey,
@@ -85,7 +85,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
     } else {
       const newCategoryRef = push(ref(database, 'categories'));
       set(newCategoryRef, {
-        category_name: newCategoryName,
+        category_name: newCategoryName.trim(),
         category_description: newCategoryDescription,
         num_items: 0,
         user_id: userKey,

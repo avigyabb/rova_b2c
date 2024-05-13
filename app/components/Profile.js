@@ -53,8 +53,6 @@ const styles = StyleSheet.create({
 });
 
 const Profile = ({ route, navigation }) => {
-  console.log("ran")
-  console.log(profilePic)
   const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
   const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
@@ -78,7 +76,6 @@ const Profile = ({ route, navigation }) => {
     const userRef = ref(database, 'users/' + userKey);
     get(userRef).then((snapshot) => {
       if (snapshot.exists()) {
-        console.log(snapshot.val());
         setIsFollowing(snapshot.val().followers && snapshot.val().followers.hasOwnProperty(visitingUserId));
         setProfileInfo(snapshot.val());
       } else {
@@ -213,7 +210,7 @@ const Profile = ({ route, navigation }) => {
       <>
       {focusedCategory === 'editProfile' ? (
         <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()}/>
-      ) : focusedCategory === 'addList' ? (
+      ) : focusedCategory === 'Add List Page' ? (
         <>
           <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
             <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
@@ -240,7 +237,7 @@ const Profile = ({ route, navigation }) => {
         <ScrollView style={{ backgroundColor: 'white', height: '100%'}}>
           {!visitingUserId ? (
             <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20  }}>
-              <Text style={{ color: 'black', fontSize: 24, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+              <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
               <TouchableOpacity onPress={() => onLogOutPress()} style={{ marginLeft: 'auto' }}>
                 <Ionicons name="exit-outline" size={25} color="black"/>
               </TouchableOpacity>
@@ -261,8 +258,8 @@ const Profile = ({ route, navigation }) => {
               />
             ) : (
               <Image
-                source={profilePic}
-                style={styles.profilePic}
+                source={"https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png"}
+                style={styles.profilePic} 
               />
             )}
             <View>
@@ -298,7 +295,7 @@ const Profile = ({ route, navigation }) => {
               <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
                 <Text style={styles.editButtons}>Edit Profile</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('addList')}>
+              <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('Add List Page')}>
                 <Text style={styles.editButtons}>Add List</Text>
               </TouchableOpacity>
             </View>
