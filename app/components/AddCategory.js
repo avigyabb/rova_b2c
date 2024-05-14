@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard, FlatList } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,7 +7,8 @@ import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from
 import { database, storage } from '../../firebaseConfig';
 import { ref, set, onValue, off, push, query, equalTo, orderByChild, get } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import RNPickerSelect from 'react-native-picker-select';
-import { presetTypesList } from '../consts';
+import { signInCategories } from '../consts';
+import CategoryTile from './CategoryTile';
 
 const styles = StyleSheet.create({
   postButtons: {
@@ -19,15 +20,15 @@ const styles = StyleSheet.create({
     marginRight: 8
   },
   addedImages: {
-    height: 120,
-    width: 120,
+    height: 100,
+    width: 100,
     borderWidth: 2,
     marginTop: 10,
-    marginBottom: 15,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    borderColor: 'gray'
+    borderColor: 'gray',
+    marginRight: 10
   }
 });
 
@@ -38,7 +39,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
   const [newCategoryType, setNewCategoryType] = useState('');
   const [buttonMessage, setButtonMessage] = useState('Add Category');
 
-  const onAddCategoryPress = async () => { 
+  const onAddCategoryPress = async (item) => { 
     setButtonMessage('Adding Category...')  
     if (newCategoryImageUri) {
       const response = await fetch(newCategoryImageUri);
@@ -64,7 +65,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
               category_description: newCategoryDescription,
               num_items: 0,
               user_id: userKey,
-              category_type: newCategoryType,
+              category_type: item.category_type || '',
               list_num: 0,
               imageUri: downloadURL,
               presetImage: true,
@@ -89,7 +90,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
         category_description: newCategoryDescription,
         num_items: 0,
         user_id: userKey,
-        category_type: newCategoryType,
+        category_type: item.category_type || '',
         list_num: 0,
         imageUri: null, // Save the URI in the database
         latest_add: 0,
@@ -120,100 +121,94 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>    
+      <View style={{ backgroundColor: 'white', padding: 10, height: '100%' }}>    
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {newCategoryImageUri ? (
             <>
-            <Image
-              source={{ uri: newCategoryImageUri }}
-              style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
-            />
-            <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-                <Ionicons name="pencil" size={30} color="gray" />
-                <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Change Image</Text>
+            <TouchableOpacity onPress={pickImage}>
+              <View style={{ position: 'relative', height: 100, width: 100, marginRight: 10,}}>
+                <Image
+                  source={{ uri: newCategoryImageUri }}
+                  style={styles.addedImages}
+                />
+                <Ionicons name="pencil" size={30} color="white" style={{ position: 'absolute', bottom: 0, right: 5 }}/>
+              </View>
             </TouchableOpacity>
             </>
           ) : (
             <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
                 <Ionicons name="duplicate" size={40} color="gray" />
-                <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Add Image</Text>
+                <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Add Cover Image</Text>
             </TouchableOpacity>
           )}
           
-        </View>
+          <View style={{ width: 260 }}>
+            <View style={{ flexDirection: 'row', marginTop: 15 }}>
+              <Ionicons name='add-circle' size={30} color="black" />
+              <TextInput
+                placeholder={'Add a list title...'}
+                onChangeText={setNewCategoryName}
+                value={newCategoryName}
+                placeholderTextColor="gray"
+                style={{ 
+                  marginLeft: 10, 
+                  fontSize: 20, 
+                  flex: 1,
+                  borderColor: 'lightgrey',
+                  borderBottomWidth: 1,
+                  fontWeight: 'bold',
+                }}
+              />
+            </View>
 
-        <View style={{ flexDirection: 'row', marginTop: 15 }}>
-          <Ionicons name='add-circle' size={30} color="black" />
-          <TextInput
-            placeholder={'Add a list title...'}
-            onChangeText={setNewCategoryName}
-            value={newCategoryName}
-            placeholderTextColor="gray"
-            style={{ 
-              marginLeft: 10, 
-              fontSize: 20, 
-              flex: 1,
-              borderColor: 'lightgrey',
-              borderBottomWidth: 1,
-              fontWeight: 'bold'
-            }}
-          />
-        </View>
-
-        <TextInput
-          placeholder={'Add a list description...'}
-          onChangeText={setNewCategoryDescription}
-          value={newCategoryDescription}
-          placeholderTextColor="gray"
-          multiline={true}
-          style={{ 
-            fontSize: 16, 
-            borderColor: 'lightgrey',
-            borderWidth: 1,
-            borderRadius: 10,
-            padding: 10,
-            paddingTop: 10,
-            marginTop: 10
-          }}
-        />
-
-        <View style={{ marginTop: 100 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Category Type:</Text>
-          <Text style={{ fontWeight: 'bold', fontSize: 12, color: 'lightgrey' }}>(Optional: may improve search)</Text>
-          <RNPickerSelect
-            onValueChange={(value) => {
-              setNewCategoryType(value)
-            }}
-            value={newCategoryType}
-            items={presetTypesList.map((item) => ({ label: item, value: item }))}
-            style={{
-              inputIOS: {
+            <TextInput
+              placeholder={'Add a list description...'}
+              onChangeText={setNewCategoryDescription}
+              value={newCategoryDescription}
+              placeholderTextColor="gray"
+              multiline={true}
+              style={{ 
                 fontSize: 16, 
-                borderColor: 'grey',
-                borderWidth: 0.5,
+                borderColor: 'lightgrey',
+                borderBottomWidth: 1,
                 borderRadius: 10,
                 padding: 10,
                 paddingTop: 10,
-                marginTop: 8
-              },
-            }}
+                marginTop: 10
+              }}
+            />
+          </View>
+          
+        </View>
+
+        <View style={{ marginTop: 40 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 14, color: 'gray', paddingLeft: 5, marginBottom: 5 }}>Category Type:</Text>
+          <FlatList
+            data={signInCategories}
+            renderItem={({ item }) => <CategoryTile 
+              category_name={item.category_name} 
+              imageUri={item.imageUri} 
+              num_items={-1} 
+              onCategoryPress={() => {
+                buttonMessage === 'Add Category' ? onAddCategoryPress(item) : {}
+              }}
+              fromPage={'PickCategory'}
+            />}
+            numColumns={3}
+            contentContainerStyle={{}}
           />
         </View>
         
-        {newCategoryName && (
-          <TouchableOpacity onPress={() => buttonMessage === 'Add Category' ? onAddCategoryPress() : {}} style={{ 
-            marginTop: 100, 
-            backgroundColor: 'black', 
+        {buttonMessage === 'Adding Category...' && (
+          <View style={{ 
+            marginTop: 40, 
             alignItems: 'center', 
             justifyContent: 'center', 
-            paddingVertical: 15, 
-            paddingHorizontal: 50, 
-            borderRadius: 35,
             width: '80%',
             marginLeft: '10%'
           }}>
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>{buttonMessage}</Text>
-          </TouchableOpacity>
+            <Text style={{ fontWeight: 'bold', fontSize: 20, color: 'gray' }}>Adding Category... 🚀</Text>
+          </View>
         )}
       </View>
     </TouchableWithoutFeedback>
