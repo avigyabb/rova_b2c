@@ -66,6 +66,7 @@ const Feed = ({ route, navigation }) => {
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
   const [request, response, promptAsync] = useSpotifyAuth('3895cb48f70545b898a65747b63b430d', 'exp://10.0.0.187:8081'); // how do I do this on my actual app
   const [individualSpotifyAccessToken, setIndividualSpotifyAccessToken] = useState(null);
+  const [numFollowers, setNumFollowers] = useState(1);
 
   const getListData = () => {
     setRefreshed(true);
@@ -105,7 +106,7 @@ const Feed = ({ route, navigation }) => {
   const getFollowingListData = () => {
     setRefreshed(true);
     const userFollowingRef = ref(database, 'users/' + userKey + '/following');
-    let followingList = []
+    let followingList = [];
     get(userFollowingRef).then((snapshot) => {
       if (snapshot.exists()) {
         followingList = Object.keys(snapshot.val());
@@ -120,6 +121,8 @@ const Feed = ({ route, navigation }) => {
         }).catch((error) => {
           console.error("Error fetching categories:", error);
         });
+      } else {
+        setNumFollowers(0);
       }
     })
 
@@ -346,8 +349,6 @@ const Feed = ({ route, navigation }) => {
     )
   }
 
-  // console.log(listData['All Time'][1])
-
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
       <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20, justifyContent: 'space-between', }}>
@@ -413,9 +414,17 @@ const Feed = ({ route, navigation }) => {
       )}
 
       {refreshed ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: 'gray', fontSize: 20, fontStyle: 'italic' }}>Loading . . . </Text>
-        </View>
+        <>
+        {numFollowers === 0 && feedType === 'Following' ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ fontSize: 20, fontStyle: 'italic' }}>Follow Your Friends to See Posts</Text>
+          </View>
+        ) : (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ color: 'gray', fontSize: 20, fontStyle: 'italic' }}>Loading . . . </Text>
+          </View>
+        )}
+        </>
       ) : (
         <>
         <FlatList

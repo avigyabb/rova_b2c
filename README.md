@@ -22,3 +22,5 @@ Groups.js
 TO START
 npm install
 npm start
+
+npx expo start -c
