@@ -5,6 +5,7 @@ import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/d
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
 
 const Explore = ({ route, navigation }) => {
@@ -44,7 +45,10 @@ const Explore = ({ route, navigation }) => {
               style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
             />
             <View>
-              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+                {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
+              </View>
               <Text style={{ color: 'grey' }}>@{item.username}</Text>
             </View>
           </View>

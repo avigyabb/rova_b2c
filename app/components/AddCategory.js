@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const AddCategory = ({ profilePic, onBackPress, userKey }) => {
+const AddCategory = ({ onBackPress, userKey }) => {
   const [newCategoryImageUri, setNewCategoryImageUri] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
@@ -182,7 +182,7 @@ const AddCategory = ({ profilePic, onBackPress, userKey }) => {
         </View>
 
         <View style={{ marginTop: 40 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 14, color: 'gray', paddingLeft: 5, marginBottom: 5 }}>Category Type:</Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 14, color: 'gray', paddingLeft: 5, marginBottom: 5 }}>Choose A Category Type:</Text>
           <FlatList
             data={signInCategories}
             renderItem={({ item }) => <CategoryTile 

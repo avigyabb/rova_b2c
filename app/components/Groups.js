@@ -30,7 +30,10 @@ const Groups = ({ route, navigation }) => {
       setSchool(snapshot.val().school || null);
     })
 
-    const usersRef = ref(database, 'users');
+    let usersRef = ref(database, 'users');
+    if (groupType === 'School') {
+      usersRef = query(usersRef, orderByChild('school'), equalTo(school));
+    }
     const tempGroupsListData = [];
     const overallMap = { // &&&
       'All Categories': [0, 0], // first index is number of people, 2nd is number of rankings
@@ -59,7 +62,7 @@ const Groups = ({ route, navigation }) => {
     }).catch((error) => {
       console.error("Error:", error);
     })
-  }, []);
+  }, [groupType]);
 
   const processUsers = (snapshot, tempGroupsListData, overallMap) => {
     const categoryRef = ref(database, 'categories');
@@ -130,7 +133,10 @@ const Groups = ({ route, navigation }) => {
             style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 20, borderColor: 'lightgrey' }}
           />
           <View>
-            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+              {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
+            </View>
             <Text style={{ color: 'grey' }}>@{item.username}</Text>
           </View>
           <Text style={{ color: 'black', marginLeft: 'auto', marginRight: 10, fontWeight: 'bold', fontSize: 16 }}>{item.map[leaderboardCategory]}</Text>
@@ -195,15 +201,18 @@ const Groups = ({ route, navigation }) => {
         </View>
       ) : (
         <>
-        {/* {school ? (
+        {school ? (
           <View>
-            <Text style={{ color: 'black', fontSize: 20, margin: 10, fontWeight: 'bold' }}>{schoolIdMap[school].name}</Text>
-            <Text style={{ color: 'gray', fontSize: 16, marginLeft: 10 }}>{schoolIdMap[school].district}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1 }}>
+              <Image source={{ uri: schoolIdMap[school].image }} style={{ width: 40, height: 40 }}/>
+              <Text style={{ color: 'black', fontSize: 20, marginLeft: 5, fontWeight: 'bold' }}>{schoolIdMap[school].name}</Text>
+            </View>
             <FlatList
               data={chips}
               renderItem={({ item }) => <Chip chipInfo={item}/>}
               horizontal={true}
               showsHorizontalScrollIndicator={false}
+              style={{ padding: 10, flexGrow: 0 }}
             />
             <FlatList
               data={groupsListData.filter((item) => item.map[leaderboardCategory] > 0 && item.school === school)}
@@ -213,12 +222,12 @@ const Groups = ({ route, navigation }) => {
               key={"single-column"}
             />
           </View>
-        ) : ( */}
+        ) : (
           <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
             <View style={{ flex: 1, alignItems: 'center', marginTop: '30%' }}>
-              <Text style={{ color: 'gray', fontSize: 20, marginBottom: 30 }}>Coming Soon! 📚</Text>
-              {/* <View style={{ width: '80%' }}>
-                <Text style={{ color: 'black', fontSize: 20, marginBottom: 30 }}>Enter Your School Email! 📚</Text>
+              {/* <Text style={{ color: 'gray', fontSize: 20, marginBottom: 30 }}>Coming Soon! 📚</Text> */}
+              <View style={{ width: '80%' }}>
+                <Text style={{ color: 'black', fontSize: 20, marginBottom: 30 }}>Enter Your School Email 📚</Text>
               </View>
               <TextInput
                 placeholder="school email"
@@ -238,8 +247,7 @@ const Groups = ({ route, navigation }) => {
 
               {schoolEmail && emailSchoolMap[schoolEmail.split('@')[1] ? schoolEmail.split('@')[1] : ''] && (
                 <>
-                <Text style={{ color: 'black', fontSize: 20, marginTop: 50, fontWeight: 'bold' }}>{emailSchoolMap[schoolEmail.split('@')[1]].name}</Text>
-                <Text style={{ color: 'gray', fontSize: 16, marginTop: 10 }}>Select a School</Text>
+                <Text style={{ color: 'gray', fontSize: 16, marginTop: 50 }}>Select a School</Text>
                 <FlatList
                   data={emailSchoolMap[schoolEmail.split('@')[1]].schools}
                   renderItem={({ item }) => (
@@ -251,21 +259,22 @@ const Groups = ({ route, navigation }) => {
                       alignItems: 'center',
                       width: 350 
                     }}>
-                      <Text style={{ color: 'black', fontSize: 18 }}>{item.name}</Text>
+                      <Image source={{ uri: item.image }} style={{ width: 40, height: 40 }}/>
+                      <Text style={{ color: 'black', fontSize: 18, marginLeft: 10 }}>{item.name}</Text>
                     </TouchableOpacity>
                   )}
                   keyExtractor={(item, index) => index.toString()}
                   numColumns={1}
                   key={"single-column"}
                   style={{
-                    marginTop: 10
+                    marginTop: 20
                   }}
                 />
                 </>
-              )} */}
+              )}
             </View>
           </TouchableWithoutFeedback>
-        {/* )} */}
+        )}
         </>
       )}
     </View>

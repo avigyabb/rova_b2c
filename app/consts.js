@@ -9,26 +9,52 @@ export const presetTypesList = [
 
 export const emailSchoolMap = {
   'student.ghctk12.com': {
-    name: 'Granada Hills Charter School',
     schools: [
-      {name: 'Grades TK-8', image: '', id: 1},
-      {name: 'Grades 9-12', image: '', id: 2},
+      {name: 'Granada Hills Charter School TK-8', image: 'https://image.maxpreps.io/school-mascot/1/f/d/1fd5ff77-0482-4f19-a9c2-e03a6ef04ce8.gif?version=636230341800000000&width=1024&height=1024', id: 1},
+      {name: 'Granada Hills Charter School 9-12', image: 'https://image.maxpreps.io/school-mascot/1/f/d/1fd5ff77-0482-4f19-a9c2-e03a6ef04ce8.gif?version=636230341800000000&width=1024&height=1024', id: 2},
     ]
   },
-  'esusdstudents.org': {},
   'stanford.edu': {
-    name: 'Stanford University',
     schools: [
-      {name: 'Stanford University', image: '', id: 3},
+      {name: 'Stanford University', image: 'https://identity.stanford.edu/wp-content/uploads/sites/3/2020/07/block-s-right.png', id: 3},
     ]
   },
-  'usc.edu': {},
+  'usc.edu': {
+    schools: [
+      {name: 'University of Southern California', image: 'https://1000logos.net/wp-content/uploads/2022/02/Southern-California-Trojans-logo.png', id: 4},
+    ]
+  },
+  'esusdstudents.org': {
+    schools: [
+      {name: 'El Segundo High School', image: 'https://assets.scorebooklive.com/uploads/production/school/10825/image/El_Segundo__CA__Eagles_Logo.png', id: 5},
+    ]
+  },
+  'columbia.edu': {
+    schools: [
+      {name: 'Columbia University', image: 'https://m.media-amazon.com/images/I/61Fa-pNEFXL.jpg', id: 6},
+    ]
+  },
+  'ucsd.edu': {
+    schools: [
+      {name: 'University of California San Diego', image: '', id: 7},
+    ]
+  },
+  'my.hartdistrict.org': {
+    schools: [
+      {name: 'Valencia High School', image: 'https://signalscv.s3.us-west-1.amazonaws.com/wp-content/uploads/2016/10/13162335/Valencia-e1478908464131.jpg', id: 8},
+    ]
+  }
 }
 
 export const schoolIdMap = {
-  1: {name: 'Grades TK-8', district: 'Granada Hills Charter School' },
-  2: {name: 'Granada Hills Charter School', district: 'Grades 9-12' },
-  3: {name: 'Stanford University', district: '' },
+  1: {name: 'GHCHS TK-8', image: 'https://image.maxpreps.io/school-mascot/1/f/d/1fd5ff77-0482-4f19-a9c2-e03a6ef04ce8.gif?version=636230341800000000&width=1024&height=1024' },
+  2: {name: 'GHCHS 9-12', image: 'https://image.maxpreps.io/school-mascot/1/f/d/1fd5ff77-0482-4f19-a9c2-e03a6ef04ce8.gif?version=636230341800000000&width=1024&height=1024' },
+  3: {name: 'Stanford University', image: 'https://identity.stanford.edu/wp-content/uploads/sites/3/2020/07/block-s-right.png' },
+  4: {name: 'University of Southern California', image: 'https://1000logos.net/wp-content/uploads/2022/02/Southern-California-Trojans-logo.png' },
+  5: {name: 'El Segundo High School', image: 'https://assets.scorebooklive.com/uploads/production/school/10825/image/El_Segundo__CA__Eagles_Logo.png' },
+  6: {name: 'Columbia University', image: 'https://m.media-amazon.com/images/I/61Fa-pNEFXL.jpg' },
+  7: {name: 'University of California San Diego', image: '' },
+  8: {name: 'Valencia High School', image: 'https://signalscv.s3.us-west-1.amazonaws.com/wp-content/uploads/2016/10/13162335/Valencia-e1478908464131.jpg' },
 }
 
 export const notIncludedCategories = [
@@ -111,6 +137,7 @@ export const largerCategories = {
 
   'shows/movies': 'Shows',
   'shows': 'Shows',
+  'TV Shows': 'Shows',
 
   'Valorant Maps': 'Valorant',
   'Val Maps': 'Valorant',

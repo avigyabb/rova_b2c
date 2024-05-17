@@ -8,7 +8,7 @@ import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from
 import { useFonts } from 'expo-font';
 // import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import { database, storage } from '../../firebaseConfig';
-import { ref, set, onValue, off, push, query, equalTo, orderByChild, get, remove } from "firebase/database"; // Import 'ref' and 'set' from the database package
+import { ref, set, onValue, off, push, query, equalTo, orderByChild, get, remove, update } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import { useEffect, useState } from 'react';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
@@ -157,6 +157,12 @@ const Profile = ({ route, navigation }) => {
   }
 
   const followUser = async () => {
+    // THIS IS TO VERIFY USERS
+    // const userRef = ref(database, 'users/' + userKey);
+    // update(userRef, {
+    //   user_type: 'verified'
+    // })
+    
     const followersRef = ref(database, 'users/' + userKey + '/followers/' + visitingUserId);
     set(followersRef, {
       closeFriend: false
@@ -219,7 +225,7 @@ const Profile = ({ route, navigation }) => {
             <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> {focusedCategory}</Text>
           </View>
 
-          <AddCategory profilePic={profileInfo.profile_pic} onBackPress={() => onBackPress()} userKey={userKey}/>
+          <AddCategory onBackPress={() => onBackPress()} userKey={userKey}/>
         </>
       ) : focusedCategoryId ? (
         <CategoryList 
@@ -265,7 +271,7 @@ const Profile = ({ route, navigation }) => {
             <View>
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
                 <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10 }}>{profileInfo.name}</Text>
-                {/* <Ionicons name="verified" size={20} color="black" /> */}
+                {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color="#00aced" />}
               </View>
               <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'gray' }}>@{profileInfo.username}</Text>
               

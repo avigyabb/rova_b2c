@@ -34,6 +34,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [commentTypingMode, setCommentTypingMode] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
     
 
   const onImageLoad = (event) => {
@@ -47,6 +48,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       if (snapshot.exists()) {
         setUsername(snapshot.val().name)
         setUserImage(snapshot.val().profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
+        setIsVerified(snapshot.val().user_type === 'verified');
       }
     }).catch((error) => {
       console.error("Error fetching categories:", error);
@@ -260,9 +262,10 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
           />
         </TouchableOpacity>
         <View>
-          <View style={{ flexDirection: 'row' }}>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 20 }}>{username}</Text>
-            <Text style={{ color: 'grey', fontSize: 12 }}>{dateString}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{username}</Text>
+            {isVerified && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
+            <Text style={{ color: 'grey', fontSize: 12, marginLeft: 20 }}>{dateString}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, width: 260 }}>
             {/* <Text>added</Text> */}
