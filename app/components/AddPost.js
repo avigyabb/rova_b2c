@@ -3,6 +3,10 @@ import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWi
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
+import LocationList from './AddFlow/TagLocation';
+import PeopleList from './AddFlow/TagFriends';
+
 
 const styles = StyleSheet.create({
   postButtons: {
@@ -27,6 +31,9 @@ const styles = StyleSheet.create({
 });
 
 const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView, setAddedCustomImage }) => {
+
+  const [addPageView, setAddPageView] = useState(null);
+
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All, // ~ may need to change to just pictures
@@ -37,6 +44,72 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
     setNewItemImageUris([result.assets[0].uri]);
     setAddedCustomImage(true);
   }; 
+
+  // const getLocation = async () => {
+  //   try {
+  //     let { status } = await Location.requestForegroundPermissionsAsync();
+  //     if (status !== 'granted') {
+  //       alert('Permission to access location was denied');
+  //       return;
+  //     }
+  
+  //     let location = await Location.getCurrentPositionAsync({});
+  //     let reverseGeocode = await Location.reverseGeocodeAsync({
+  //       latitude: location.coords.latitude,
+  //       longitude: location.coords.longitude
+  //     });
+  //     let address = reverseGeocode[0];
+  //     let locationString = `${address.street}, ${address.city}, ${address.region}, ${address.country}`;
+  //     console.log(locationString);
+  //     return locationString;
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };  
+
+  const getLocation = async () => {
+    setAddPageView('locationList');
+  }
+
+  const getPeople = async () => {
+    setAddPageView('peopleList');
+  }
+
+  if (addPageView === 'locationList') {
+    return(
+      <View>
+        <View style={{ backgroundColor: 'white' }}>
+          <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+              <TouchableOpacity onPress={() => {
+                  setAddPageView(null)
+              }}> 
+                  <Ionicons name="arrow-back" size={30} color="black" />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Tag Location</Text>
+          </View>
+        </View>
+        <LocationList/>
+      </View>
+    )
+  }
+
+  if (addPageView === 'peopleList') {
+    return(
+      <View>
+        <View style={{ backgroundColor: 'white' }}>
+          <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+              <TouchableOpacity onPress={() => {
+                  setAddPageView(null)
+              }}> 
+                  <Ionicons name="arrow-back" size={30} color="black" />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Tag Friends</Text>
+          </View>
+        </View>
+        <PeopleList/>
+      </View>
+    )
+  }
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
@@ -97,11 +170,11 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
         </View>
 
         <View style={{ flexDirection: 'row', borderTopWidth: 1, borderColor: 'lightgray', paddingTop: 15 }}>
-          <TouchableOpacity style={styles.postButtons}>
+          <TouchableOpacity onPress={getPeople} style={styles.postButtons}>
             <Ionicons name="person-circle" size={20} color="black" />
             <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Friends</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.postButtons}>
+          <TouchableOpacity onPress={getLocation} style={styles.postButtons}>
             <Ionicons name="location-sharp" size={20} color="black" />
             <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Location</Text>
           </TouchableOpacity>

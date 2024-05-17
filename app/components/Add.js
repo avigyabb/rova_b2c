@@ -726,7 +726,6 @@ const Add = ({ route }) => {
               onFocus={() => setAddView('')}
               style={{
                 flex: 1, // Takes up the maximum space leaving the icon on the far side
-                fontSize: 15,
                 letterSpacing: 0.4,
                 paddingLeft: 10, // Optional: Adds some space between the icon and the text input
                 fontWeight: 'bold',
