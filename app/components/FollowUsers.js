@@ -8,7 +8,7 @@ import Profile from './Profile';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
 
-const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, userKey, visitingUserId }) => {
+const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, userKey, visitingUserId, navigation }) => {
   const [userListData, setUserListData] = useState([]);
   const [followUsersView, setFollowUsersView] = useState(null);
 
@@ -47,7 +47,10 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
             style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
           />
           <View>
-            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+              {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
+            </View>
             <Text style={{ color: 'grey' }}>@{item.username}</Text>
           </View>
         </View>
@@ -57,12 +60,15 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
 
   if (followUsersView) {
     return (
-      <Profile route={{'params': {
-        userKey: followUsersView.userKey,
-        username: followUsersView.username,
-        visitingUserId: visitingUserId || userKey,
-        setFeedView: setFocusedCategory
-      }}}/>
+      <Profile 
+        route={{'params': {
+          userKey: followUsersView.userKey,
+          username: followUsersView.username,
+          visitingUserId: visitingUserId || userKey,
+          setFeedView: setFocusedCategory
+        }}}
+        navigation={navigation}
+      />
     )
   }
 
@@ -73,17 +79,17 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
         <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
           <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
-        <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}>{username}'s   {focusedCategory}</Text>
+        <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}>{username}'s {focusedCategory}</Text>
       </View>
 
-      <View style={{ backgroundColor: 'white', paddingHOrizontal: 20, height: '100%' }}>
+      <View style={{ backgroundColor: 'white', paddingHOrizontal: 20, height: '94.5%' }}>
         <FlatList
-            data={userListData}
-            renderItem={({ item }) => <UserTile item={item} />}
-            keyExtractor={(item, index) => index.toString()}
-            numColumns={1}
-            key={"single-column"}
-          />
+          data={userListData}
+          renderItem={({ item }) => <UserTile item={item} />}
+          keyExtractor={(item, index) => index.toString()}
+          numColumns={1}
+          key={"single-column"}
+        />
       </View>
       </>
     </TouchableWithoutFeedback>

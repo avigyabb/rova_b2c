@@ -198,6 +198,7 @@ const Profile = ({ route, navigation }) => {
       username={profileInfo.username}
       userKey={userKey}
       visitingUserId={visitingUserId}
+      navigation={navigation}
     />
   }
 
@@ -209,6 +210,7 @@ const Profile = ({ route, navigation }) => {
       username={profileInfo.username}
       userKey={userKey}
       visitingUserId={visitingUserId}
+      navigation={navigation}
     />
   }
 

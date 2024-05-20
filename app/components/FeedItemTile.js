@@ -79,6 +79,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
     const eventsRef = push(ref(database, 'events/' + item.user_id));
     const userRef = ref(database, 'users/' + item.user_id);
+    console.log(itemLikeRef)
 
     if (visitingUserId in likes) {
       remove(itemLikeRef);
@@ -87,6 +88,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         return newLikes;
       });
     } else if (!(visitingUserId in dislikes)) {
+      console.log("ran2")
       set(itemLikeRef, {
         userId: visitingUserId
       })

@@ -113,7 +113,7 @@ const Feed = ({ route, navigation }) => {
         const categoryItemsRef = ref(database, 'items');
         get(categoryItemsRef).then((inner_snapshot) => {
           if (inner_snapshot.exists()) {
-            const tempListData = Object.values(inner_snapshot.val());
+            const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
             const filteredData = tempListData.filter(item => followingList.includes(item.user_id));
             setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
           }
