@@ -245,6 +245,38 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     }
   }
 
+  const removePresetImage = async (categoryId) => {
+    try {
+      const categoryItemsRef = ref(database, 'items');
+      const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(categoryId));
+  
+      const snapshot = await get(categoryItemsQuery);
+      if (snapshot.exists()) {
+        let topItem = null;
+        let maxScore = -1;
+  
+        snapshot.forEach((childSnapshot) => {
+          const item = childSnapshot.val();
+          if (item.score > maxScore) {
+            maxScore = item.score;
+            topItem = item;
+          }
+        });
+  
+        const categoryRef = ref(database, 'categories/' + categoryId);
+        await update(categoryRef, {
+          imageUri: topItem && topItem.image ? topItem.image : null,
+        });
+  
+        console.log('Category image updated to the best item image successfully!');
+      } else {
+        console.log('No items found for this category.');
+      }
+    } catch (error) {
+      console.error('Error updating category image:', error);
+    }
+  };
+
   const onEditPress = async () => {
     if (editMode && !focusedItem) {
       if (categoryImage) {
@@ -480,7 +512,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
             </TouchableOpacity>
             {categoryInfo.presetImage && presetImage && (
-              <TouchableOpacity style={{ marginLeft: 20, borderColor: 'red', padding: 5, borderWidth: 1, borderRadius: 5}} onPress={() => setPresetImage(false)}>
+              <TouchableOpacity style={{ marginLeft: 20, borderColor: 'red', padding: 5, borderWidth: 1, borderRadius: 5}} onPress={() => removePresetImage(focusedCategoryId)}>
                 <Text style={{ fontWeight: 'bold', fontSize: 12, color: 'red' }}>Remove Preset Image</Text>
               </TouchableOpacity>
             )}
