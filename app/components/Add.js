@@ -635,6 +635,37 @@ const Add = ({ route }) => {
     )
   }
 
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState(null);
+  const handleTextChange = (text) => {
+    setNewItem(text);
+    setLoadingItems(true);
+  
+    if (text.trim() === '') {
+      setLoadingItems(false);
+      setSearchResults([]);
+      return;
+    }
+  
+    if (newItemCategoryType === 'Locations') {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+  
+      setTypingTimeout(setTimeout(() => {
+        search(spotifyAccessToken, newItemCategoryType, (results) => {
+          setLoadingItems(false);
+          setSearchResults(results);
+        }, text);
+      }, 400));
+    } else {
+      search(spotifyAccessToken, newItemCategoryType, (results) => {
+        setLoadingItems(false);
+        setSearchResults(results);
+      }, text);
+    }
+  };  
+
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
@@ -746,8 +777,7 @@ const Add = ({ route }) => {
               value={newItem}
               placeholderTextColor="gray"
               onChangeText={(text) => {
-                setNewItem(text);
-                search(spotifyAccessToken, newItemCategoryType, setSearchResults, text);
+                handleTextChange(text);
               }}
               onFocus={() => setAddView('')}
               style={{
@@ -762,7 +792,11 @@ const Add = ({ route }) => {
           </View>
         )}
 
-        {newItem.length > 0 && newItemCategory && !rankMode && addView === '' && (
+        {loadingItems && newItemCategoryType === 'Locations' && (
+          <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
+        )}
+
+        {newItem.length > 0 && newItemCategory && !rankMode && addView === '' && !loadingItems && (
           <>
             <FlatList
               data={searchResults}

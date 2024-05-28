@@ -25,7 +25,7 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
     axios.get(`${BASE_URL}/search/${type}?api_key=${API_KEY}&query=${encodeURIComponent(text)}`)
       .then(response => {
         console.log(response.data.results);
-        setSearchResults(response.data.results.slice(0, 10).map(movie => ({
+        setSearchResults(response.data.results.slice(0, 4).map(movie => ({
           content: newItemCategoryType === 'Movies' ? movie.title : movie.name,
           description: newItemCategoryType === 'Movies' ? movie.release_date : movie.first_air_date,
           image: `${imgBaseURL}${imgSize}${movie.poster_path}`,
@@ -84,7 +84,7 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
           description: place.formatted_address,
           image: place.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` : undefined,
         }));
-        setSearchResults(places.slice(0, 10));
+        setSearchResults(places.slice(0, 4));
       })
       .catch(error => {
         console.error('Error:', error);

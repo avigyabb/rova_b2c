@@ -220,6 +220,7 @@ const Groups = ({ route, navigation }) => {
               keyExtractor={(item, index) => index.toString()}
               numColumns={1}
               key={"single-column"}
+              style={{ height: 535 }}
             />
           </View>
         ) : (

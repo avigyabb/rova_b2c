@@ -267,7 +267,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{username}</Text>
             {isVerified && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
-            <Text style={{ color: 'grey', fontSize: 12, marginLeft: 20 }}>{dateString}</Text>
+            <Text style={{ color: 'grey', fontSize: 10, marginLeft: 5 }}>{dateString}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, width: 260 }}>
             {/* <Text>added</Text> */}

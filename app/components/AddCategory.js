@@ -60,52 +60,99 @@ const AddCategory = ({ onBackPress, userKey }) => {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             console.log('File available at', downloadURL);
             const newCategoryRef = push(ref(database, 'categories'));
-            set(newCategoryRef, {
-              category_name: newCategoryName.trim(),
-              category_description: newCategoryDescription,
-              num_items: 0,
-              user_id: userKey,
-              category_type: item.category_type || '',
-              list_num: 0,
-              imageUri: downloadURL,
-              presetImage: true,
-              num_items: 0
-            })
-            .then(() => {
-              console.log('New category added with image URI.')
-              setNewCategoryName('');
-              setNewCategoryDescription('');
-              setNewCategoryType('');
-              setNewCategoryImageUri(null);
-              onBackPress();
-            })
-            .catch((error) => console.error('Error adding new category:', error));
+            if (newCategoryName.length == 0) {
+              set(newCategoryRef, {
+                category_name: item.category_name,
+                category_description: newCategoryDescription,
+                num_items: 0,
+                user_id: userKey,
+                category_type: item.category_type || '',
+                list_num: 0,
+                imageUri: downloadURL,
+                presetImage: true,
+                num_items: 0
+              })
+              .then(() => {
+                console.log('New category added with image URI.')
+                setNewCategoryName('');
+                setNewCategoryDescription('');
+                setNewCategoryType('');
+                setNewCategoryImageUri(null);
+                onBackPress();
+              })
+              .catch((error) => console.error('Error adding new category:', error));
+            } else {
+              set(newCategoryRef, {
+                category_name: newCategoryName.trim(),
+                category_description: newCategoryDescription,
+                num_items: 0,
+                user_id: userKey,
+                category_type: item.category_type || '',
+                list_num: 0,
+                imageUri: downloadURL,
+                presetImage: true,
+                num_items: 0
+              })
+              .then(() => {
+                console.log('New category added with image URI.')
+                setNewCategoryName('');
+                setNewCategoryDescription('');
+                setNewCategoryType('');
+                setNewCategoryImageUri(null);
+                onBackPress();
+              })
+              .catch((error) => console.error('Error adding new category:', error));
+            }
           });
         }
       );
     } else {
       const newCategoryRef = push(ref(database, 'categories'));
-      set(newCategoryRef, {
-        category_name: newCategoryName.trim(),
-        category_description: newCategoryDescription,
-        num_items: 0,
-        user_id: userKey,
-        category_type: item.category_type || '',
-        list_num: 0,
-        imageUri: null, // Save the URI in the database
-        latest_add: 0,
-        presetImage: false,
-        num_items: 0
-      })
-      .then(() => {
-        console.log('New category added without image URI.')
-        setNewCategoryName('');
-        setNewCategoryDescription('');
-        setNewCategoryType('');
-        setNewCategoryImageUri(null);
-        onBackPress();
-      })
-      .catch((error) => console.error('Error adding new category:', error));
+      if (newCategoryName.length == 0) {
+        set(newCategoryRef, {
+          category_name: item.category_name,
+          category_description: newCategoryDescription,
+          num_items: 0,
+          user_id: userKey,
+          category_type: item.category_type || '',
+          list_num: 0,
+          imageUri: null, // Save the URI in the database
+          latest_add: 0,
+          presetImage: false,
+          num_items: 0
+        })
+        .then(() => {
+          console.log('New category added without image URI.')
+          setNewCategoryName('');
+          setNewCategoryDescription('');
+          setNewCategoryType('');
+          setNewCategoryImageUri(null);
+          onBackPress();
+        })
+        .catch((error) => console.error('Error adding new category:', error));
+      } else {
+        set(newCategoryRef, {
+          category_name: newCategoryName.trim(),
+          category_description: newCategoryDescription,
+          num_items: 0,
+          user_id: userKey,
+          category_type: item.category_type || '',
+          list_num: 0,
+          imageUri: null, // Save the URI in the database
+          latest_add: 0,
+          presetImage: false,
+          num_items: 0
+        })
+        .then(() => {
+          console.log('New category added without image URI.')
+          setNewCategoryName('');
+          setNewCategoryDescription('');
+          setNewCategoryType('');
+          setNewCategoryImageUri(null);
+          onBackPress();
+        })
+        .catch((error) => console.error('Error adding new category:', error));
+      }
     }
   }
 
