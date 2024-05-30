@@ -130,6 +130,8 @@ const Add = ({ route }) => {
   const [presetDescription, setPresetDescription] = useState('');
   const [trackUri, setTrackUri] = useState(null);
   const [itemsInCategory, setItemsInCategory] = useState(null);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState(null);
 
   const getUserCategories = () => {
     const categoriesRef = ref(database, 'categories');
@@ -635,12 +637,12 @@ const Add = ({ route }) => {
     )
   }
 
-  const [loadingItems, setLoadingItems] = useState(false);
-  const [typingTimeout, setTypingTimeout] = useState(null);
   const handleTextChange = (text) => {
     setNewItem(text);
-    setLoadingItems(true);
-  
+    if (newItemCategoryType === 'Locations') {
+      setLoadingItems(true);
+    }
+
     if (text.trim() === '') {
       setLoadingItems(false);
       setSearchResults([]);
