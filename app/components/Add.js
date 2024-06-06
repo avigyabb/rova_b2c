@@ -741,7 +741,9 @@ const Add = ({ route }) => {
                 setNewItemCategory(null)
                 setSearchResults([])
               }}>
-                <Text>Change</Text>
+                <View style={{ backgroundColor: 'lightgrey', padding: 8, fontSize: 13, borderRadius: 10 }}>
+                  <Text style={{ fontWeight: 'bold' }}>Back</Text>
+                </View>
               </TouchableOpacity>
             </View>
             </>

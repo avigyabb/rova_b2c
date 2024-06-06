@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, update } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, update, set } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -249,8 +249,9 @@ const Feed = ({ route, navigation }) => {
     }
   }, [response]);
 
-  const NotificationsTile = ({ item }) => {
+  const NotificationsTile = ({ item, visitingUserId }) => {
     const [userInfo, setUserInfo] = useState({});
+    const [isFollowingBack, setIsFollowingBack] = useState(false);
 
     useEffect(() => {
       const userRef = ref(database, `users/${item.evokerId}`);
@@ -259,6 +260,15 @@ const Feed = ({ route, navigation }) => {
           setUserInfo(snapshot.val());
         }
       })
+
+      const followingRef = ref(database, `users/${visitingUserId}/following/${item.evokerId}`);
+      get(followingRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          setIsFollowingBack(true);
+        } else {
+          setIsFollowingBack(false);
+        }
+      });
     }, [])
 
     const date = new Date(item.timestamp);
@@ -270,23 +280,45 @@ const Feed = ({ route, navigation }) => {
       minute: '2-digit',
     }) : 'N/A';
 
+    const handleFollowBack = () => {
+      const followersRef = ref(database, `users/${item.evokerId}/followers/${visitingUserId}`);
+      set(followersRef, { closeFriend: false }).then(() => {
+        const followingRef = ref(database, `users/${visitingUserId}/following/${item.evokerId}`);
+        set(followingRef, { closeFriend: false }).then(() => {
+          setIsFollowingBack(true);
+        });
+      });
+    };
+
     return (
-      <View style={{ width: '90%', flexDirection: 'row', padding: 10 }}>
+      <View style={{ width: '95%', flexDirection: 'row', padding: 10 }}>
         <TouchableOpacity onPress={() => {
-          setFeedView({userKey: item.evokerId, username: userInfo.username})
-          setNotifications(null)
+          setFeedView({ userKey: item.evokerId, username: userInfo.username });
+          setNotifications(null);
         }}>
           <Image
             source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-            style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            style={{ height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
           />
         </TouchableOpacity>
-        <View>
+        <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row' }}>
-            <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
+            <Text style={{ fontSize: 15, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
             <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
           </View>
-          <Text style={{ marginTop: 5, flexShrink: 1 }}>{item.content}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontSize: 15, marginTop: 5, flexShrink: 1 }}>{item.content}</Text>
+              {item.content.includes('follow') ? (
+                <TouchableOpacity style={{ backgroundColor: isFollowingBack ? 'gray' : '#00aced', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 5, alignSelf: 'flex-end' }} onPress={handleFollowBack} disabled={isFollowingBack}>
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                    {isFollowingBack ? 'Friends' : 'Follow Back'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                /* <View style={{ width: 50, height: 50, backgroundColor: 'black' }} /> */
+                <View></View> /*Temporary Rendring since black sqaure code is not finished */
+              )}
+          </View>
         </View>
       </View>
     );
@@ -307,7 +339,7 @@ const Feed = ({ route, navigation }) => {
         </View>
         <FlatList
           data={notifications}
-          renderItem={({ item}) => <NotificationsTile item={item} />}
+          renderItem={({ item}) => <NotificationsTile item={item} visitingUserId={userKey}/>}
         />
       </View>
     )

@@ -201,7 +201,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               </TouchableOpacity>
             )}
             <View style={{ width: '85%' }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{index + 1}) {item.content}</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: 16.5 }}>{index + 1}) {item.content}</Text>
               <View style={{ flexDirection: 'row', marginTop: 10, }}>
                 {item.image && (
                   <Image
@@ -216,9 +216,11 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                     onPress={ (url, text) => Linking.openURL(url) }
                     style={{ flex: 1 }}
                   >
+                  <View style={{ width: 250 }}>
                     <Text style={{ color: 'grey', fontSize: 16 }}>
                       {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
                     </Text>
+                  </View>
                   </Hyperlink>
                 )}
               </View>
@@ -406,7 +408,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       itemCategoryName: focusedItem.category_name,
       trackUri: focusedItem.trackUri,
       numItems: numItems - 1,
-      taggedUser: null
+      taggedUser: null,
+      presetImage: categoryInfo.presetImage // Pass the presetImage status
     })
   }
 
