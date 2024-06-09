@@ -84,6 +84,7 @@ const Groups = ({ route, navigation }) => {
             map['All Categories'] += catInfo.num_items;
             overallMap['All Categories'][1] += catInfo.num_items;
             overallMap['All Categories'][0] += 1;
+            // console.log(catInfo.category_name);
             if (Object.keys(map).includes(catInfo.category_type) && catInfo.category_type !== 'Locations') {
               map[catInfo.category_type] += catInfo.num_items;
               overallMap[catInfo.category_type][1] += catInfo.num_items;

@@ -28,6 +28,9 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
         setSearchResults(response.data.results.slice(0, 4).map(movie => ({
           content: newItemCategoryType === 'Movies' ? movie.title : movie.name,
           description: newItemCategoryType === 'Movies' ? movie.release_date : movie.first_air_date,
+          id: newItemCategoryType + movie.id,
+          content_description: newItemCategoryType === 'Movies' ? movie.title : movie.name + newItemCategoryType === 'Movies' ? movie.release_date : movie.first_air_date,
+          info: movie,
           image: `${imgBaseURL}${imgSize}${movie.poster_path}`,
         })));
       })
@@ -51,6 +54,8 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
         setSearchResults(response.data.albums.items.map(album => ({
           content: album.name,
           description: album.artists.map(artist => artist.name).join(', '),
+          id: newItemCategoryType + album.id,
+          content_description: album.name + album.artists.map(artist => artist.name).join(', '),
           image: album.images.length > 0 ? album.images[0].url : undefined,
         })));
       } else if (newItemCategoryType === 'Songs') { 
@@ -58,6 +63,8 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
         setSearchResults(response.data.tracks.items.map(track => ({
           content: track.name,
           description: track.artists.map(artist => artist.name).join(', '),
+          id: newItemCategoryType + track.id,
+          content_description: track.name + track.artists.map(artist => artist.name).join(', '),
           image: track.album.images.length > 0 ? track.album.images[0].url : undefined,
           uri: track.uri
         })));
@@ -65,6 +72,8 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
         setSearchResults(response.data.artists.items.map(artist => ({
           content: artist.name,
           description: artist.genres.join(', '), // Assuming you might want to show artist genres as a description
+          content_description: artist.name + artist.genres.join(', '),
+          id: newItemCategoryType + artist.id,
           image: artist.images.length > 0 ? artist.images[0].url : undefined,
         })));
       }
@@ -79,9 +88,12 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
 
     axios.get(url)
       .then(response => {
+        console.log(response.data.results[0]);
         const places = response.data.results.map(place => ({
           content: place.name,
           description: place.formatted_address,
+          content_description: place.name + place.formatted_address,
+          id: place.place_id,
           image: place.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` : undefined,
         }));
         setSearchResults(places.slice(0, 4));

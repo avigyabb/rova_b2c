@@ -68,26 +68,46 @@ export const notIncludedCategories = [
   'The',
   'New Test',
   'Random items',
+  'Dvgg',
+  'dtd',
+  'Things I Didn’t Enjoy That Much',
+  'Things i dislike',
 ]
 
 export const largerCategories = {
   'anime': 'Anime',
   'Shows/Anime': 'Anime',
 
+  'Disney rides': 'Amusement Park Rides',
+
   'artists': 'Artists',
 
   'carry brawlers': 'Brawl Stars',
   'Top 10 Brawlers': 'Brawl Stars',
   'My favorite Brawlers': 'Brawl Stars',
+  'Brawl Stars Brawlers': 'Brawl Stars',
+
+  'Hyper Cars': 'Cars',
+
+  'Hikes/Cliff Jumping': 'Cliff Jumping',
 
   'Bevs': 'Food',
   'Meals': 'Food',
   'Chocolate': 'Food',
   'Homecooked Meals': 'Food',
   'starbucks orders': 'Food',
+  "every food i’ve ever eaten": 'Food',
+  'Food Around USC': 'Food',
+  'Disneyland food': 'Food',
+  "Food I've Had While High": 'Food',
+  'Cuisines': 'Food',
 
   'fit checks': 'Fashion',
   'Jeans/tops': 'Fashion',
+
+  'Interesting life takes n advice of mine': 'Life Advice',
+  'Self improvement': 'Life Advice',
+  'Life': 'Life Advice',
 
   'places': 'Locations',
   'General Locations': 'Locations',
@@ -95,9 +115,19 @@ export const largerCategories = {
   'Places': 'Locations',
   'Best Countries': 'Locations',
   'Cities': 'Locations',
-  'Places i\'ve been too/restaurants': 'Locations',
+  "Places i've been too/restaurants": 'Locations',
   'Cities/Locations': 'Locations',
   'Regions': 'Locations',
+  "Places i’ve been off the drank": 'Locations',
+  'Sesh spots': 'Locations',
+  'Cities/Towns': 'Locations',
+  'USC study spots': 'Locations',
+  'Places in SD': 'Locations',
+  'Specific Locations/Experiences': 'Locations',
+
+  'mmmm': 'NBA',
+  'Basketball Players': 'NBA',
+  'NBA Games I’ve Been To': 'NBA',
 
   'GHC Freaks': 'People',
   'unc wylin': 'People',
@@ -117,9 +147,15 @@ export const largerCategories = {
   'Dylans': 'People',
   'hi jason': 'People',
   'Yahdel': 'People',
+  'Ambora Profiles': 'People',
+  'Impractical Jokes Special Guests': 'People',
 
   'best starter(all gens)': 'Pokemon',
   'pokemon regions': 'Pokemon',
+
+  'Photos With Aura': 'Photos',
+  'Pictures': 'Photos',
+  'Images': 'Photos',
 
   'Street Taco Rankings': 'Restaurants',
   'Food Spots': 'Restaurants',
@@ -128,9 +164,12 @@ export const largerCategories = {
   'Street Food': 'Restaurants',
   'Eats': 'Restaurants',
   'Street Tacos': 'Restaurants',
+  'Places i’ve been too/restaurants': 'Restaurants',
+  'Faves 🤩': 'Restaurants',
 
   'On Repeat': 'Songs',
   'top 5 songs of all time': 'Songs',
+  'Kendrick vs. Drake Disstracks': 'Songs',
 
   'sneakers/shoes': 'Shoes',
   'running shoes': 'Shoes',
@@ -138,6 +177,10 @@ export const largerCategories = {
   'shows/movies': 'Shows',
   'shows': 'Shows',
   'TV Shows': 'Shows',
+  'Superhero Shows': 'Shows',
+  'shows ranked on how happy they made me': 'Shows',
+  'TV': 'Shows',
+  'goodness': 'Shows',
 
   'Valorant Maps': 'Valorant',
   'Val Maps': 'Valorant',

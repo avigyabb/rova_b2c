@@ -108,6 +108,8 @@ const Add = ({ route }) => {
   const [newItemCategoryName, setNewItemCategoryName] = useState('');
   const [newItemCategoryType, setNewItemCategoryType] = useState('');
   const [newItemDescription, setNewItemDescription] = useState(''); // ~ why does this work
+  const [newItemId, setNewItemId] = useState(null);
+  const [newItemContentDescription, setNewItemContentDescription] = useState('');
   const [newItemImageUris, setNewItemImageUris] = useState([]); // ~ why does this work
   const [newItemBucket, setNewItemBucket] = useState(null);
   const [itemComparisons, setItemComparisons] = useState([]);
@@ -171,6 +173,7 @@ const Add = ({ route }) => {
     }
   }
 
+  // ***
   useEffect(() => {
     getUserCategories();
     getSpotifyAccessToken(); 
@@ -189,6 +192,8 @@ const Add = ({ route }) => {
     );
     setNewItemImageUris(route.params.itemImage);
     setTrackUri(route.params.trackUri);
+    setNewItemId(route.params.itemId);
+    setNewItemContentDescription(route.params.itemContentDescription);
     setNumItems(route.params.numItems);
     setSearchResults([]);
   }, [route]);
@@ -249,7 +254,9 @@ const Add = ({ route }) => {
               'timestamp': Date.now(),
               'custom': true,
               'trackUri': trackUri,
-              'imageType': imageType
+              'imageType': imageType,
+              'id': newItemId,
+              'content_description': newItemDescription
             };
             // make sure any changes to newItemObj are also reflected in itemComparisons
             let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -274,7 +281,9 @@ const Add = ({ route }) => {
                 user_id: userKey,
                 custom: item.custom,
                 trackUri: item.trackUri || null,
-                imageType: item.imageType || null
+                imageType: item.imageType || null,
+                id: item.id || null,
+                content_description: item.content_description || null
               })
               .then(() => console.log(`Score updated for ${item.content} ${items}`))
               .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -306,6 +315,8 @@ const Add = ({ route }) => {
         'timestamp': Date.now(),
         'custom': presetDescription !== newItemDescription,
         'trackUri': trackUri,
+        'id': newItemId,
+        'content_description': newItemDescription
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
       let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -330,6 +341,8 @@ const Add = ({ route }) => {
           user_id: userKey,
           custom: item.custom,
           trackUri: item.trackUri || null,
+          id: item.id || null,
+          content_description: item.content_description || null
         })
         .then(() => console.log(`Score updated for ${item.content} ${items}`))
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -393,6 +406,8 @@ const Add = ({ route }) => {
               'custom': childSnapshot.val().custom || false,
               'trackUri': childSnapshot.val().trackUri || null,
               'imageType': childSnapshot.val().imageType || null,
+              'id': childSnapshot.val().id || null,
+              'content_description': childSnapshot.val().content_description || null
             });
           }
         });
@@ -477,7 +492,9 @@ const Add = ({ route }) => {
       timestamp: Date.now(),
       user_id: userKey,
       custom: presetDescription !== newItemDescription,
-      imageType: imageType
+      imageType: imageType,
+      id: newItemId,
+      content_description: newItemDescription
     };
 
     if (trackUri) {
@@ -485,8 +502,8 @@ const Add = ({ route }) => {
     }
 
     update(newLaterItemRef, updateObject)
-    .then(() => console.log(`New later item added`))
-    .catch((error) => console.error(`Failed to add later item: ${error}`));
+      .then(() => console.log(`New later item added`))
+      .catch((error) => console.error(`Failed to add later item: ${error}`));
 
     // increment counters
     const categoryRef = ref(database, 'categories/' + newItemCategory);
@@ -625,7 +642,7 @@ const Add = ({ route }) => {
         <TouchableOpacity onPress={() => setAddView(null)}> 
           <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
-        <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}>Add Category Page</Text>
+        <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> </Text>
       </View>
       <AddCategory onBackPress={() => {
           setAddView(null)
@@ -781,7 +798,8 @@ const Add = ({ route }) => {
               value={newItem}
               placeholderTextColor="gray"
               onChangeText={(text) => {
-                handleTextChange(text);
+                setNewItem(text);
+                search(spotifyAccessToken, newItemCategoryType, setSearchResults, text);
               }}
               onFocus={() => setAddView('')}
               style={{
@@ -796,11 +814,7 @@ const Add = ({ route }) => {
           </View>
         )}
 
-        {loadingItems && newItemCategoryType === 'Locations' && (
-          <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
-        )}
-
-        {newItem.length > 0 && newItemCategory && !rankMode && addView === '' && !loadingItems && (
+        {newItem.length > 0 && newItemCategory && !rankMode && addView === '' && (
           <>
             <FlatList
               data={searchResults}
@@ -809,6 +823,8 @@ const Add = ({ route }) => {
                   setNewItem(item.content)
                   setNewItemImageUris([item.image])
                   setNewItemDescription(item.description)
+                  setNewItemId(item.id)
+                  setNewItemContentDescription(item.content_description)
                   setPresetDescription(item.description)
                   setTrackUri(item.uri || null)
                 }} 

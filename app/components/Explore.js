@@ -12,8 +12,11 @@ const Explore = ({ route, navigation }) => {
   const { userKey } = route.params;
   const [userListData, setUserListData] = useState([]);
   const [searchVal, setSearchVal] = useState(''); // ~ why does this work
- 
-  const [exploreView, setExploreView] = useState(null);
+  const [exploreView, setExploreView] = useState('');
+
+  // fetchTopMovies(() => {
+  //   const itemsRef = ref(database, 'items');
+  // });
 
   useEffect(() => {
     const usersRef = ref(database, 'users');
@@ -55,6 +58,23 @@ const Explore = ({ route, navigation }) => {
         </TouchableOpacity>
       )
     }
+  }
+
+  if (exploreView === 'Top Movies') {
+    return (
+      <View style={{ backgroundColor: 'white', height: '100%' }}>
+        <View style={{ paddingHorizontal: 20 }}>
+          <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
+        </View>
+        <FlatList
+          data={userListData}
+          renderItem={({ item }) => <UserTile item={item} />}
+          keyExtractor={(item, index) => index.toString()}
+          numColumns={1}
+          key={"single-column"}
+        />
+      </View> 
+    )
   }
 
   if (exploreView) {

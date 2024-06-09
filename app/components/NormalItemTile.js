@@ -23,7 +23,7 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex }) => {
+const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState('https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
@@ -36,6 +36,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   const [newComment, setNewComment] = useState('');
   const [commentTypingMode, setCommentTypingMode] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+    
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -288,26 +289,26 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
 
   return (
-    <ScrollView style={{ backgroundColor: 'white' }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ backgroundColor: 'white' }}>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
     <>
     {!commentTypingMode && (
-    <View style={{ padding: 14, width: '94%', margin: '3%', backgroundColor: '#e6e6e6', borderRadius: 10 }}>
+    <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white' }}>
       <>
       <View style={{ flexDirection: 'row' }}>
         <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: username})}>
           <Image
             source={userImage}
-            style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
+            style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
           />
         </TouchableOpacity>
-        <View style={{ width: 230 }}>
+        <View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{username}</Text>
             {isVerified && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
-            <Text style={{ color: 'grey', fontSize: 10, marginLeft: 5 }}>{dateString}</Text>
+            <Text style={{ color: 'grey', fontSize: 12, marginLeft: 20 }}>{dateString}</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, width: 260 }}>
             <Text style={{ color: 'gray', fontWeight: 'bold', fontSize: 13, fontStyle: 'italic' }}>
               {item.category_name ? (item.score < 0 ? `${item.category_name}/Later/ ` : `${item.category_name}/ `) : null}
               <Text style={{ fontWeight: 'bold', fontSize: 16, fontStyle: 'italic', color: 'black' }}>{item.content}</Text>
@@ -329,7 +330,7 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
         </View>
       </View>
           
-      <View style={{ marginLeft: 50, width: 300, marginTop: 10 }}>
+      <View style={{ marginLeft: 60, width: 300, marginTop: 10 }}>
         {editMode ? (
           <TextInput
             value={itemDescription}
@@ -492,4 +493,4 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   );
 })
 
-export default FeedItemTile;
+export default NormalItemTile;

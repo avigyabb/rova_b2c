@@ -107,7 +107,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     }
   };
 
-  // update 1 here ***
   const onDeleteItemPress = (item_bucket, item_category_id) => {
     const delItemRef = ref(database, `items/${item_category_id}`);
     remove(delItemRef)
@@ -407,6 +406,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       itemCategory: focusedItem.category_id,
       itemCategoryName: focusedItem.category_name,
       trackUri: focusedItem.trackUri,
+      itemId: focusedItem.id,
+      itemContentDescription: focusedItem.contentDescription,
       numItems: numItems - 1,
       taggedUser: null,
       presetImage: categoryInfo.presetImage // Pass the presetImage status

@@ -224,7 +224,7 @@ const Profile = ({ route, navigation }) => {
             <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
               <Ionicons name="arrow-back" size={30} color="black" />
             </TouchableOpacity>
-            <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> {focusedCategory}</Text>
+            <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> </Text>
           </View>
 
           <AddCategory onBackPress={() => onBackPress()} userKey={userKey}/>

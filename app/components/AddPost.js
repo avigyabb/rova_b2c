@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import LocationList from './AddFlow/TagLocation';
 import PeopleList from './AddFlow/TagFriends';
 
