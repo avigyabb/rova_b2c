@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update } from "firebase/database";
@@ -11,6 +11,16 @@ import Profile from './Profile';
 import axios from 'axios';
 import { generateRandom, deriveChallenge } from 'expo-auth-session';
 import { Video } from 'expo-av';
+import { Directions, Swipeable, GestureHandlerRootView, GestureDetector, Gesture, FlingGestureHandler } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated'; 
+ 
 
 // this function is repeated many times -> condense into one file ~
 function getScoreColorHSL(score) {
@@ -141,6 +151,8 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   }
 
   const onStarPress = (item) => {
+    'worklet'
+
     const itemStarRef = ref(database, 'items/' + item.key + '/stars/' + visitingUserId);
     const eventsRef = push(ref(database, 'events/' + item.user_id));
     const userRef = ref(database, 'users/' + item.user_id);
@@ -286,9 +298,73 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
   }
 
   const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
+  const LeftActions = () => {
+    if (navigation.getState().index === 0 && !showComments){
+return (  
+  <View style = {{backgroundColor: '#388e3c', justifyContent: 'center' , flex: 1}}>
+      <Text style = {{color: '#fff', fontWeight: '600', padding: 20}}>Agree</Text>
+    </View>
+);
+  }
+}
+  const RightActions = () => {
+    if (navigation.getState().index === 0 && !showComments){
+    return (
+      <View style = {{backgroundColor: '#f00808', justifyContent: 'center' , flex: 1}}>
+      <Text style = {{color: '#fff', fontWeight: '600', padding: 20}}>DISAGREE</Text>
+    </View>
+    );
+  }
+  }
+  const swipeRef = useRef(null);
+  const holdRef = useRef();
+  // const manager = GestureStateManager.create()
 
+
+  const longHold = Gesture.LongPress().runOnJS(true).withRef(holdRef)
+  .onEnd(()=>onStarPress(item));
+
+  const onFling = event => {
+ 
+    console.log('Fling detected');
+ 
+  };
+  
+  // const next = Gesture.Pan().runOnJS(true).withRef(manager)
+  // .onTouchesMove(() => {
+  //     manager.activate();
+  // })
+  // .onUpdate(({ y }) => 
+
+  // console.log(y)
+  // // {if (translationY){
+  // //   console.log(translationY)
+  // // }}
+  // );
+
+  // const composed = Gesture.Simultaneous(next, longHold)
   return (
-    <ScrollView style={{ backgroundColor: 'white' }} showsVerticalScrollIndicator={false}>
+    <GestureHandlerRootView>
+    <GestureDetector gesture={longHold}>
+      <FlingGestureHandler direction={Directions.UP} onActivated={onFling}>
+      <View>
+    <Swipeable 
+    ref = {swipeRef}
+    simultaneousHandlers={holdRef}
+
+    renderLeftActions={LeftActions}
+    renderRightActions={RightActions}
+    onSwipeableOpen = 
+    {direction => {
+      if (direction === "right") {
+      onLikePress(item);
+      swipeRef.current.reset()
+      } else if (direction === "left") {
+      onDislikePress(item);
+      swipeRef.current.reset()      }
+    }}>
+
+    <Animated.ScrollView style={{ backgroundColor: 'white' }} showsVerticalScrollIndicator={false}>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
     <>
     {!commentTypingMode && (
@@ -399,14 +475,14 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
       
       {/* {visitingUserId !== item.user_id && ( */}
       <View style={{ flexDirection: 'row', marginTop: 20 }}>
-        <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
+       
           <Ionicons name="thumbs-up-sharp" size={22} color={visitingUserId in likes ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onDislikePress(item)}>
+        
+       
           <Ionicons name="thumbs-down-sharp" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
-        </TouchableOpacity>
+       
         
         {!showComments && (
           <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
@@ -415,10 +491,10 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onStarPress(item)}>
+        {/* <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onStarPress(item)}> */}
           <Ionicons name="star" size={30} color={visitingUserId in stars ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(stars).length}</Text>
-        </TouchableOpacity>
+        {/* </TouchableOpacity> */}
 
         <TouchableOpacity 
           style={{ marginLeft: 'auto', marginRight: 10 }} 
@@ -488,7 +564,13 @@ const FeedItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView,
     )}
     </>
     </TouchableWithoutFeedback>
-    </ScrollView>
+    </Animated.ScrollView>
+    </Swipeable>
+    </View>
+    </FlingGestureHandler>
+    </GestureDetector>
+    </GestureHandlerRootView>
+    
   );
 })
 
