@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Keyboard, TouchableWithoutFeedback, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, Keyboard, TouchableWithoutFeedback, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set } from "firebase/database";
 import { Image } from 'expo-image';
@@ -41,6 +41,8 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
   const UserTile = ({ item, visitingUserId: propVisitingUserId }) => {
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowedBy, setIsFollowedBy] = useState(false);
+    const [isLoadingFollowing, setIsLoadingFollowing] = useState(true);
+    const [isLoadingFollowers, setIsLoadingFollowers] = useState(true);
     const visitingUserId = propVisitingUserId || userKey;
 
     useEffect(() => {
@@ -48,17 +50,21 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
       get(followingRef).then((followingSnapshot) => {
         if (followingSnapshot.exists()) {
           setIsFollowing(true);
+          setIsLoadingFollowing(false);
         } else {
           setIsFollowing(false);
+          setIsLoadingFollowing(false);
         }
       });
 
-      const friendsRef = ref(database, `users/${item.id}/following/${visitingUserId}`);
-      get(friendsRef).then((friendsSnapshot) => {
-        if (friendsSnapshot.exists()) {
+      const followedByRef = ref(database, `users/${item.id}/following/${visitingUserId}`);
+      get(followedByRef).then((followedBySnapshot) => {
+        if (followedBySnapshot.exists()) {
           setIsFollowedBy(true);
-        } else if (friendsSnapshot.exists()) {
+          setIsLoadingFollowers(false);
+        } else {
           setIsFollowedBy(false);
+          setIsLoadingFollowers(false);
         }
       });
     }, [])
@@ -77,7 +83,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
       <TouchableOpacity onPress={() => visitingUserId === item.id ? {} : setFollowUsersView({ userKey: item.id, username: item.username })}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white', alignItems: 'center' }}>
           <Image
-            source={item.profile_pic ? { uri: item.profile_pic } : 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
+            source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }}
             style={{ height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
           />
           <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -88,6 +94,9 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
               </View>
               <Text style={{ color: 'grey' }}>@{item.username}</Text>
             </View>
+          {isLoadingFollowing || isLoadingFollowers ? (
+            <ActivityIndicator size="medium" color="black" style={{ marginTop: 20 }} />
+          ) : (
             <TouchableOpacity
               style={{
                 backgroundColor: isFollowing && isFollowedBy ? 'gray' : isFollowing ? 'gray' : isFollowedBy ? '#00aced' : '#00aced',
@@ -105,9 +114,10 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
                 'Follow'}
               </Text>
             </TouchableOpacity>
-          </View>
+          )}
         </View>
-      </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
     )
   }
 

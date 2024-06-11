@@ -654,23 +654,22 @@ const Add = ({ route }) => {
     )
   }
 
+  //changed this function
   const handleTextChange = (text) => {
     setNewItem(text);
-    if (newItemCategoryType === 'Locations') {
-      setLoadingItems(true);
-    }
+    setLoadingItems(true);
 
     if (text.trim() === '') {
       setLoadingItems(false);
       setSearchResults([]);
       return;
     }
-  
+
     if (newItemCategoryType === 'Locations') {
       if (typingTimeout) {
         clearTimeout(typingTimeout);
       }
-  
+
       setTypingTimeout(setTimeout(() => {
         search(spotifyAccessToken, newItemCategoryType, (results) => {
           setLoadingItems(false);
@@ -798,8 +797,7 @@ const Add = ({ route }) => {
               value={newItem}
               placeholderTextColor="gray"
               onChangeText={(text) => {
-                setNewItem(text);
-                search(spotifyAccessToken, newItemCategoryType, setSearchResults, text);
+                handleTextChange(text);
               }}
               onFocus={() => setAddView('')}
               style={{
@@ -814,7 +812,11 @@ const Add = ({ route }) => {
           </View>
         )}
 
-        {newItem.length > 0 && newItemCategory && !rankMode && addView === '' && (
+        {loadingItems && newItemCategoryType === 'Locations' && (
+          <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
+        )}
+
+        {newItem.length > 0 && newItemCategory && !rankMode && addView === '' && !loadingItems && (
           <>
             <FlatList
               data={searchResults}
