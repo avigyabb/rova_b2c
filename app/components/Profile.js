@@ -132,11 +132,10 @@ const Profile = ({ route, navigation }) => {
     });
   }
 
-  onBackPress = () => {
-    setFocusedList({});
+  const onBackPress = () => {
+    setFocusedList(null);
     setFocusedCategory(null);
     setFocusedCategoryId(null);
-    setFocusedList({});
   }
 
   const pickImage = async () => {
@@ -221,7 +220,7 @@ const Profile = ({ route, navigation }) => {
       ) : focusedCategory === 'Add List Page' ? (
         <>
           <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
-            <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
+            <TouchableOpacity onPress={() => onBackPress()}> 
               <Ionicons name="arrow-back" size={30} color="black" />
             </TouchableOpacity>
             <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> </Text>
