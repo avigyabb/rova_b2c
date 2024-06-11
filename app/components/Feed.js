@@ -322,7 +322,7 @@ const Feed = ({ route, navigation }) => {
                 </TouchableOpacity>
               ) : (
                 /* <View style={{ width: 50, height: 50, backgroundColor: 'black' }} /> */
-                <View></View> /*Temporary Rendring since black sqaure code is not finished */
+                <View></View>/*Temporary Rendring since black sqaure code is not finished*/
               )}
           </View>
         </View>

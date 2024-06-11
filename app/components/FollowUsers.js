@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Keyboard, TouchableWithoutFeedback, FlatList, TouchableOpacity } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, set } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
@@ -38,20 +38,73 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
     });
   }, []);
 
-  const UserTile = ({ item }) => {
+  const UserTile = ({ item, visitingUserId: propVisitingUserId }) => {
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [isFollowedBy, setIsFollowedBy] = useState(false);
+    const visitingUserId = propVisitingUserId || userKey;
+
+    useEffect(() => {
+      const followingRef = ref(database, `users/${visitingUserId}/following/${item.id}`);
+      get(followingRef).then((followingSnapshot) => {
+        if (followingSnapshot.exists()) {
+          setIsFollowing(true);
+        } else {
+          setIsFollowing(false);
+        }
+      });
+
+      const friendsRef = ref(database, `users/${item.id}/following/${visitingUserId}`);
+      get(friendsRef).then((friendsSnapshot) => {
+        if (friendsSnapshot.exists()) {
+          setIsFollowedBy(true);
+        } else if (friendsSnapshot.exists()) {
+          setIsFollowedBy(false);
+        }
+      });
+    }, [])
+
+    const handleFollowBack = () => {
+      const followersRef = ref(database, `users/${item.id}/followers/${visitingUserId}`);
+      set(followersRef, { closeFriend: false }).then(() => {
+        const followingRef = ref(database, `users/${visitingUserId}/following/${item.id}`);
+        set(followingRef, { closeFriend: false }).then(() => {
+          setIsFollowing(true);
+        });
+      });
+    };
+
     return (
-      <TouchableOpacity onPress={() => visitingUserId === item.id ? {} : setFollowUsersView({userKey: item.id, username: item.username })}>
+      <TouchableOpacity onPress={() => visitingUserId === item.id ? {} : setFollowUsersView({ userKey: item.id, username: item.username })}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white', alignItems: 'center' }}>
           <Image
             source={item.profile_pic ? { uri: item.profile_pic } : 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-            style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
+            style={{ height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
           />
-          <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
-              {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
+          <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+                {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }} />}
+              </View>
+              <Text style={{ color: 'grey' }}>@{item.username}</Text>
             </View>
-            <Text style={{ color: 'grey' }}>@{item.username}</Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: isFollowing && isFollowedBy ? 'gray' : isFollowing ? 'gray' : isFollowedBy ? '#00aced' : '#00aced',
+                paddingVertical: 5,
+                paddingHorizontal: 10,
+                borderRadius: 5,
+              }}
+              onPress={handleFollowBack}
+              disabled={!(isFollowedBy && !isFollowing)}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                {isFollowing && isFollowedBy ? 'Friends' :
+                isFollowing ? 'Following' :
+                isFollowedBy ? 'Follow Back' :
+                'Follow'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
