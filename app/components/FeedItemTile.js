@@ -12,14 +12,7 @@ import axios from 'axios';
 import { generateRandom, deriveChallenge } from 'expo-auth-session';
 import { Video } from 'expo-av';
 import { Directions, Swipeable, GestureHandlerRootView, GestureDetector, Gesture, FlingGestureHandler } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
-import Animated, {
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from 'react-native-reanimated'; 
+
  
 
 // this function is repeated many times -> condense into one file ~
@@ -364,7 +357,7 @@ return (
       swipeRef.current.reset()      }
     }}>
 
-    <Animated.ScrollView style={{ backgroundColor: 'white' }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ backgroundColor: 'white' }} showsVerticalScrollIndicator={false}>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
     <>
     {!commentTypingMode && (
@@ -564,7 +557,7 @@ return (
     )}
     </>
     </TouchableWithoutFeedback>
-    </Animated.ScrollView>
+    </ScrollView>
     </Swipeable>
     </View>
     </FlingGestureHandler>
