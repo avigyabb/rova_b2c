@@ -139,10 +139,15 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));
 
           // update category photo if its the best
-          if (item[1].score === 10.0) {
-            const categoryRef = ref(database, 'categories/' + item[1].category_id);
-            update(categoryRef, {
-              imageUri: item[1].image || null
+          if (item[1].score === 10.0 ) {
+            const categoryRef = ref(database, 'categories/' + item_category_id);
+            get(categoryRef).then((snapshot) => {
+              if (snapshot.exists() && !snapshot.val().presetImage) {
+                console.log("switched photos")
+                update(categoryRef, {
+                  imageUri: item.image
+                })
+              }
             })
           }
         });
