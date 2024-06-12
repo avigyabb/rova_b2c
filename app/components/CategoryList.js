@@ -8,6 +8,7 @@ import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from
 import Hyperlink from 'react-native-hyperlink';
 import * as ImagePicker from 'expo-image-picker';
 import FeedItemTile from "./FeedItemTile";
+import NormalItemTile from "./NormalItemTile";
 import Profile from './Profile';
 
 const styles = StyleSheet.create({
@@ -459,7 +460,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           <Text>       </Text>
         )}
       </View>
-      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription} showComments={true} setFeedView={setProfileView}/>
+      <NormalItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription} showComments={true} setFeedView={setProfileView}/>
       </View>
     );
   }

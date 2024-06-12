@@ -18,7 +18,8 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
       const userRef = ref(database, 'users/' + id);
       return get(userRef).then((snapshot) => {
         if (snapshot.exists()) {
-          console.log("ran");
+          console.log("u: " + userKey)
+          console.log(visitingUserId);
           const userData = snapshot.val();
           userData.id = id; // Add or modify the id property
           return userData; // This value will be pushed into the array in Promise.all
@@ -38,15 +39,15 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
     });
   }, []);
 
-  const UserTile = ({ item, visitingUserId: propVisitingUserId }) => {
+  const UserTile = ({ item }) => {
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowedBy, setIsFollowedBy] = useState(false);
     const [isLoadingFollowing, setIsLoadingFollowing] = useState(true);
     const [isLoadingFollowers, setIsLoadingFollowers] = useState(true);
-    const visitingUserId = propVisitingUserId || userKey;
 
     useEffect(() => {
-      const followingRef = ref(database, `users/${visitingUserId}/following/${item.id}`);
+      const userRef = visitingUserId || userKey;
+      const followingRef = ref(database, `users/${userRef}/following/${item.id}`);
       get(followingRef).then((followingSnapshot) => {
         if (followingSnapshot.exists()) {
           setIsFollowing(true);
@@ -57,7 +58,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
         }
       });
 
-      const followedByRef = ref(database, `users/${item.id}/following/${visitingUserId}`);
+      const followedByRef = ref(database, `users/${item.id}/following/${userRef}`);
       get(followedByRef).then((followedBySnapshot) => {
         if (followedBySnapshot.exists()) {
           setIsFollowedBy(true);
@@ -87,33 +88,37 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
             style={{ height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
           />
           <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
-                {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }} />}
-              </View>
-              <Text style={{ color: 'grey' }}>@{item.username}</Text>
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+              {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }} />}
             </View>
-          {isLoadingFollowing || isLoadingFollowers ? (
-            <ActivityIndicator size="medium" color="black" style={{ marginTop: 20 }} />
-          ) : (
-            <TouchableOpacity
-              style={{
-                backgroundColor: isFollowing && isFollowedBy ? 'gray' : isFollowing ? 'gray' : isFollowedBy ? '#00aced' : '#00aced',
-                paddingVertical: 5,
-                paddingHorizontal: 10,
-                borderRadius: 5,
-              }}
-              onPress={handleFollowBack}
-              disabled={!(isFollowedBy && !isFollowing)}
-            >
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>
-                {isFollowing && isFollowedBy ? 'Friends' :
-                isFollowing ? 'Following' :
-                isFollowedBy ? 'Follow Back' :
-                'Follow'}
-              </Text>
-            </TouchableOpacity>
+            <Text style={{ color: 'grey' }}>@{item.username}</Text>
+          </View>
+          { !visitingUserId && (
+            <>
+            {isLoadingFollowing || isLoadingFollowers ? (
+              <ActivityIndicator size="medium" color="black" style={{ marginTop: 20 }} />
+            ) : (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: isFollowing && isFollowedBy ? 'gray' : isFollowing ? 'gray' : isFollowedBy ? '#00aced' : '#00aced',
+                  paddingVertical: 5,
+                  paddingHorizontal: 10,
+                  borderRadius: 5,
+                }}
+                onPress={handleFollowBack}
+                disabled={!(isFollowedBy && !isFollowing)}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                  {isFollowing && isFollowedBy ? 'Friends' :
+                  isFollowing ? 'Following' :
+                  isFollowedBy ? 'Follow Back' :
+                  'Follow'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            </>
           )}
         </View>
       </View>

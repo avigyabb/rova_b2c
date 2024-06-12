@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, update, set } from "firebase/database";
 import { Image } from 'expo-image';
@@ -368,7 +368,7 @@ const Feed = ({ route, navigation }) => {
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
         </View>
-        <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync}/>
+        <NormalItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync}/>
       </View>
     );
   }
@@ -459,7 +459,7 @@ const Feed = ({ route, navigation }) => {
           </View>
         ) : (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ color: 'gray', fontSize: 20, fontStyle: 'italic' }}>Loading . . . </Text>
+            <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
           </View>
         )}
         </>
