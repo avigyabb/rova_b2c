@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { Image as ReactImage } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -64,6 +64,8 @@ const Profile = ({ route, navigation }) => {
   const [imageUri, setImageUri] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [downloadImage, setDownloadImage] = useState(null);
+  const [refreshed, setRefreshed] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
   const [loaded] = useFonts({
     'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
     'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
@@ -189,6 +191,12 @@ const Profile = ({ route, navigation }) => {
     getUserInfo();
   }
 
+  const refreshProfile = () => {
+    setRefreshed(true);
+    getUserInfo();
+    setRefreshed(false);
+  };
+
   if (focusedCategory === 'Followers') {
     return <FollowUsers 
       userIds={Object.keys(profileInfo.followers)} 
@@ -214,132 +222,143 @@ const Profile = ({ route, navigation }) => {
   }
 
   return (
-      <>
+    <>
       {focusedCategory === 'editProfile' ? (
-        <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()}/>
+        <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()} />
       ) : focusedCategory === 'Add List Page' ? (
         <>
           <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
-            <TouchableOpacity onPress={() => onBackPress()}> 
+            <TouchableOpacity onPress={() => onBackPress()}>
               <Ionicons name="arrow-back" size={30} color="black" />
             </TouchableOpacity>
             <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> </Text>
           </View>
 
-          <AddCategory onBackPress={() => onBackPress()} userKey={userKey}/>
+          <AddCategory onBackPress={() => onBackPress()} userKey={userKey} />
         </>
       ) : focusedCategoryId ? (
-        <CategoryList 
-          focusedCategory={focusedCategory} 
-          focusedList={focusedList} 
-          focusedCategoryId={focusedCategoryId} 
+        <CategoryList
+          focusedCategory={focusedCategory}
+          focusedList={focusedList}
+          focusedCategoryId={focusedCategoryId}
           numItems={numItems}
           onBackPress={() => onBackPress()}
           isMyProfile={visitingUserId ? visitingUserId === userKey : true}
-          visitingUserId={visitingUserId || userKey} // in CategoryList there must always be a visitingUserId to check for showButtons
+          visitingUserId={visitingUserId || userKey}
           userKey={userKey}
           navigation={navigation}
         />
       ) : (
-        <ScrollView style={{ backgroundColor: 'white', height: '100%'}}>
-          {!visitingUserId ? (
-            <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20  }}>
-              <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
-              <TouchableOpacity onPress={() => onLogOutPress()} style={{ marginLeft: 'auto' }}>
-                <Ionicons name="exit-outline" size={25} color="black"/>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
-              <TouchableOpacity onPress={() => setFeedView(null)}> 
-                <Ionicons name="arrow-back" size={30} color="black" />
-              </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          {scrollY < -110 && (
+            <View style={{position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1000,}}>
+              <Ionicons name='reload' size={40} color='lightgray' />
             </View>
           )}
-          
-          <View style={{ flexDirection: 'row', padding: 15 }}>
-            {profileInfo.profile_pic ? (
-              <Image
-                source={{ uri: profileInfo.profile_pic }}
-                style={styles.profilePic}
+          <ScrollView
+            style={{ backgroundColor: 'white', height: '100%' }}
+            onScroll={(event) => {
+              const y = event.nativeEvent.contentOffset.y;
+              setScrollY(y);
+              if (y < -110 && !refreshed) {
+                refreshProfile();
+              }
+            }}
+            scrollEventThrottle={1} // This ensures the scroll position is updated frequently
+          >
+            {!visitingUserId ? (
+              <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
+                <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+                <TouchableOpacity onPress={() => onLogOutPress()} style={{ marginLeft: 'auto' }}>
+                  <Ionicons name="exit-outline" size={25} color="black" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => setFeedView(null)}>
+                  <Ionicons name="arrow-back" size={30} color="black" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={{ flexDirection: 'row', padding: 15 }}>
+              {profileInfo.profile_pic ? (
+                <Image source={{ uri: profileInfo.profile_pic }} style={styles.profilePic} />
+              ) : (
+                <Image source={"https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png"} style={styles.profilePic} />
+              )}
+              <View>
+                <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
+                  <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10 }}>
+                    {profileInfo.name}
+                  </Text>
+                  {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color="#00aced" />}
+                </View>
+                <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'gray' }}>@{profileInfo.username}</Text>
+
+                <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
+                  <TouchableOpacity onPress={() => profileInfo.followers && setFocusedCategory('Followers')}>
+                    <Text style={{ marginRight: 30, fontWeight: 'bold' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => profileInfo.following && setFocusedCategory('Following')}>
+                    <Text style={{ fontWeight: 'bold' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            <Hyperlink linkDefault={true} linkStyle={{ color: '#2980b9', textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
+              <Text style={{ paddingHorizontal: 15, marginBottom: 20 }}>{profileInfo.bio}</Text>
+            </Hyperlink>
+
+            {!visitingUserId ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+                <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
+                  <Text style={styles.editButtons}>Edit Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('Add List Page')}>
+                  <Text style={styles.editButtons}>Add List</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+                {isFollowing ? (
+                  <TouchableOpacity style={styles.editContainer} onPress={() => unfollowUser()}>
+                    <Text style={styles.editButtons}>Unfollow</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={styles.editContainer} onPress={() => followUser()}>
+                    <Text style={styles.editButtons}>Follow</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {categories.length > 0 ? (
+              <FlatList
+                data={categories}
+                renderItem={({ item }) => (
+                  <CategoryTile
+                    category_name={item.category_name}
+                    imageUri={item.imageUri}
+                    num_items={item.num_items}
+                    onCategoryPress={() => onCategoryPress(item.category_name, item.id, item.num_items)}
+                  />
+                )}
+                scrollEnabled={false}
+                numColumns={3}
+                contentContainerStyle={styles.grid}
               />
             ) : (
-              <Image
-                source={"https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png"}
-                style={styles.profilePic} 
-              />
+              <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
+                add a list to get started...
+              </Text>
             )}
-            <View>
-              <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
-                <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10 }}>{profileInfo.name}</Text>
-                {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color="#00aced" />}
-              </View>
-              <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'gray' }}>@{profileInfo.username}</Text>
-              
-              <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
-                <TouchableOpacity onPress={() => profileInfo.followers && setFocusedCategory('Followers')}>
-                  <Text style={{ marginRight: 30, fontWeight: 'bold' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => profileInfo.following && setFocusedCategory('Following')}>
-                  <Text style={{ fontWeight: 'bold' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-          
-          <Hyperlink
-            linkDefault={ true }
-            linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
-            onPress={ (url, text) => Linking.openURL(url) }
-          >
-            <Text style={{ paddingHorizontal: 15, marginBottom: 20 }}>
-              {profileInfo.bio}
-            </Text>
-          </Hyperlink>
-          
-          {!visitingUserId ? (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1}}>
-              <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
-                <Text style={styles.editButtons}>Edit Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('Add List Page')}>
-                <Text style={styles.editButtons}>Add List</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
-              {isFollowing ? (
-                <TouchableOpacity style={styles.editContainer} onPress={() => unfollowUser()}>
-                  <Text style={styles.editButtons}>Unfollow</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={styles.editContainer} onPress={() => followUser()}>
-                  <Text style={styles.editButtons}>Follow</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
-          {categories.length > 0 ? (
-            <FlatList
-              data={categories}
-              renderItem={({ item }) => <CategoryTile 
-                category_name={item.category_name} 
-                imageUri={item.imageUri} 
-                num_items={item.num_items} 
-                onCategoryPress={() => onCategoryPress(item.category_name, item.id, item.num_items)}
-              />}
-              scrollEnabled={false}
-              numColumns={3}
-              contentContainerStyle={styles.grid}
-            />
-          ) : (
-            <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>add a list to get started...</Text>
-          )}
-        </ScrollView> 
+          </ScrollView>
+        </View>
       )}
-      </>
-  )
+    </>
+  );
 };
 
 export default Profile;
