@@ -546,6 +546,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           />
           <TextInput
             value={categoryInfo.category_description}
+            multiline={true}
             onChangeText={(text) => {
               setCategoryInfo(prevState => ({
                 ...prevState,
