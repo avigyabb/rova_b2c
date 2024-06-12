@@ -465,10 +465,10 @@ const Feed = ({ route, navigation }) => {
         </>
       ) : (
         <>
-        {listData.length > 0 && (
+        {/*{listData.length > 0 && (
           <FeedItemTile item={listData[index]} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} setIndex={setIndex}/>
-        )}
-        {/* <FlatList
+        )} uncomment this for swiping*/}
+        <FlatList
           data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
           renderItem={({ item }) => <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} />}
           keyExtractor={(item, index) => index.toString()}
@@ -493,7 +493,7 @@ const Feed = ({ route, navigation }) => {
         />
         <View style={{ position: 'absolute', width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 170 }}>
           <Ionicons name='reload' size={60} color='lightgray' />
-        </View> */}
+        </View>
         </>
       )}
     </View>
