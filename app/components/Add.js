@@ -678,11 +678,14 @@ const Add = ({ route }) => {
       }, 400));
     } else {
       search(spotifyAccessToken, newItemCategoryType, (results) => {
-        setLoadingItems(false);
+        setLoadingItems(false); // ~ i think you can remove this
         setSearchResults(results);
       }, text);
+      setLoadingItems(false);
     }
   };  
+
+  console.log(loadingItems)
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
@@ -861,7 +864,7 @@ const Add = ({ route }) => {
               key={"single-column"}
             />
             
-            {(newItemImageUris.length === 0 && newItemDescription.length === 0 && newItemCategory) ? (
+            {(newItemImageUris.length === 0 && newItemDescription.length === 0) ? (
               <>
               <Text style={{ marginTop: 10, marginLeft: 5, fontSize: 11, color: 'gray', fontStyle: 'italic' }}>Add a custom description or image to appear in the feed!</Text>
               <TouchableOpacity onPress={() => setAddView('AddPost')} style={{ 
