@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, update, set } from "firebase/database";
 import { Image } from 'expo-image';
@@ -322,7 +322,7 @@ const Feed = ({ route, navigation }) => {
                 </TouchableOpacity>
               ) : (
                 /* <View style={{ width: 50, height: 50, backgroundColor: 'black' }} /> */
-                <View></View> /*Temporary Rendring since black sqaure code is not finished */
+                <View></View>/*Temporary Rendring since black sqaure code is not finished*/
               )}
           </View>
         </View>
@@ -368,7 +368,7 @@ const Feed = ({ route, navigation }) => {
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
         </View>
-        <FeedItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync}/>
+        <NormalItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync}/>
       </View>
     );
   }
@@ -459,16 +459,16 @@ const Feed = ({ route, navigation }) => {
           </View>
         ) : (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ color: 'gray', fontSize: 20, fontStyle: 'italic' }}>Loading . . . </Text>
+            <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
           </View>
         )}
         </>
       ) : (
         <>
-        {listData.length > 0 && (
+        {/*{listData.length > 0 && (
           <FeedItemTile item={listData[index]} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} setIndex={setIndex}/>
-        )}
-        {/* <FlatList
+        )} uncomment this for swiping*/}
+        <FlatList
           data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
           renderItem={({ item }) => <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} />}
           keyExtractor={(item, index) => index.toString()}
@@ -493,7 +493,7 @@ const Feed = ({ route, navigation }) => {
         />
         <View style={{ position: 'absolute', width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 170 }}>
           <Ionicons name='reload' size={60} color='lightgray' />
-        </View> */}
+        </View>
         </>
       )}
     </View>

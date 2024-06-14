@@ -4,7 +4,7 @@ import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import * as ImagePicker from 'expo-image-picker';
 import LocationList from './AddFlow/TagLocation';
 import PeopleList from './AddFlow/TagFriends';
-
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
 const styles = StyleSheet.create({
   postButtons: {

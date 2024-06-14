@@ -107,7 +107,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         unreadNotifications: true
       })
     }
-    setIndex((prevIndex) => prevIndex + 1);
+    //setIndex((prevIndex) => prevIndex + 1); uncomment for swiping
   }
 
   const onDislikePress = (item) => {
@@ -138,7 +138,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         unreadNotifications: true
       })
     }
-    setIndex((prevIndex) => prevIndex + 1);
+    //setIndex((prevIndex) => prevIndex + 1); uncomment for swiping
   }
 
   const onStarPress = (item) => {
@@ -416,10 +416,10 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onStarPress(item)}>
+        {/*<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onStarPress(item)}>
           <Ionicons name="star" size={30} color={visitingUserId in stars ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(stars).length}</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> uncomment for swiping*/}
 
         <TouchableOpacity 
           style={{ marginLeft: 'auto', marginRight: 10 }} 

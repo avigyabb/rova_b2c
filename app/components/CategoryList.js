@@ -8,6 +8,7 @@ import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from
 import Hyperlink from 'react-native-hyperlink';
 import * as ImagePicker from 'expo-image-picker';
 import FeedItemTile from "./FeedItemTile";
+import NormalItemTile from "./NormalItemTile";
 import Profile from './Profile';
 
 const styles = StyleSheet.create({
@@ -139,10 +140,15 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));
 
           // update category photo if its the best
-          if (item[1].score === 10.0) {
-            const categoryRef = ref(database, 'categories/' + item[1].category_id);
-            update(categoryRef, {
-              imageUri: item[1].image || null
+          if (item[1].score === 10.0 ) {
+            const categoryRef = ref(database, 'categories/' + item_category_id);
+            get(categoryRef).then((snapshot) => {
+              if (snapshot.exists() && !snapshot.val().presetImage) {
+                console.log("switched photos")
+                update(categoryRef, {
+                  imageUri: item.image
+                })
+              }
             })
           }
         });
@@ -454,7 +460,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           <Text>       </Text>
         )}
       </View>
-      <FeedItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription} showComments={true} setFeedView={setProfileView}/>
+      <NormalItemTile item={focusedItem} visitingUserId={visitingUserId} navigation={navigation} editMode={editMode} setFocusedItemDescription={setFocusedItemDescription} showComments={true} setFeedView={setProfileView}/>
       </View>
     );
   }
@@ -515,7 +521,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 <Ionicons name="image" size={40} color="gray" />
                 <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
             </TouchableOpacity>
-            {categoryInfo.presetImage && presetImage && (
+            {presetImage && (
               <TouchableOpacity style={{ marginLeft: 20, borderColor: 'red', padding: 5, borderWidth: 1, borderRadius: 5}} onPress={() => removePresetImage(focusedCategoryId)}>
                 <Text style={{ fontWeight: 'bold', fontSize: 12, color: 'red' }}>Remove Preset Image</Text>
               </TouchableOpacity>
@@ -541,6 +547,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           />
           <TextInput
             value={categoryInfo.category_description}
+            multiline={true}
             onChangeText={(text) => {
               setCategoryInfo(prevState => ({
                 ...prevState,

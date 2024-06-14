@@ -25,7 +25,7 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
     axios.get(`${BASE_URL}/search/${type}?api_key=${API_KEY}&query=${encodeURIComponent(text)}`)
       .then(response => {
         console.log(response.data.results);
-        setSearchResults(response.data.results.slice(0, 4).map(movie => ({
+        setSearchResults(response.data.results.slice(0, 10).map(movie => ({
           content: newItemCategoryType === 'Movies' ? movie.title : movie.name,
           description: newItemCategoryType === 'Movies' ? movie.release_date : movie.first_air_date,
           id: newItemCategoryType + movie.id,
