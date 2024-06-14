@@ -677,8 +677,8 @@ const Add = ({ route }) => {
         }, text);
       }, 400));
     } else {
+      setLoadingItems(false);
       search(spotifyAccessToken, newItemCategoryType, (results) => {
-        setLoadingItems(false);
         setSearchResults(results);
       }, text);
     }
