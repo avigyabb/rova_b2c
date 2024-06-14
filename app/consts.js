@@ -245,3 +245,13 @@ export const signInCategories = [
     category_name: 'Other...',
   }
 ]
+
+export function getScoreColorHSL(score) {
+  if (score < 0) {
+    return '#A3A3A3'; // Gray color for negative scores
+  }
+  const cappedScore = Math.max(0, Math.min(score, 10)); // Cap the score between 0 and 100
+  const hue = (cappedScore / 10) * 120; // Calculate hue from green to red
+  const lightness = 50 - score ** 1.3; // Constant lightness
+  return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
+}

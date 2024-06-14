@@ -8,7 +8,7 @@ import Hyperlink from 'react-native-hyperlink';
 import { useFonts } from 'expo-font';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import Profile from './Profile';
-import FeedItemTile from './FeedItemTile';
+// import FeedItemTile from './FeedItemTile';
 import NormalItemTile from './NormalItemTile';
 import { getSpotifyAccessToken } from '../consts';
 import axios from 'axios';

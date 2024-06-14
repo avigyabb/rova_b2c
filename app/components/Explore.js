@@ -1,22 +1,74 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Keyboard, TouchableWithoutFeedback, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Keyboard, TouchableWithoutFeedback, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import ExploreItemTile from './ExploreComponents/ExploreItemTile';
 
 
 const Explore = ({ route, navigation }) => {
   const { userKey } = route.params;
   const [userListData, setUserListData] = useState([]);
   const [searchVal, setSearchVal] = useState(''); // ~ why does this work
-  const [exploreView, setExploreView] = useState('');
+  const [exploreView, setExploreView] = useState('Home');
+  const [topMovies, setTopMovies] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // fetchTopMovies(() => {
-  //   const itemsRef = ref(database, 'items');
-  // });
+  const fetchTopMovies = async () => {
+    if (topMovies.length > 0) {
+      return;
+    }
+    setLoading(true);
+    const promises = [];
+    const items = {};
+    const itemsRef = ref(database, 'items');
+
+    const snapshot = await get(itemsRef);
+    if (snapshot.exists()) {
+      
+      snapshot.forEach((childSnapshot) => {
+        const categoryRef = ref(database, 'categories/' + childSnapshot.val().category_id);
+        const promise = get(categoryRef).then((categorySnapshot) => {
+          if (categorySnapshot.exists()) {
+            if (categorySnapshot.val().category_type === 'Movies') {
+              const itemId = childSnapshot.val().image;
+
+              if (itemId in items) {
+                items[itemId].score += childSnapshot.val().score;
+                items[itemId].num_items += 1;
+                items[itemId].name = childSnapshot.val().content;
+              } else {
+                items[itemId] = { 
+                  score: childSnapshot.val().score, 
+                  num_items: 1, 
+                  name: childSnapshot.val().content 
+                };
+              }
+            }
+          }
+        });
+        promises.push(promise);
+      });
+
+      // Wait for all category fetch promises to complete
+      await Promise.all(promises);
+
+      // Convert items object to an array
+      const itemsArray = Object.keys(items).map((key) => ({
+        image: key,
+        ...items[key]
+      }))
+      .filter(item => item.num_items > 1)  // Filter items with num_items > 1
+      .sort((a, b) => b.score/b.num_items - a.score/a.num_items);  // Sort by score in decreasing order
+
+      // Update the state
+      setTopMovies(itemsArray);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const usersRef = ref(database, 'users');
@@ -60,19 +112,79 @@ const Explore = ({ route, navigation }) => {
     }
   }
 
+  if (exploreView === 'Home') {
+    return (
+      <View style={{ backgroundColor: 'white', height: '100%', paddingHorizontal: 20 }}>
+        <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
+        <View>
+          <TouchableOpacity 
+            style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              padding: 10, 
+              borderWidth: 1, 
+              borderRadius: 5, 
+              borderColor: 'lightgrey', 
+              marginTop: 20 
+            }}
+            onPress={() => setExploreView(null)}
+          >
+            <MaterialIcons name="person-search" size={30} color="black" />
+            <Text style={{ marginLeft: 10, fontWeight: 'bold', fontSize: 15 }}>Search Users</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              padding: 10, 
+              borderWidth: 1, 
+              borderRadius: 5, 
+              borderColor: 'lightgrey', 
+              marginTop: 20 
+            }}
+            onPress={() => {
+              setExploreView('Top Movies')
+              fetchTopMovies();
+            }}
+          >
+            <Ionicons name="film" size={30} color="black" />
+            <Text style={{ marginLeft: 10, fontWeight: 'bold', fontSize: 15 }}>Top Movies</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
+  }
+
   if (exploreView === 'Top Movies') {
     return (
       <View style={{ backgroundColor: 'white', height: '100%' }}>
-        <View style={{ paddingHorizontal: 20 }}>
-          <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
+        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => {
+            setExploreView('Home');
+          }}> 
+            <Ionicons name="arrow-back" size={30} color="black" />
+          </TouchableOpacity>
+          <Text>Top Movies</Text>
         </View>
-        <FlatList
-          data={userListData}
-          renderItem={({ item }) => <UserTile item={item} />}
-          keyExtractor={(item, index) => index.toString()}
-          numColumns={1}
-          key={"single-column"}
-        />
+        <View style={{ padding: 20, borderBottomWidth: 1, borderColor: 'lightgrey' }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 30, fontStyle: 'italic' }}>Top Movies</Text>
+          <Text style={{ color: 'grey', marginTop: 10 }}>{topMovies.length} movies ranked.</Text>
+        </View>
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
+          </View>
+        ) : (
+          <>
+          <FlatList
+            data={topMovies}
+            renderItem={({ item, index }) => <ExploreItemTile item={item} index={index} />}
+            keyExtractor={(item, index) => index.toString()}
+            numColumns={1}
+            key={"single-column"}
+          />
+          </>
+        )}
       </View> 
     )
   }
@@ -95,8 +207,15 @@ const Explore = ({ route, navigation }) => {
     <>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}> 
       <View style={{ backgroundColor: 'white', paddingHOrizontal: 20, height: '100%' }}>
+        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => {
+            setExploreView('Home');
+          }}> 
+            <Ionicons name="arrow-back" size={30} color="black" />
+          </TouchableOpacity>
+          <Text>User Search</Text>
+        </View>
         <View style={{ paddingHorizontal: 20 }}>
-          <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
           <TextInput
             placeholder={'Search Users...'}
             value={searchVal} 
@@ -115,7 +234,7 @@ const Explore = ({ route, navigation }) => {
         </View>
         <FlatList
           data={userListData}
-          renderItem={({ item }) => <UserTile item={item} />}
+          renderItem={({ item, index }) => <UserTile item={item} index={index}/>}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}
