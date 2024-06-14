@@ -23,12 +23,8 @@
     "axios": "^1.6.8",
     "babel-preset-expo": "~11.0.0",
     "buffer": "^6.0.3",
-<<<<<<< Updated upstream
-    "expo": "^51.0.11",
-=======
     "date-fns": "^3.6.0",
-    "expo": "~51.0.4",
->>>>>>> Stashed changes
+    "expo": "~51.0.11",
     "expo-asset": "~10.0.6",
     "expo-auth-session": "~5.5.2",
     "expo-av": "~14.0.5",
