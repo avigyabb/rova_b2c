@@ -23,7 +23,12 @@
     "axios": "^1.6.8",
     "babel-preset-expo": "~11.0.0",
     "buffer": "^6.0.3",
+<<<<<<< Updated upstream
     "expo": "^51.0.11",
+=======
+    "date-fns": "^3.6.0",
+    "expo": "~51.0.4",
+>>>>>>> Stashed changes
     "expo-asset": "~10.0.6",
     "expo-auth-session": "~5.5.2",
     "expo-av": "~14.0.5",
@@ -41,6 +46,8 @@
     "expo-splash-screen": "^0.27.5",
     "expo-status-bar": "~1.12.1",
     "firebase": "^10.9.0",
+    "moment": "^2.30.1",
+    "moment-timezone": "^0.5.45",
     "qs": "^6.12.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",

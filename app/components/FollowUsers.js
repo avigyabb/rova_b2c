@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Keyboard, TouchableWithoutFeedback, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, set } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, set, push, update } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
@@ -71,13 +71,23 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
     }, [])
 
     const handleFollowBack = () => {
-      const followersRef = ref(database, `users/${item.id}/followers/${visitingUserId}`);
+      const followersRef = ref(database, `users/${item.id}/followers/${userKey}`);
       set(followersRef, { closeFriend: false }).then(() => {
-        const followingRef = ref(database, `users/${visitingUserId}/following/${item.id}`);
+        const followingRef = ref(database, `users/${userKey}/following/${item.id}`);
         set(followingRef, { closeFriend: false }).then(() => {
           setIsFollowing(true);
         });
       });
+      const eventsRef = push(ref(database, 'events/' + item.id));
+      set(eventsRef, {
+        evokerId: userKey,
+        content: 'followed you!',
+        timestamp: Date.now()
+      });
+      const userRef = ref(database, 'users/' + item.id);
+      update(userRef, {
+        unreadNotifications: true
+      })
     };
 
     return (

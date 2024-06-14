@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, update, set } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, update, set, push } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -15,7 +15,7 @@ import axios from 'axios';
 import qs from 'qs';
 import { Buffer } from 'buffer';
 import * as AuthSession from 'expo-auth-session';
-
+import moment from 'moment';
 
 const styles = StyleSheet.create({
   timesText: {
@@ -258,6 +258,7 @@ const Feed = ({ route, navigation }) => {
   const NotificationsTile = ({ item, visitingUserId }) => {
     const [userInfo, setUserInfo] = useState({});
     const [isFollowingBack, setIsFollowingBack] = useState(false);
+    const [isLoadingFollowBack, setIsLoadingFollowBack] = useState(true);
 
     useEffect(() => {
       const userRef = ref(database, `users/${item.evokerId}`);
@@ -271,13 +272,16 @@ const Feed = ({ route, navigation }) => {
       get(followingRef).then((snapshot) => {
         if (snapshot.exists()) {
           setIsFollowingBack(true);
+          setIsLoadingFollowBack(false);
         } else {
           setIsFollowingBack(false);
+          setIsLoadingFollowBack(false);
         }
       });
     }, [])
 
     const date = new Date(item.timestamp);
+    const realDateStr = moment(item.timestamp).fromNow();
     const dateString = date ? date.toLocaleDateString("en-US", {
       year: 'numeric',
       month: '2-digit',
@@ -294,6 +298,16 @@ const Feed = ({ route, navigation }) => {
           setIsFollowingBack(true);
         });
       });
+      const eventsRef = push(ref(database, 'events/' + item.evokerId));
+      set(eventsRef, {
+        evokerId: visitingUserId,
+        content: 'followed you back!',
+        timestamp: Date.now()
+      });
+      const userRef = ref(database, 'users/' + item.evokerId);
+      update(userRef, {
+        unreadNotifications: true
+      })
     };
 
     return (
@@ -310,20 +324,25 @@ const Feed = ({ route, navigation }) => {
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row' }}>
             <Text style={{ fontSize: 15, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
-            <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 15, marginTop: 5, flexShrink: 1 }}>{item.content}</Text>
-              {item.content.includes('follow') ? (
+            <Text style={{ fontSize: 15, marginTop: 5, flexShrink: 1 }}>{item.content} <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text></Text>
+            {item.content.includes('follow') ? (
+              <>
+              {isLoadingFollowBack ? (
+                <ActivityIndicator size="medium" color="black" style={{ marginTop: 20 }} />
+              ) : (
                 <TouchableOpacity style={{ backgroundColor: isFollowingBack ? 'gray' : '#00aced', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 5, alignSelf: 'flex-end' }} onPress={handleFollowBack} disabled={isFollowingBack}>
                   <Text style={{ color: 'white', fontWeight: 'bold' }}>
                     {isFollowingBack ? 'Friends' : 'Follow Back'}
                   </Text>
                 </TouchableOpacity>
-              ) : (
-                /* <View style={{ width: 50, height: 50, backgroundColor: 'black' }} /> */
-                <View></View>/*Temporary Rendring since black sqaure code is not finished*/
               )}
+              </>
+            ) : (
+              /* <View style={{ width: 50, height: 50, backgroundColor: 'black' }} /> */
+              <View></View>/*Temporary Rendring since black sqaure code is not finished*/
+            )}
           </View>
         </View>
       </View>

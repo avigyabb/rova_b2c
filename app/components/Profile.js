@@ -159,8 +159,8 @@ const Profile = ({ route, navigation }) => {
 
   const followUser = async () => {
     // THIS IS TO VERIFY USERS
-    // const userRef = ref(database, 'users/' + userKey);
-    // update(userRef, {
+    // const userRef1 = ref(database, 'users/' + userKey);
+    // update(userRef1, {
     //   user_type: 'verified'
     // })
     
@@ -178,6 +178,12 @@ const Profile = ({ route, navigation }) => {
       evokerId: visitingUserId,
       content: 'followed you!',
       timestamp: Date.now()
+    })
+
+    console.log(userKey)
+    const userRef = ref(database, 'users/' + userKey);
+    update(userRef, {
+      unreadNotifications: true
     })
 
     getUserInfo();
