@@ -70,6 +70,25 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     });
   }, [focusedCategoryId]);
 
+  function recalculateItems(similarBucketItems, item_bucket) {
+    const minMaxMap = {
+      'like': [10.0, 6.7],
+      'neutral': [6.6, 3.3],
+      'dislike': [3.2, 0.0]
+    }
+
+    let isLike = 1
+    if (item_bucket === 'like') {
+      isLike = 0
+    }
+
+    const step = (minMaxMap[item_bucket][0] - minMaxMap[item_bucket][1]) / (similarBucketItems.length + isLike);
+    for (let i = 0; i < similarBucketItems.length; i++) {
+        similarBucketItems[i][1]['score'] = minMaxMap[item_bucket][0] - step * (i + isLike);
+    }
+    return similarBucketItems;
+  }
+
   const deleteImageFromStorage = async (imageUri) => {
     try {
       const storage = getStorage();
@@ -461,7 +480,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           </TouchableOpacity>
           </>
         ) : (
-          <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{focusedCategory}</Text>
+          <Text style={{ fontSize: 15, fontWeight: 'bold' }}></Text>
         )}
 
         <TouchableOpacity onPress={() => onEditPress()}>
