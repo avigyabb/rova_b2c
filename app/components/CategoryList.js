@@ -542,6 +542,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 category_description: text
               }))
             }}
+            maxHeight={150} // this height seemed okay to me, but feel free to make it bigger / smaller
+            scrollEnabled={true}
             style={{ 
               color: 'gray', 
               marginVertical: 10,
