@@ -73,6 +73,9 @@ const Feed = ({ route, navigation }) => {
   const [individualSpotifyAccessToken, setIndividualSpotifyAccessToken] = useState(null);
   const [numFollowers, setNumFollowers] = useState(1);
   const [index, setIndex] = useState(0);
+  const [focusedItem, setFocusedItem] = useState(null);
+  const [focusedItemDescription, setFocusedItemDescription] = useState(null);
+  const [profileView, setProfileView] = useState(null);
 
   const getListData = () => {
     setRefreshed(true);
@@ -310,6 +313,16 @@ const Feed = ({ route, navigation }) => {
       })
     };
 
+    const onItemPress = (item) => {
+      const itemRef = ref(database, `items/${item.postId}`);
+      get(itemRef).then((snapshot) => {
+        const tempFocusedItem = snapshot.val();
+        tempFocusedItem.key = item.postId;
+        setFocusedItem(tempFocusedItem);
+        setNotifications(null);
+      });
+    }
+
     return (
       <View style={{ width: '95%', flexDirection: 'row', padding: 10 }}>
         <TouchableOpacity onPress={() => {
@@ -340,8 +353,14 @@ const Feed = ({ route, navigation }) => {
               )}
               </>
             ) : (
-              /* <View style={{ width: 50, height: 50, backgroundColor: 'black' }} /> */
-              <View></View>/*Temporary Rendring since black sqaure code is not finished*/
+              item.image ? (
+                <TouchableOpacity onPress={() => onItemPress(item)}>
+                  <Image
+                    source={{ uri: item.image }}
+                    style={{ width: 50, height: 50 }}
+                  />
+                </TouchableOpacity>
+              ) : null
             )}
           </View>
         </View>
@@ -368,6 +387,22 @@ const Feed = ({ route, navigation }) => {
         />
       </View>
     )
+  }
+
+  if (focusedItem) {
+    return (
+      <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => {
+          setFocusedItem(null)
+        }}> 
+          <Ionicons name="arrow-back" size={30} color="black" />
+        </TouchableOpacity>
+  
+      </View>
+      <NormalItemTile item={focusedItem} visitingUserId={userKey} navigation={navigation} showComments={true}/>
+      </View>
+    );
   }
 
   if (itemInfo) {
@@ -511,7 +546,7 @@ const Feed = ({ route, navigation }) => {
           showsVerticalScrollIndicator={false}
         />
         <View style={{ position: 'absolute', width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 170 }}>
-          <Ionicons name='reload' size={60} color='lightgray' />
+          <Ionicons name='reload' size={40} color='lightgray' />
         </View>
         </>
       )}

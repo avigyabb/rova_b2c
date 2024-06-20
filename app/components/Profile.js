@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Vibration } from 'react-native';
 import { Image } from 'expo-image';
 import { Image as ReactImage } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -258,7 +258,7 @@ const Profile = ({ route, navigation }) => {
         <View style={{ flex: 1 }}>
           {scrollY < -110 && (
             <View style={{position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1000,}}>
-              <Ionicons name='reload' size={40} color='lightgray' />
+              <ActivityIndicator size="large" color="black" />
             </View>
           )}
           <ScrollView

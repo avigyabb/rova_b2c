@@ -104,7 +104,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       set(eventsRef, {
         evokerId: visitingUserId,
         content: 'liked your post: ' + item.content + '!',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        image: item.image, //added to make the image appear in the notifcation center
+        postId: item.key
       })
       update(userRef, {
         unreadNotifications: true
@@ -135,7 +137,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       set(eventsRef, {
         evokerId: visitingUserId,
         content: 'disliked your post: ' + item.content + '!',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        image: item.image, //added to make the image appear in the notifcation center
+        postId: item.key
       })
       update(userRef, {
         unreadNotifications: true
@@ -199,7 +203,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     set(eventsRef, {
       evokerId: visitingUserId,
       content: 'commented on your post: ' + item.content + '!',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      image: item.image, //added to make the image appear in the notifcation center
+      postId: item.key
     })
     update(userRef, {
       unreadNotifications: true
