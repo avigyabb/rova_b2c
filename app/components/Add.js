@@ -677,6 +677,7 @@ const Add = ({ route }) => {
         }, text);
       }, 400));
     } else {
+      setLoadingItems(false);
       search(spotifyAccessToken, newItemCategoryType, (results) => {
         setLoadingItems(false); // ~ i think you can remove this
         setSearchResults(results);

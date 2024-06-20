@@ -11,6 +11,8 @@ import Profile from './Profile';
 import axios from 'axios';
 import { generateRandom, deriveChallenge } from 'expo-auth-session';
 import { Video } from 'expo-av';
+import moment from 'moment';
+import { formatDistanceToNow } from 'date-fns';
 
 // this function is repeated many times -> condense into one file ~
 function getScoreColorHSL(score) {
@@ -69,6 +71,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
 
   let scoreColor = getScoreColorHSL(Number(item.score));
   const date = new Date(item.timestamp);
+  const realDateStr = moment(item.timestamp).fromNow();
   const dateString = date.toLocaleDateString("en-US", {
     year: 'numeric',
     month: '2-digit',
@@ -101,7 +104,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       set(eventsRef, {
         evokerId: visitingUserId,
         content: 'liked your post: ' + item.content + '!',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        image: item.image, //added to make the image appear in the notifcation center
+        postId: item.key
       })
       update(userRef, {
         unreadNotifications: true
@@ -132,7 +137,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       set(eventsRef, {
         evokerId: visitingUserId,
         content: 'disliked your post: ' + item.content + '!',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        image: item.image, //added to make the image appear in the notifcation center
+        postId: item.key
       })
       update(userRef, {
         unreadNotifications: true
@@ -196,7 +203,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     set(eventsRef, {
       evokerId: visitingUserId,
       content: 'commented on your post: ' + item.content + '!',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      image: item.image, //added to make the image appear in the notifcation center
+      postId: item.key
     })
     update(userRef, {
       unreadNotifications: true
@@ -220,6 +229,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     }, [])
 
     const date = new Date(item.timestamp);
+    const realDateStr = moment(item.timestamp).fromNow();
     const dateString = date ? date.toLocaleDateString("en-US", {
       year: 'numeric',
       month: '2-digit',
@@ -239,7 +249,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           <View>
             <View style={{ flexDirection: 'row' }}>
               <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
-              <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
+              <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text>
             </View>
             <Text style={{ marginTop: 5, width: 320 }}>{item.comment}</Text>
           </View>
@@ -306,7 +316,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{username}</Text>
             {isVerified && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
-            <Text style={{ color: 'grey', fontSize: 12, marginLeft: 20 }}>{dateString}</Text>
+            <Text style={{ color: 'grey', fontSize: 12, marginLeft: 20 }}>{realDateStr}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, width: 260 }}>
             <Text style={{ color: 'gray', fontWeight: 'bold', fontSize: 13, fontStyle: 'italic' }}>

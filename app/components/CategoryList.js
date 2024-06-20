@@ -37,25 +37,25 @@ const styles = StyleSheet.create({
 
 function getScoreColorHSL(score) {
   if (score < 0) {
-    return '#A3A3A3'; // Gray color for negative scores
+    return '#A3A3A3';
   }
-  const cappedScore = Math.max(0, Math.min(score, 10)); // Cap the score between 0 and 100
-  const hue = (cappedScore / 10) * 120; // Calculate hue from green to red
-  const lightness = 50 - score ** 1.3; // Constant lightness
-  return `hsl(${hue}, 100%, ${lightness}%)`; // Return HSL color string
+  const cappedScore = Math.max(0, Math.min(score, 10));
+  const hue = (cappedScore / 10) * 120;
+  const lightness = 50 - score ** 1.3;
+  return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
 const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey }) => {
   const [listView, setListView] = useState('now');
   const [listData, setListData] = useState(focusedList);
   const [editMode, setEditMode] = useState(false);
-  const [categoryLoading, setCategoryLoading] = useState(false);
   const [categoryInfo, setCategoryInfo] = useState({});
   const [categoryImage, setCategoryImage] = useState(null);
   const [focusedItem, setFocusedItem] = useState(null);
   const [focusedItemDescription, setFocusedItemDescription] = useState(null);
   const [presetImage, setPresetImage] = useState(true);
   const [profileView, setProfileView] = useState(null);
+  const [searchVal, setSearchVal] = useState('');
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
@@ -68,7 +68,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     }).catch((error) => {
       console.error(error);
     });
-  }, [focusedCategoryId]); // ~ why do I need to put this here, why isn't it updating automatically
+  }, [focusedCategoryId]);
 
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
@@ -92,14 +92,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const deleteImageFromStorage = async (imageUri) => {
     try {
       const storage = getStorage();
-      
-      // You need to transform the `imageUri` from your database to the storage reference
-      // If your `imageUri` is a full URL like in the example you provided,
-      // you will need to extract the path to the file from it.
-      // Example: "items/84E4F4D9-D783-4486-8BDD-251FF2752334.png"
       const imagePath = imageUri.split('/o/')[1].split('?')[0];
       const decodedImagePath = decodeURIComponent(imagePath);
-  
       const imageRef = storageRef(storage, decodedImagePath);
       await deleteObject(imageRef);
       console.log('Image deleted successfully!');
@@ -118,13 +112,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       console.error('Error deleting item:', error);
     });
 
-    // setCategoryLoading(true);
     if (listView === 'now') {
-      let similarBucketItems = []
+      let similarBucketItems = [];
       
       listData[listView].forEach(item => {
         if (item[1].bucket === item_bucket && item[0] !== item_category_id) {
-          similarBucketItems.push(item)
+          similarBucketItems.push(item);
         }
       });
 
@@ -133,33 +126,25 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       if (items) {
         items.forEach((item) => {
           const itemRef = ref(database, `items/${item[0]}`);
-          update(itemRef, { 
-            score: item[1].score,
-          })
+          update(itemRef, { score: item[1].score })
           .then(() => console.log(`Score updated for ${item[0]}`))
           .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));
 
-          // update category photo if its the best
-          if (item[1].score === 10.0 ) {
+          if (item[1].score === 10.0) {
             const categoryRef = ref(database, 'categories/' + item_category_id);
             get(categoryRef).then((snapshot) => {
               if (snapshot.exists() && !snapshot.val().presetImage) {
-                console.log("switched photos")
-                update(categoryRef, {
-                  imageUri: item.image
-                })
+                update(categoryRef, { imageUri: item.image });
               }
-            })
+            });
           }
         });
       }
     }
 
-    // setCategoryLoading(false);
     const categoryItemsRef = ref(database, 'items');
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(focusedCategoryId));
 
-    // some repeated code here from Profile.js
     get(categoryItemsQuery).then((snapshot) => {
       let tempFocusedList = {'now': [], 'later': []};
       if (snapshot.exists()) {
@@ -180,17 +165,17 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
     runTransaction(categoryRef, (currentData) => {
       currentData.num_items = (currentData.num_items || 0) - 1;
-      return currentData; // Returns the updated data to be saved
-    })
+      return currentData;
+    });
   }
 
-  onItemPress = (item_key) => {
+  const onItemPress = (item_key) => {
     const itemRef = ref(database, `items/${item_key}`);
     get(itemRef).then((snapshot) => {
       const tempFocusedItem = snapshot.val();
       tempFocusedItem.key = item_key;
       setFocusedItem(tempFocusedItem);
-    })
+    });
   }
 
   const ListItemTile = ({ item, item_key, index }) => {
@@ -234,11 +219,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
             </View>
           </View>
-          {/* {editMode && (
-            <TouchableOpacity onPress={() => onRerankItemPress(item_key)} style={{ flexDirection: 'row', marginTop: 10, borderColor: 'lightgrey', borderWidth: 3, padding: 3, borderRadius: 5 }}>
-              <Text style={{ color: 'grey', fontSize: 16, fontWeight: 'bold' }}>Rerank Item</Text>
-            </TouchableOpacity>
-          )} */}
         </View>
       </TouchableOpacity>
     );
@@ -256,12 +236,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     try {
       const categoryItemsRef = ref(database, 'items');
       const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(categoryId));
-  
+
       const snapshot = await get(categoryItemsQuery);
       if (snapshot.exists()) {
         let topItem = null;
         let maxScore = -1;
-  
+
         snapshot.forEach((childSnapshot) => {
           const item = childSnapshot.val();
           if (item.score > maxScore) {
@@ -269,12 +249,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             topItem = item;
           }
         });
-  
+
         const categoryRef = ref(database, 'categories/' + categoryId);
         await update(categoryRef, {
           imageUri: topItem && topItem.image ? topItem.image : null,
         });
-  
+
         console.log('Category image updated to the best item image successfully!');
       } else {
         console.log('No items found for this category.');
@@ -290,7 +270,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         const response = await fetch(categoryImage);
         const blob = await response.blob();
         const filename = categoryImage.substring(categoryImage.lastIndexOf('/') + 1);
-        const storageRef = storRef(storage, filename); // Use the previously renamed 'ref' function
+        const storageRef = storageRef(storage, filename);
         const uploadTask = uploadBytesResumable(storageRef, blob);
 
         uploadTask.on('state_changed',
@@ -343,10 +323,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       .catch((error) => console.error('Error onEditPress:', error));
     }
 
-    console.log(editMode, focusedItemDescription, focusedItem);
-
     if (editMode && focusedItemDescription && focusedItem) {
-      console.log('focusedItemDescription:', focusedItemDescription);
       const itemRef = ref(database, `items/${focusedItem.key}`);
       update(itemRef, {
         description: focusedItemDescription
@@ -388,21 +365,20 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         { text: "Cancel", onPress: () => console.log("Cancel Pressed"), style: "cancel"},
         { text: "Delete Category", onPress: () => deleteCategoryAndItems() }
       ],
-      { cancelable: false } // This prevents the alert from being dismissed by tapping outside of the alert dialog.
+      { cancelable: false }
     );
   };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All, // ~ may need to change to just pictures
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
-      aspect: [4,3], // search up
+      aspect: [4,3],
       quality: 1,
     });
     setCategoryImage(result.assets[0].uri);
   }; 
 
-  // ***
   const onRerankItemPress = () => {
     onDeleteItemPress(focusedItem.bucket, focusedItem.key);
     navigation.navigate('Add', {
@@ -416,11 +392,23 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       itemContentDescription: focusedItem.contentDescription,
       numItems: numItems - 1,
       taggedUser: null,
-      presetImage: categoryInfo.presetImage // Pass the presetImage status
+      presetImage: categoryInfo.presetImage
     })
   }
 
-  const memoizedList = useMemo(() => listData[listView].map((item, index) => <ListItemTile item={item[1]} item_key={item[0]} index={index} key={index} />), [listData, listView, editMode]);
+  const memoizedList = useMemo(() => {
+    // Filter the items based on the search value, keeping the original index
+    const filteredList = listData[listView]
+      .map((item, index) => ({ ...item, originalIndex: index })) // Add the original index to each item
+      .filter(({ 1: item }) =>
+        item.content && item.content.toLowerCase().includes(searchVal.toLowerCase())
+      );
+  
+    // Map the filtered items to ListItemTile components, using the original index
+    return filteredList.map(({ 1: item, 0: key, originalIndex }) => (
+      <ListItemTile item={item} item_key={key} index={originalIndex} key={key} />
+    ));
+  }, [listData, listView, searchVal, editMode]);  
 
   if (focusedItem) {
     return (
@@ -492,7 +480,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           </TouchableOpacity>
           </>
         ) : (
-          <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{focusedCategory}</Text>
+          <Text style={{ fontSize: 15, fontWeight: 'bold' }}></Text>
         )}
 
         <TouchableOpacity onPress={() => onEditPress()}>
@@ -554,6 +542,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 category_description: text
               }))
             }}
+            maxHeight={150} // this height seemed okay to me, but feel free to make it bigger / smaller
+            scrollEnabled={true}
             style={{ 
               color: 'gray', 
               marginVertical: 10,
@@ -585,7 +575,24 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       </View>
 
       {listData[listView].length > 0 ? (  
-        <>         
+        <>
+        <TextInput
+          placeholder={'Search Items...'}
+          value={searchVal} 
+          onChangeText={setSearchVal}
+          placeholderTextColor="gray"
+          style={{ 
+            fontSize: 16, 
+            borderColor: 'lightgrey',
+            borderWidth: 0.5,
+            borderRadius: 30,
+            padding: 10,
+            marginRight: 10,
+            marginLeft: 10,
+            paddingHorizontal: 20,
+            marginVertical: 15
+          }}
+        />          
         {memoizedList}
         </>
       ) : (
@@ -593,7 +600,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       )}
       </ScrollView>
     </View>
-  )
+  );
 }
 
 export default CategoryList;
