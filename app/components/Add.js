@@ -481,6 +481,8 @@ const Add = ({ route }) => {
     //   imageType = 'video';
     // }
 
+    console.log(newItemId + " : " + newItemDescription);
+
     let updateObject = {
       category_id: newItemCategory,
       category_name: newItemCategoryName,
