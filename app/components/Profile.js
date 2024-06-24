@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Vibration } from 'react-native';
+import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Vibration } from 'react-native';
 import { Image } from 'expo-image';
 import { Image as ReactImage } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -150,11 +150,27 @@ const Profile = ({ route, navigation }) => {
     setImageUri(result.assets[0].uri);
   }; 
 
-  const onLogOutPress = async () => {
-    await AsyncStorage.removeItem('username');
-    await AsyncStorage.removeItem('key');
-    fetchUserData();
-    setView('signin');
+  const onLogOutPress = () => {
+    Alert.alert(
+      "Log out of ambora/social?",
+      "You can sign back in at anytime",
+      [
+        {
+          text: "Cancel",
+          onPress: () => console.log("Logout cancelled"),
+          style: "cancel"
+        },
+        {
+          text: "Log out",
+          onPress: async () => {
+            await AsyncStorage.removeItem('username');
+            await AsyncStorage.removeItem('key');
+            fetchUserData();
+            setView('signin');
+          }
+        }
+      ]
+    );
   }
 
   const followUser = async () => {
