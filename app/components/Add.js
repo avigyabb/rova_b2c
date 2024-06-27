@@ -481,6 +481,8 @@ const Add = ({ route }) => {
     //   imageType = 'video';
     // }
 
+    console.log(newItemId + " : " + newItemDescription);
+
     let updateObject = {
       category_id: newItemCategory,
       category_name: newItemCategoryName,
@@ -692,7 +694,7 @@ const Add = ({ route }) => {
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
+          <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 5 }}>ambora\social</Text>
           <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setAddView('addList')}>
             <Ionicons name="add-outline" size={22} color="gray" />
             <Text style={{ fontSize: 16, color: 'gray' }}>Add List</Text>
