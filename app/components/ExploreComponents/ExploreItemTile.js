@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const ExploreItemTile = ({ item, index }) => {
+const ExploreItemTile = ({ item, index, itemsInCategory }) => {
   let scoreColor = getScoreColorHSL(Number(item.score/item.num_items.toFixed(1)));
 
   return (
@@ -51,8 +51,13 @@ const ExploreItemTile = ({ item, index }) => {
                 </View>
             </View>
           </View>
-          <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-            <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{(item.score/item.num_items).toFixed(1)}</Text>
+          <View>
+            <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
+              <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{(item.score/item.num_items).toFixed(1)}</Text>
+            </View>
+            {itemsInCategory && itemsInCategory.has(item.image) && (
+              <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 
+            )}
           </View>
         </View>
       </View>

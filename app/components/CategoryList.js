@@ -56,19 +56,55 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [presetImage, setPresetImage] = useState(true);
   const [profileView, setProfileView] = useState(null);
   const [searchVal, setSearchVal] = useState('');
+  const [itemsInCategory, setItemsInCategory] = useState(new Set());
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
     get(categoryRef).then((snapshot) => {
       if (snapshot.exists()) {
         setCategoryInfo(snapshot.val());
+        // check item matches with user
+        const sameUserCategoriesRef = ref(database, 'categories');
+        const sameUserCategoriesQuery = query(sameUserCategoriesRef, orderByChild('user_id'), equalTo(visitingUserId));
+        get(sameUserCategoriesQuery).then((sameUserCategoriesSnapshot) => {
+          if (sameUserCategoriesSnapshot.exists()) {
+            let promises = [];
+            sameUserCategoriesSnapshot.forEach((childSnapshot) => {
+              if (childSnapshot.val().category_type === snapshot.val().category_type) {
+                const categoryItemsRef = ref(database, 'items');
+                const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(childSnapshot.key));
+                promises.push(get(categoryItemsQuery));
+              }
+            });
+
+            Promise.all(promises).then((results) => {
+              let items = new Set();
+              results.forEach((categoryItemsSnapshot) => {
+                if (categoryItemsSnapshot.exists()) {
+                  categoryItemsSnapshot.forEach((childCategoryItemsSnapshot) => {
+                    let item = childCategoryItemsSnapshot.val();
+                    items.add(item.image);
+                  });
+                }
+              });
+              console.log("ran2")
+              setItemsInCategory(items)
+              // Now you can use 'items' or set it in your state
+            }).catch((error) => {
+              console.error(error);
+            });
+
+          } else {
+            console.log("No categories found for the user.");
+          }
+        })
       } else {
         console.log("No user data.");
       }
     }).catch((error) => {
       console.error(error);
     });
-  }, [focusedCategoryId]);
+  }, [focusedCategoryId, database, visitingUserId]);
 
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
@@ -180,6 +216,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
   const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
+    console.log("here")
+    console.log(itemsInCategory && itemsInCategory.has(item.image))
 
     return (
       <TouchableOpacity onPress={() => onItemPress(item_key)}>
@@ -215,9 +253,16 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 )}
               </View>
             </View>
-            <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-              <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
-            </View>
+            { !editMode && (
+              <View>
+                <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
+                  <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
+                </View>
+                { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && (
+                  <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 
+                )}
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -408,7 +453,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     return filteredList.map(({ 1: item, 0: key, originalIndex }) => (
       <ListItemTile item={item} item_key={key} index={originalIndex} key={key} />
     ));
-  }, [listData, listView, searchVal, editMode]);  
+  }, [listData, listView, searchVal, editMode, itemsInCategory]);  
 
   if (focusedItem) {
     return (
@@ -466,6 +511,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       />
     )
   }
+
+  console.log("reload")
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
