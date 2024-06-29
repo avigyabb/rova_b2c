@@ -27,14 +27,14 @@ npm install
 npm start/npx expo start -c
 
 ONBOARDING
-new file on desktop
-git install
-cd into rova_b2c
+create new file on desktop
+git clone link from green code button in repo
+cd rova_b2c
 make sure node is installed / restart vs to ensure node is installed
-run npm install
-download expo go on phone
+npm install
+download expo go
 make an account on expo
-run npx expo start -c
+run npx expo start -c or npx expo start --tunnel
 enter email and password into terminal
 ALWAYS PULL BEFORE YOU PUSH
 

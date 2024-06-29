@@ -441,7 +441,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             itemCategoryName: '',
             taggedUser: username,
             taggedUserId: item.user_id,
-            itemId: item.id 
+            itemId: item.id
           })}>
           <Ionicons name="bookmark" size={30} color="grey" />
         </TouchableOpacity>
@@ -454,7 +454,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             itemCategoryName: '',
             taggedUser: username,
             taggedUserId: item.user_id,
-            itemId: item.id 
+            itemId: item.id
           })}
         >
           <Ionicons style={{}} name="add-circle" size={30} color="grey" />

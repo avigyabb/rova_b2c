@@ -481,7 +481,7 @@ const Add = ({ route }) => {
     //   imageType = 'video';
     // }
 
-    console.log(newItemId + " : " + newItemDescription);
+    console.log(newItem + " : " + newItemDescription);
 
     let updateObject = {
       category_id: newItemCategory,
@@ -495,7 +495,7 @@ const Add = ({ route }) => {
       user_id: userKey,
       custom: presetDescription !== newItemDescription,
       imageType: imageType,
-      id: newItemId,
+      id: newItemId || newItem,
       content_description: newItemDescription
     };
 

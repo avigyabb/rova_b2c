@@ -7,8 +7,9 @@ import * as FileSystem from 'expo-file-system';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
 import { useFonts } from 'expo-font';
 // import profilePic from '../../assets/images/lebron_profile_pic.webp';
+import { sendPasswordResetEmail, getAuth } from "firebase/auth";
 import { database, storage } from '../../firebaseConfig';
-import { ref, set, onValue, off, push, query, equalTo, orderByChild, get, remove, update } from "firebase/database"; // Import 'ref' and 'set' from the database package
+import { ref, set, onValue, off, push, query, equalTo, orderByChild, get, remove, update, getDatabase } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import { useEffect, useState } from 'react';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
@@ -179,6 +180,17 @@ const Profile = ({ route, navigation }) => {
     // update(userRef1, {
     //   user_type: 'verified'
     // })
+
+    //THIS IS TO GET PASSWORD BACK
+    // const auth = getAuth();
+    // const database = getDatabase();
+    // const emailVal = "EMAIL";
+    // sendPasswordResetEmail(auth, emailVal).then(() => {
+    //   alert("Check your email for password reset");
+    //   console.log("Password reset email sent");
+    // }).catch(err => {
+    //   alert("Error sending password reset email: " + err.message);
+    // });
     
     const followersRef = ref(database, 'users/' + userKey + '/followers/' + visitingUserId);
     set(followersRef, {

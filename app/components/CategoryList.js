@@ -258,7 +258,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
                   <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
                 </View>
-                { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && (
+                { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryInfo.category_type !== "" && (
                   <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 
                 )}
               </View>
