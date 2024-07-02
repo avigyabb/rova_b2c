@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
 })
 
 const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fromPage }) => {
-  // console.log(pageFrom)
+  console.log(imageUri)
   return (
     <TouchableOpacity style={fromPage === 'Add' ? styles.tile2 : fromPage === 'PickCategory' ? styles.tile3 : styles.tile } onPress={() => onCategoryPress()}>
       <View style={{

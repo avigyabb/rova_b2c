@@ -25,7 +25,11 @@
     ],
     "name": "ambora",
     "slug": "rova-b2c-app",
+<<<<<<< Updated upstream
     "version": "1.0.27",
+=======
+    "version": "1.0.28",
+>>>>>>> Stashed changes
     "ios": {
       "bundleIdentifier": "com.swing.b2capp",
       "googleServicesFile": "./GoogleService-Info.plist",

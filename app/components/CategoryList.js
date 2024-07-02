@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import FeedItemTile from "./FeedItemTile";
 import NormalItemTile from "./NormalItemTile";
 import Profile from './Profile';
+import CategoryComparison from "./CategoryListComponents/CategoryComparison";
 
 const styles = StyleSheet.create({
   listTileScore: {
@@ -57,6 +58,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [profileView, setProfileView] = useState(null);
   const [searchVal, setSearchVal] = useState('');
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
+  const [visitingUserCategories, setVisitingUserCategories] = useState([]);
+  const [categoryListView, setCategoryListView] = useState(null);
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
@@ -69,14 +72,17 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         get(sameUserCategoriesQuery).then((sameUserCategoriesSnapshot) => {
           if (sameUserCategoriesSnapshot.exists()) {
             let promises = [];
+            let visitingUserCategoriesTemp = [];
             sameUserCategoriesSnapshot.forEach((childSnapshot) => {
               if (childSnapshot.val().category_type === snapshot.val().category_type) {
+                visitingUserCategoriesTemp.push({id: childSnapshot.key, ...childSnapshot.val()});
                 const categoryItemsRef = ref(database, 'items');
                 const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(childSnapshot.key));
                 promises.push(get(categoryItemsQuery));
               }
             });
 
+            setVisitingUserCategories(visitingUserCategoriesTemp);
             Promise.all(promises).then((results) => {
               let items = new Set();
               results.forEach((categoryItemsSnapshot) => {
@@ -87,7 +93,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                   });
                 }
               });
-              console.log("ran2")
               setItemsInCategory(items)
               // Now you can use 'items' or set it in your state
             }).catch((error) => {
@@ -216,8 +221,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
   const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
-    console.log("here")
-    console.log(itemsInCategory && itemsInCategory.has(item.image))
 
     return (
       <TouchableOpacity onPress={() => onItemPress(item_key)}>
@@ -455,6 +458,20 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     ));
   }, [listData, listView, searchVal, editMode, itemsInCategory]);  
 
+  if (categoryListView === 'Similarity Score') {
+    return (
+      <>
+      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+        <TouchableOpacity onPress={() => setCategoryListView(null)}> 
+          <Ionicons name="arrow-back" size={30} color="black" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Similarity Score</Text>
+      </View>
+      <CategoryComparison onContinuePress={() => setCategoryListView(null)} userCategories={visitingUserCategories} curListData={listData['now']} curListInfo={categoryInfo}/>
+      </>
+    )
+  }
+
   if (focusedItem) {
     return (
       <View style={{ flex: 1, backgroundColor: 'white' }}>
@@ -512,8 +529,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     )
   }
 
-  console.log("reload")
-
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -530,15 +545,23 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           <Text style={{ fontSize: 15, fontWeight: 'bold' }}></Text>
         )}
 
-        <TouchableOpacity onPress={() => onEditPress()}>
-          {editMode ? (
-            <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Done</Text>
-          ) : isMyProfile ? (
-            <Text style={{ fontSize: 15 }}>Edit</Text>
-          ) : (
-            <Text>       </Text>
+        <View style={{ flexDirection: 'row' }}>
+          {!editMode && !isMyProfile && (
+            <TouchableOpacity onPress={() => setCategoryListView('Similarity Score')}>
+              <Text style={{ fontSize: 15 }}>Compare</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => onEditPress()}>
+            {editMode ? (
+              <Text style={{ fontSize: 15, fontWeight: 'bold', marginLeft: 25 }}>Done</Text>
+            ) : isMyProfile ? (
+              <Text style={{ fontSize: 15, marginLeft: 25 }}>Edit</Text>
+            ) : (
+              <></>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
       
       <ScrollView>
