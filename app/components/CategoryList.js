@@ -555,7 +555,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           <TouchableOpacity onPress={() => onEditPress()}>
             {editMode ? (
               <Text style={{ fontSize: 15, fontWeight: 'bold', marginLeft: 25 }}>Done</Text>
-            ) : isMyProfile ? (
+            ) : isMyProfile ? ( //change this variable to true to delete other people's comments
               <Text style={{ fontSize: 15, marginLeft: 25 }}>Edit</Text>
             ) : (
               <></>
