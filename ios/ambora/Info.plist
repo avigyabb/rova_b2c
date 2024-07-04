@@ -19,11 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-<<<<<<< Updated upstream
-    <string>1.0.27</string>
-=======
-    <string>1.0.28</string>
->>>>>>> Stashed changes
+    <string>1.0.30</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -72,10 +68,7 @@
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
-<<<<<<< Updated upstream
-=======
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
->>>>>>> Stashed changes
     </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
