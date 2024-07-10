@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Keyboard, TouchableWithoutFeedback, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { database } from '../../firebaseConfig';
+import { View, TextInput, Text, Keyboard, TouchableWithoutFeedback, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, push, update } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
@@ -11,7 +10,7 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, userKey, visitingUserId, navigation }) => {
   const [userListData, setUserListData] = useState([]);
   const [followUsersView, setFollowUsersView] = useState(null);
-
+  const [searchVal, setSearchVal] = useState("")
   useEffect(() => {
     let tempListData = [];
     const userPromises = userIds.map(id => {
@@ -89,7 +88,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
         unreadNotifications: true
       })
     };
-
+    if (item.username && item.username.toLowerCase().includes(searchVal.toLowerCase())){
     return (
       <TouchableOpacity onPress={() => visitingUserId === item.id ? {} : setFollowUsersView({ userKey: item.id, username: item.username })}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white', alignItems: 'center' }}>
@@ -108,7 +107,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
           { !visitingUserId && (
             <>
             {isLoadingFollowing || isLoadingFollowers ? (
-              <ActivityIndicator size="medium" color="black" style={{ marginTop: 20 }} />
+              <ActivityIndicator size="medium" color="black" style={{ marginTop: 10 }} />
             ) : (
               <TouchableOpacity
                 style={{
@@ -129,11 +128,14 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
               </TouchableOpacity>
             )}
             </>
+
+      
           )}
         </View>
       </View>
     </TouchableOpacity>
     )
+  }
   }
 
   if (followUsersView) {
@@ -161,6 +163,25 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
       </View>
 
       <View style={{ backgroundColor: 'white', paddingHOrizontal: 20, height: '94.5%' }}>
+      <TextInput
+            placeholder={'Search Users...'}
+            value={searchVal} 
+            onChangeText={setSearchVal}
+            placeholderTextColor="gray"
+            style={{ 
+              fontSize: 16, 
+              borderColor: 'lightgrey',
+              borderWidth: .5,
+              borderRadius: 30,
+              padding: 15,
+              paddingHorizontal: 30,
+              marginVertical: 5,
+              marginHorizontal: 10, // Add horizontal margin
+              width: '94.5%', // Adjust this percentage or use a fixed width, e.g., 250
+              alignSelf: 'center', // Center the input horizontally
+           
+            }}
+          /> 
         <FlatList
           data={userListData}
           renderItem={({ item }) => <UserTile item={item} />}

@@ -16,7 +16,6 @@ const Explore = ({ route, navigation }) => {
   const [exploreView, setExploreView] = useState('Home');
   const [topMovies, setTopMovies] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [itemsInCategory, setItemsInCategory] = useState(new Set());
 
   const fetchTopMovies = async () => {
     if (topMovies.length > 0) {
@@ -36,9 +35,7 @@ const Explore = ({ route, navigation }) => {
           if (categorySnapshot.exists()) {
             if (categorySnapshot.val().category_type === 'Movies') {
               const itemId = childSnapshot.val().image;
-              if (childSnapshot.val().content === 'Dune: Part Two') {
-                console.log(childSnapshot.val());
-              }
+
               if (itemId in items) {
                 items[itemId].score += childSnapshot.val().score;
                 items[itemId].num_items += 1;
@@ -73,44 +70,7 @@ const Explore = ({ route, navigation }) => {
     }
   };
 
-  const checkUserMatches = async () => {
-    const sameUserCategoriesRef = ref(database, 'categories');
-    const sameUserCategoriesQuery = query(sameUserCategoriesRef, orderByChild('user_id'), equalTo(userKey));
-    get(sameUserCategoriesQuery).then((sameUserCategoriesSnapshot) => {
-      if (sameUserCategoriesSnapshot.exists()) {
-        let promises = [];
-        sameUserCategoriesSnapshot.forEach((childSnapshot) => {
-          if (childSnapshot.val().category_type === 'Movies') {
-            const categoryItemsRef = ref(database, 'items');
-            const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(childSnapshot.key));
-            promises.push(get(categoryItemsQuery));
-          }
-        });
-
-        Promise.all(promises).then((results) => {
-          let items = new Set();
-          results.forEach((categoryItemsSnapshot) => {
-            if (categoryItemsSnapshot.exists()) {
-              categoryItemsSnapshot.forEach((childCategoryItemsSnapshot) => {
-                let item = childCategoryItemsSnapshot.val();
-                items.add(item.image);
-              });
-            }
-          });
-          setItemsInCategory(items)
-          // Now you can use 'items' or set it in your state
-        }).catch((error) => {
-          console.error(error);
-        });
-
-      } else {
-        console.log("No categories found for the user.");
-      }
-    })
-  }
-
   useEffect(() => {
-    checkUserMatches();
     const usersRef = ref(database, 'users');
 
     get(usersRef).then((snapshot) => {
@@ -185,7 +145,6 @@ const Explore = ({ route, navigation }) => {
             onPress={() => {
               setExploreView('Top Movies')
               fetchTopMovies();
-
             }}
           >
             <Ionicons name="film" size={30} color="black" />
@@ -219,7 +178,7 @@ const Explore = ({ route, navigation }) => {
           <>
           <FlatList
             data={topMovies}
-            renderItem={({ item, index }) => <ExploreItemTile item={item} index={index} itemsInCategory={itemsInCategory}/>}
+            renderItem={({ item, index }) => <ExploreItemTile item={item} index={index} />}
             keyExtractor={(item, index) => index.toString()}
             numColumns={1}
             key={"single-column"}
