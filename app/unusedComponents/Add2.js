@@ -122,6 +122,8 @@ const Add = ({ route }) => {
   });
   const [rankMode, setRankMode] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [artistName, setArtistName] = useState('');
+
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
   const presetTypesList = ['Movies', 'Albums']
 
@@ -243,7 +245,9 @@ const Add = ({ route }) => {
                 image: item.image,
                 score: item.score,
                 timestamp: item.timestamp || 0,
-                user_id: userKey
+                user_id: userKey,
+                artist: item.artist || null
+
               })
               .then(() => console.log(`Score updated for ${item.content} ${items}`))
               .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -291,7 +295,9 @@ const Add = ({ route }) => {
           image: item.image,
           score: item.score,
           timestamp: item.timestamp || 0,
-          user_id: userKey
+          user_id: userKey,
+          artist: item.artist || null
+
         })
         .then(() => console.log(`Score updated for ${item.content} ${items}`))
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -414,6 +420,8 @@ const Add = ({ route }) => {
       image: newItemImageUris[0] || '',
       timestamp: Date.now(),
       user_id: userKey,
+      artist: item.artist || null
+
     })
     .then(() => console.log(`New later item added`))
     .catch((error) => console.error(`Failed to add later item: ${error}`));
@@ -687,6 +695,7 @@ const Add = ({ route }) => {
                   setNewItem(item.content)
                   setNewItemImageUris([item.image])
                   setNewItemDescription(item.description)
+                  setArtistName(item.artist)
                 }} 
                 style={{ 
                   flexDirection: 'row', 

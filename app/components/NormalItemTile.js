@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update } from "firebase/database";
 import { Image } from 'expo-image';
@@ -13,6 +13,10 @@ import { generateRandom, deriveChallenge } from 'expo-auth-session';
 import { Video } from 'expo-av';
 import moment from 'moment';
 import { formatDistanceToNow } from 'date-fns';
+import { Audio } from 'expo-av';
+import { getDeezerPreviewUrl } from './deezerService';
+import { artistName } from './Search';
+ 
 
 // this function is repeated many times -> condense into one file ~
 function getScoreColorHSL(score) {
@@ -38,7 +42,14 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [newComment, setNewComment] = useState('');
   const [commentTypingMode, setCommentTypingMode] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-    
+  const [spotifyAccessToken, setSpotifyAccessToken] = useState('')
+  // const [playing, setPlaying] = useState(false);
+  const [accessToken, setAccessToken] = useState(null);
+  const [devices, setDevices] = useState([]);
+  const [trackUri, setTrackUri] = useState('')
+  const [artistNames, setArtistNames] = useState(null)
+  const [songState, setSongState] = useState(0)
+  // const [songPlay, setSongPlay] = useState(false)
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -46,6 +57,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   };
 
   useEffect(() => {
+    getSpotifyAccessToken();
     const userRef = ref(database, `users/${item.user_id}`);
     get(userRef).then((snapshot) => {
       if (snapshot.exists()) {
@@ -80,7 +92,27 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     minute: '2-digit',
   });
 
+  const getSpotifyAccessToken = async () => {
+    const client_id = '3895cb48f70545b898a65747b63b430d';
+    const client_secret = '8d70ee092b614f58b488ce149e827ab1';
+    const url = 'https://accounts.spotify.com/api/token';
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
+    };
+    const data = qs.stringify({'grant_type': 'client_credentials'});
+
+    try {
+      const response = await axios.post(url, data, {headers});
+      console.log(response)
+      setSpotifyAccessToken(response.data.access_token);
+    } catch (error) {
+      console.error('Error obtaining token:', error);
+    }
+  }
+
   const onLikePress = (item) => {
+    console.log(item.key)
     const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
     const eventsRef = push(ref(database, 'events/' + item.user_id));
     const userRef = ref(database, 'users/' + item.user_id);
@@ -271,6 +303,246 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     }
   };
 
+  // const spotifyApi = new SpotifyWebApi();
+  // // localStorage.getItem('access_token')
+  // spotifyApi.setAccessToken(individualSpotifyAccessToken);
+  // spotifyApi.setAccessToken(localStorage.getItem('access_token'))
+
+  // useEffect(() => {
+  //   const authenticate = async () => {
+  //     const token = await getSpotifyAccessToken();
+  //     setAccessToken(token);
+  //     await connectToSpotify(token);
+  //     const deviceList = await getDevices(token);
+  //     setDevices(deviceList);
+  //   };
+  //   authenticate();
+  // }, []);
+
+  // const getSpotifyAccessToken = async () => {
+  //   const client_id = '3895cb48f70545b898a65747b63b430d';
+  //   const client_secret = '8d70ee092b614f58b488ce149e827ab1';
+  //   const url = 'https://accounts.spotify.com/api/token';
+  //   const headers = {
+  //     'Content-Type': 'application/x-www-form-urlencoded',
+  //     'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
+  //   };
+  //   const data = qs.stringify({'grant_type': 'client_credentials'});
+
+  //   try {
+  //     const response = await axios.post(url, data, {headers});
+  //     return response.data.access_token;
+  //   } catch (error) {
+  //     console.error('Error obtaining token:', error);
+  //   }
+  // }
+
+  // const spot_config = {
+  //   clientId: '3895cb48f70545b898a65747b63b430d',
+  //   clientSecret: '8d70ee092b614f58b488ce149e827ab1', // Be cautious with your client secret
+  //   redirectUrl: 'YOUR_REDIRECT_URI', // This must match the configuration in your Spotify dashboard
+  //   scopes: ['user-read-playback-state', 'user-modify-playback-state', 'user-read-currently-playing'],
+  //   serviceConfiguration: {
+  //     authorizationEndpoint: 'https://accounts.spotify.com/authorize',
+  //     tokenEndpoint: 'https://accounts.spotify.com/api/token',
+  //   }
+  // };
+  
+  // // const authenticateSpotify = async () => {
+  // //   try {
+  // //     const result = await authorize(spot_config);
+  // //     console.log(result);
+  // //     return result.accessToken;
+  // //   } catch (error) {
+  // //     console.error(error);
+  // //   }
+  // // };
+
+  // const connectToSpotify = async (accessToken) => {
+  //   try {
+  //     await Spotify.initialize({ accessToken });
+  //   } catch (error) {
+  //     console.error('Error connecting to Spotify', error);
+  //   }
+  // };
+
+  // const getDevices = async (accessToken) => {
+  //   try {
+  //     const response = await axios.get('https://api.spotify.com/v1/me/player/devices', {
+  //       headers: {
+  //         Authorization: `Bearer ${accessToken}`,
+  //       },
+  //     });
+  //     return response.data.devices;
+  //   } catch (error) {
+  //     console.error('Error getting devices', error);
+  //   }
+  // };
+
+  // const playSong = async (spotifyUri) => {
+  //   try {
+  //     await Spotify.playUri(spotifyUri);
+  //   } catch (error) {
+  //     console.error('Error playing song', error);
+  //   }
+  // };
+
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [playing, setPlaying] = useState(false);
+  // const[playingGeneral, setPlayingGeneral] = useState(false);
+  const [error, setError] = useState(null);
+  const soundRef = useRef(new Audio.Sound());
+  const [urlFetched, setUrlFetched] = useState(false)
+  const [currentSound, setCurrentSound] = useState(null);
+
+  const playSound = async (soundUri, playState) => {
+    const { sound } = await Audio.Sound.createAsync({ uri: soundUri });
+    if (playState ===1) {
+      if (currentSound) {
+        await currentSound.unloadAsync();
+      }
+  
+     
+      setCurrentSound(sound);
+      await sound.playAsync();
+    }
+    if (playState ===2){
+      currentSound.pauseAsync();
+    }
+  };
+
+// Function to extract track ID from Spotify URI
+// function extractTrackId(uri) {
+//   const parts = uri.split(':');
+//   return parts[2];
+// }
+
+// Function to get track information including artists from Spotify
+// async function getTrackArtists(uri, token) {
+//   const trackId = extractTrackId(uri);
+
+//   try {
+//     const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`, // Include the token in the header
+//       },
+//     });
+
+//     // Extracting artists from response
+//     const artists = response.data.artists.map(artist => ({
+//       name: artist.name,
+//       id: artist.id,
+//       externalUrl: artist.external_urls.spotify,
+//     }));
+
+//     return artists;
+//   } catch (error) {
+//     console.error('Error fetching track data:', error);
+//     return null;
+//   }
+// }
+
+// // Example usage
+// // const trackUri = 'spotify:track:3n3Ppam7vgaVa1iaRUc9Lp';
+// const token = spotifyAccessToken; // Replace with your actual token
+
+// getTrackArtists(trackUri, token).then(artists => {
+//   setArtistNames(artists)
+//   if (artists) {
+//     console.log('Artists:', artists);
+//   }
+// });
+  const urlFetching = () => {
+    if (previewUrl === null){
+      urlFetching();
+    }else{
+      setUrlFetched(true)
+    }
+  }
+  //fetch, play fetch play
+
+  const handleFetchTrack = async (item) => {
+    // console.log(item)
+    try {
+      
+      setError(null);
+      let url = await getDeezerPreviewUrl(item.content, item.artist);
+      setPreviewUrl(url)
+      
+      
+      
+    } catch (error) {
+      setError('Error fetching track');
+      console.error('Error fetching track:', error);
+    }
+    
+    // handlePlayTrack(item);
+
+  };
+
+  const handlePlayTrack = async (item) => {
+    // handleFetchTrack(item);
+    console.log(previewUrl)
+   
+
+    if (previewUrl) {
+      try {
+        if (playing) {
+          // await soundRef.current.stopAsync();
+          // await soundRef.current.unloadAsync();
+          playSound(previewUrl, songState);
+          setPlaying(false);
+        } else {
+          // await soundRef.current.loadAsync({ uri: previewUrl })
+          // .then( async () => {
+          // await soundRef.current.playAsync()
+          // }
+          // )
+          // .then(() => {setPlaying(true);})
+          playSound(previewUrl, songState ).then(() => {setPlaying(true);})
+        }
+      } catch (error) {
+        setError('Error playing track');
+        console.error('Error playing track:', error);
+      }
+    } 
+  
+  };
+
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+  const onSongImagePress = (item) => {
+    // getSpotifyAccessToken();
+    // setTrackUri(item.uri);
+
+     if (item.content != null){
+    // console.log(individualSpotifyAccessToken)
+    // console.log(item)
+    
+    // console.log(artistName)
+    // console.log(playing)
+  // console.log(item.artist)
+      
+       
+      
+
+        handleFetchTrack(item)
+        handlePlayTrack(item);
+        // if(previewUrl === null){
+        //   onSongImagePress(item);
+        // }
+  
+      // handlePlayTrack();
+      // console.log(playing)
+
+      // setPlaying(!playing);
+
+    }
+  }
+
+  
+
   const onItemImagePress = async (item) => {
     if (!individualSpotifyAccessToken) {
       promptAsync();
@@ -388,6 +660,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           ) : (
             <>
             {/* <TouchableOpacity onPress={() => onItemImagePress(item)}> */}
+              
               <Image
                 source={{ uri: item.image }}
                 style={{
@@ -401,6 +674,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
                 }}
                 onLoad={onImageLoad}
               />
+              
             {/* </TouchableOpacity> */}
             </>
           )}
@@ -425,11 +699,24 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(comments).length}</Text>
           </TouchableOpacity>
         )}
-
+  
         {/*<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onStarPress(item)}>
           <Ionicons name="star" size={30} color={visitingUserId in stars ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(stars).length}</Text>
-        </TouchableOpacity> uncomment for swiping*/}
+        // </TouchableOpacity> uncomment for swiping*/}
+        {/* TODO: change music icon to the right */}
+
+        {item.artist != null && (<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); if (songState === 0){setSongState(1)} if(songState ===1){setSongState(2);} if(songState === 2){setSongState(1);} }}>
+        
+        <Ionicons name= {songState === 0 ? "musical-notes": (songState === 1 ? "play-circle-outline": "pause-circle-outline")} size={30} color={songState === 0 ? "grey": "green"} />
+
+        </TouchableOpacity>)}
+        
+        {/* {songQ && (<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); setSongQ(true);} }>
+        
+        <Ionicons name="musical-notes" size={26} color={"grey"} />
+
+        </TouchableOpacity>)} */}
 
         <TouchableOpacity 
           style={{ marginLeft: 'auto', marginRight: 10 }} 

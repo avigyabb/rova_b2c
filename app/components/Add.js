@@ -107,6 +107,7 @@ const Add = ({ route }) => {
   const [newItemCategory, setNewItemCategory] = useState(null);
   const [newItemCategoryName, setNewItemCategoryName] = useState('');
   const [newItemCategoryType, setNewItemCategoryType] = useState('');
+  const [newItemArtist, setNewItemArtist] = useState('');
   const [newItemDescription, setNewItemDescription] = useState(''); // ~ why does this work
   const [newItemId, setNewItemId] = useState(null);
   const [newItemContentDescription, setNewItemContentDescription] = useState('');
@@ -256,7 +257,7 @@ const Add = ({ route }) => {
               'trackUri': trackUri,
               'imageType': imageType,
               'id': newItemId,
-              'content_description': newItemDescription
+              'content_description': newItemDescription,
             };
             // make sure any changes to newItemObj are also reflected in itemComparisons
             let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -283,9 +284,10 @@ const Add = ({ route }) => {
                 trackUri: item.trackUri || null,
                 imageType: item.imageType || null,
                 id: item.id || null,
-                content_description: item.content_description || null
+                content_description: item.content_description || null,
+                artist: item.artist || null
               })
-              .then(() => console.log(`Score updated for ${item.content} ${items}`))
+              .then(() => console.log(item.key, item.artist))
               .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
               
               // update category photo if its the best
@@ -316,7 +318,8 @@ const Add = ({ route }) => {
         'custom': presetDescription !== newItemDescription,
         'trackUri': trackUri,
         'id': newItemId,
-        'content_description': newItemDescription
+        'content_description': newItemDescription,
+        'artist': newItemArtist
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
       let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -342,9 +345,11 @@ const Add = ({ route }) => {
           custom: item.custom,
           trackUri: item.trackUri || null,
           id: item.id || null,
-          content_description: item.content_description || null
+          content_description: item.content_description || null,
+          artist: item.artist || null
+
         })
-        .then(() => console.log(`Score updated for ${item.content} ${items}`))
+        .then(() => console.log(item.key, item.artist))
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
 
         // update category photo if its the best
@@ -407,7 +412,8 @@ const Add = ({ route }) => {
               'trackUri': childSnapshot.val().trackUri || null,
               'imageType': childSnapshot.val().imageType || null,
               'id': childSnapshot.val().id || null,
-              'content_description': childSnapshot.val().content_description || null
+              'content_description': childSnapshot.val().content_description || null,
+              'artist': childSnapshot.val().artist || null
             });
           }
         });
@@ -496,7 +502,8 @@ const Add = ({ route }) => {
       custom: presetDescription !== newItemDescription,
       imageType: imageType,
       id: newItemId,
-      content_description: newItemDescription
+      content_description: newItemDescription,
+
     };
 
     if (trackUri) {
@@ -831,6 +838,7 @@ const Add = ({ route }) => {
                   setNewItemContentDescription(item.content_description)
                   setPresetDescription(item.description)
                   setTrackUri(item.uri || null)
+                  setNewItemArtist(item.artist || null)
                 }} 
                 style={{ 
                   flexDirection: 'row', 
