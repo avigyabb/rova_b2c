@@ -49,6 +49,8 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [trackUri, setTrackUri] = useState('')
   const [artistNames, setArtistNames] = useState(null)
   const [songState, setSongState] = useState(0)
+  const [didFinish, setDidFinish] = useState(false)
+
   // const [songPlay, setSongPlay] = useState(false)
 
   const onImageLoad = (event) => {
@@ -395,6 +397,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [urlFetched, setUrlFetched] = useState(false)
   const [currentSound, setCurrentSound] = useState(null);
 
+
+
+
   const playSound = async (soundUri, playState) => {
     const { sound } = await Audio.Sound.createAsync({ uri: soundUri });
     if (playState ===1) {
@@ -488,27 +493,52 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     if (previewUrl) {
       try {
         if (playing) {
-          // await soundRef.current.stopAsync();
-          // await soundRef.current.unloadAsync();
-          playSound(previewUrl, songState);
+          await soundRef.current.stopAsync();
+          await soundRef.current.unloadAsync();
+          // playSound(previewUrl, songState);
           setPlaying(false);
         } else {
-          // await soundRef.current.loadAsync({ uri: previewUrl })
-          // .then( async () => {
-          // await soundRef.current.playAsync()
-          // }
-          // )
-          // .then(() => {setPlaying(true);})
-          playSound(previewUrl, songState ).then(() => {setPlaying(true);})
+          if (didFinish){
+
+          setDidFinish(false)
+          await soundRef.current.playAsync()
+          .then(() => {setPlaying(true);})}
+
+          else{
+
+            await soundRef.current.loadAsync({ uri: previewUrl })
+          .then( async () => {
+          await soundRef.current.playAsync()
+          // soundRef.current.setOnPlaybackStatusUpdate((status) => {
+          //   if (status.didJustFinish) {
+          //     // Handle track completion here
+          //     // setDidFinish(true)
+          //     console.log("finished")
+          //     setSongState(1)
+          //     setPlaying(false)
+          //   }
+          // });
+          }
+          )
+          .then(() => {setPlaying(true);})
+          }
+          // playSound(previewUrl, songState ).then(() => {setPlaying(true);})
         }
       } catch (error) {
         setError('Error playing track');
         console.error('Error playing track:', error);
       }
     } 
-  
   };
-
+  soundRef.current.setOnPlaybackStatusUpdate((status) => {
+    if (status.didJustFinish) {
+      // Handle track completion here
+      // setDidFinish(true)
+      console.log("finished")
+      setSongState(3)
+      // setPlaying(false)
+    }
+  });
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 
@@ -685,17 +715,17 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       {/* {visitingUserId !== item.user_id && ( */}
       <View style={{ flexDirection: 'row', marginTop: 20 }}>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
-          <Ionicons name="thumbs-up-sharp" size={22} color={visitingUserId in likes ? "black" : "grey"} />
+          <Ionicons name="thumbs-up-sharp" size={25} color={visitingUserId in likes ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onDislikePress(item)}>
-          <Ionicons name="thumbs-down-sharp" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
+          <Ionicons name="thumbs-down-sharp" size={25} color={visitingUserId in dislikes ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
         </TouchableOpacity>
         
         {!showComments && (
           <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
-            <Ionicons name="chatbubble-sharp" size={22} color="grey" />
+            <Ionicons name="chatbubble-sharp" size={25} color="grey" />
             <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(comments).length}</Text>
           </TouchableOpacity>
         )}
@@ -703,12 +733,13 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         {/*<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onStarPress(item)}>
           <Ionicons name="star" size={30} color={visitingUserId in stars ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(stars).length}</Text>
-        // </TouchableOpacity> uncomment for swiping*/}
+        // </TouchableOpacity> uncomment for swiping*/
+        }
         {/* TODO: change music icon to the right */}
 
-        {item.artist != null && (<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); if (songState === 0){setSongState(1)} if(songState ===1){setSongState(2);} if(songState === 2){setSongState(1);} }}>
+        {item.artist != null && (<TouchableOpacity style={{ marginRight: 10, marginLeft: 'auto', justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); if (songState === 0){setSongState(1)} if(songState ===1){setSongState(2);} if(songState === 2){setSongState(1);} if (songState ===3 ){setSongState(1)} }}>
         
-        <Ionicons name= {songState === 0 ? "musical-notes": (songState === 1 ? "play-circle-outline": "pause-circle-outline")} size={30} color={songState === 0 ? "grey": "green"} />
+        <Ionicons name= {songState === 0 ? "musical-notes": (songState === 1 ? "play": (songState ===2 ? "pause": "reload"))} size={40} color={songState === 0 ? "grey": (songState === 3 ? 'grey': "green")} />
 
         </TouchableOpacity>)}
         
