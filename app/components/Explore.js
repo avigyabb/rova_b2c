@@ -191,7 +191,48 @@ const Explore = ({ route, navigation }) => {
             <Ionicons name="film" size={30} color="black" />
             <Text style={{ marginLeft: 10, fontWeight: 'bold', fontSize: 15 }}>Top Movies</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              padding: 10, 
+              borderWidth: 1, 
+              borderRadius: 5, 
+              borderColor: 'lightgrey', 
+              marginTop: 20 
+            }}
+            onPress={() => {
+              setExploreView('Events')
+            }}
+          >
+            <Ionicons name="basketball-sharp" size={30} color="black" />
+            <Text style={{ marginLeft: 10, fontWeight: 'bold', fontSize: 15 }}>Events</Text>
+          </TouchableOpacity>
         </View>
+      </View>
+    )
+  }
+
+  if (exploreView === 'Events') {
+    return (
+      <View>
+          <View style={{ backgroundColor: 'white' }}>
+            <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => {
+                    setExploreView("Home")
+                }}> 
+                    <Ionicons name="arrow-back" size={30} color="black" />
+                </TouchableOpacity>
+                <Text>Events</Text>
+            </View>
+        </View>
+          <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}> 
+              <View style={{ backgroundColor: 'white', paddingHorizontal: 20, height: '100%' }}>
+                  <View style={{ flex: 1, alignItems: 'center', marginTop: '30%' }}>
+                      <Text style={{ color: 'gray', fontSize: 20, marginBottom: 30 }}>Coming Soon! 🗓️</Text>
+                  </View>
+              </View> 
+          </TouchableWithoutFeedback>
       </View>
     )
   }
