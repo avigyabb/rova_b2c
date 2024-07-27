@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update } from "firebase/database";
 import { Image } from 'expo-image';
@@ -13,6 +13,30 @@ import { generateRandom, deriveChallenge } from 'expo-auth-session';
 import { Video } from 'expo-av';
 import moment from 'moment';
 import { formatDistanceToNow } from 'date-fns';
+import { Audio } from 'expo-av';
+import { artistName } from './Search';
+ 
+async function getDeezerPreviewUrl(trackName, artistName) {
+  try {
+    const response = await axios.get('https://api.deezer.com/search', {
+      params: {
+        q: `track:"${trackName}" artist:"${artistName}"`,
+      },
+    });
+
+    const track = response.data.data[0];
+    if (track && track.preview) {
+      return track.preview;
+    } else {
+      alert("Sorry, this snippet is unavailable. Try a different song!")
+      throw new Error('Track preview not found.');
+    }
+  } catch (error) {
+    console.error('Error fetching Deezer preview URL:', error);
+    throw error;
+  }
+}
+
 
 // this function is repeated many times -> condense into one file ~
 function getScoreColorHSL(score) {
@@ -38,7 +62,14 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [newComment, setNewComment] = useState('');
   const [commentTypingMode, setCommentTypingMode] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-    
+  const [spotifyAccessToken, setSpotifyAccessToken] = useState('')
+  const [accessToken, setAccessToken] = useState(null);
+  const [devices, setDevices] = useState([]);
+  const [trackUri, setTrackUri] = useState('')
+  const [artistNames, setArtistNames] = useState(null)
+  const [songState, setSongState] = useState(0)
+  const [didFinish, setDidFinish] = useState(false)
+
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -46,6 +77,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   };
 
   useEffect(() => {
+    getSpotifyAccessToken();
     const userRef = ref(database, `users/${item.user_id}`);
     get(userRef).then((snapshot) => {
       if (snapshot.exists()) {
@@ -80,7 +112,27 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     minute: '2-digit',
   });
 
+  const getSpotifyAccessToken = async () => {
+    const client_id = '3895cb48f70545b898a65747b63b430d';
+    const client_secret = '8d70ee092b614f58b488ce149e827ab1';
+    const url = 'https://accounts.spotify.com/api/token';
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
+    };
+    const data = qs.stringify({'grant_type': 'client_credentials'});
+
+    try {
+      const response = await axios.post(url, data, {headers});
+      console.log(response)
+      setSpotifyAccessToken(response.data.access_token);
+    } catch (error) {
+      console.error('Error obtaining token:', error);
+    }
+  }
+
   const onLikePress = (item) => {
+    console.log(item.key)
     const itemLikeRef = ref(database, 'items/' + item.key + '/likes/' + visitingUserId);
     const eventsRef = push(ref(database, 'events/' + item.user_id));
     const userRef = ref(database, 'users/' + item.user_id);
@@ -271,6 +323,110 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     }
   };
 
+
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [playing, setPlaying] = useState(false);
+  const [error, setError] = useState(null);
+  const soundRef = useRef(new Audio.Sound());
+  const [urlFetched, setUrlFetched] = useState(false)
+  const [currentSound, setCurrentSound] = useState(null);
+
+
+
+
+  const playSound = async (soundUri, playState) => {
+    const { sound } = await Audio.Sound.createAsync({ uri: soundUri });
+    if (playState ===1) {
+      if (currentSound) {
+        await currentSound.unloadAsync();
+      }
+  
+     
+      setCurrentSound(sound);
+      await sound.playAsync();
+    }
+    if (playState ===2){
+      currentSound.pauseAsync();
+    }
+  };
+
+
+  const urlFetching = () => {
+    if (previewUrl === null){
+      urlFetching();
+    }else{
+      setUrlFetched(true)
+    }
+  }
+
+  const handleFetchTrack = async (item) => {
+    try {
+      
+      setError(null);
+      let url = await getDeezerPreviewUrl(item.content, item.artist);
+      setPreviewUrl(url)
+      
+      
+      
+    } catch (error) {
+      setError('Error fetching track');
+      console.error('Error fetching track:', error);
+    }
+    
+
+  };
+
+  const handlePlayTrack = async (item) => {
+    console.log(previewUrl)
+   
+
+    if (previewUrl) {
+      try {
+        if (playing) {
+          await soundRef.current.stopAsync();
+          await soundRef.current.unloadAsync();
+          setPlaying(false);
+        } else {
+          if (didFinish){
+
+          setDidFinish(false)
+          await soundRef.current.playAsync()
+          .then(() => {setPlaying(true);})}
+
+          else{
+
+            await soundRef.current.loadAsync({ uri: previewUrl })
+          .then( async () => {
+          await soundRef.current.playAsync()
+          }
+          )
+          .then(() => {setPlaying(true);})
+          }
+        }
+      } catch (error) {
+        setError('Error playing track');
+        console.error('Error playing track:', error);
+      }
+    } 
+  };
+  soundRef.current.setOnPlaybackStatusUpdate((status) => {
+    if (status.didJustFinish) {
+      setSongState(3)
+    }
+  });
+
+
+  const onSongImagePress = (item) => {
+     if (item.content != null){
+
+        handleFetchTrack(item)
+        handlePlayTrack(item);
+       
+    }
+  }
+
+  
+
   const onItemImagePress = async (item) => {
     if (!individualSpotifyAccessToken) {
       promptAsync();
@@ -388,6 +544,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           ) : (
             <>
             {/* <TouchableOpacity onPress={() => onItemImagePress(item)}> */}
+              
               <Image
                 source={{ uri: item.image }}
                 style={{
@@ -401,6 +558,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
                 }}
                 onLoad={onImageLoad}
               />
+              
             {/* </TouchableOpacity> */}
             </>
           )}
@@ -411,25 +569,39 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       {/* {visitingUserId !== item.user_id && ( */}
       <View style={{ flexDirection: 'row', marginTop: 20 }}>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
-          <Ionicons name="thumbs-up-sharp" size={22} color={visitingUserId in likes ? "black" : "grey"} />
+          <Ionicons name="thumbs-up-sharp" size={25} color={visitingUserId in likes ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onDislikePress(item)}>
-          <Ionicons name="thumbs-down-sharp" size={22} color={visitingUserId in dislikes ? "black" : "grey"} />
+          <Ionicons name="thumbs-down-sharp" size={25} color={visitingUserId in dislikes ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
         </TouchableOpacity>
         
         {!showComments && (
           <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
-            <Ionicons name="chatbubble-sharp" size={22} color="grey" />
+            <Ionicons name="chatbubble-sharp" size={25} color="grey" />
             <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(comments).length}</Text>
           </TouchableOpacity>
         )}
-
+  
         {/*<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onStarPress(item)}>
           <Ionicons name="star" size={30} color={visitingUserId in stars ? "black" : "grey"} />
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(stars).length}</Text>
-        </TouchableOpacity> uncomment for swiping*/}
+        // </TouchableOpacity> uncomment for swiping*/
+        }
+        {/* TODO: change music icon to the right */}
+
+        {item.artist != null && (<TouchableOpacity style={{ marginRight: 10, marginLeft: 'auto', justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); if (songState === 0){setSongState(1)} if(songState ===1){setSongState(2);} if(songState === 2){setSongState(1);} if (songState ===3 ){setSongState(1)} }}>
+        
+        <Ionicons name= {songState === 0 ? "musical-notes": (songState === 1 ? "play": (songState ===2 ? "pause": "reload"))} size={40} color={songState === 0 ? "grey": (songState === 3 ? 'grey': "green")} />
+
+        </TouchableOpacity>)}
+        
+        {/* {songQ && (<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); setSongQ(true);} }>
+        
+        <Ionicons name="musical-notes" size={26} color={"grey"} />
+
+        </TouchableOpacity>)} */}
 
         <TouchableOpacity 
           style={{ marginLeft: 'auto', marginRight: 10 }} 
@@ -441,7 +613,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             itemCategoryName: '',
             taggedUser: username,
             taggedUserId: item.user_id,
-            itemId: item.id
+            itemId: item.id 
           })}>
           <Ionicons name="bookmark" size={30} color="grey" />
         </TouchableOpacity>
@@ -454,7 +626,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             itemCategoryName: '',
             taggedUser: username,
             taggedUserId: item.user_id,
-            itemId: item.id
+            itemId: item.id 
           })}
         >
           <Ionicons style={{}} name="add-circle" size={30} color="grey" />

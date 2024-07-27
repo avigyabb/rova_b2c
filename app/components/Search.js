@@ -12,8 +12,9 @@ import axios from 'axios';
 import qs from 'qs';
 import { Buffer } from 'buffer';
 import { useIsFocused } from '@react-navigation/native';
-
+var artists = ''
 export const search = async (spotifyAccessToken, newItemCategoryType, setSearchResults, text) => {
+  
   if (newItemCategoryType === 'Movies' || newItemCategoryType === 'Shows') {
     const API_KEY = '0259695ad57c17e0c504fae2bf270bc4';
     const BASE_URL = 'https://api.themoviedb.org/3';
@@ -60,13 +61,16 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
         })));
       } else if (newItemCategoryType === 'Songs') { 
         console.log(response.data.tracks.items);
+        console.log("access token", spotifyAccessToken)
         setSearchResults(response.data.tracks.items.map(track => ({
           content: track.name,
           description: track.artists.map(artist => artist.name).join(', '),
           id: newItemCategoryType + track.id,
           content_description: track.name + track.artists.map(artist => artist.name).join(', '),
           image: track.album.images.length > 0 ? track.album.images[0].url : undefined,
-          uri: track.uri
+          uri: track.uri,
+          // artist: track.artists.map(artist => artist.name).join(' ')
+          artist: track.artists.map(artist => artist.name).length > 1 ? track.artists.map(artist => artist.name).join(' ') : track.artists[0].name
         })));
       } else if (newItemCategoryType === 'Artists') { 
         setSearchResults(response.data.artists.items.map(artist => ({
@@ -118,3 +122,4 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
     // }); 
   }
 }
+// export var artistName = artists;

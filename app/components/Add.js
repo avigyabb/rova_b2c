@@ -116,6 +116,8 @@ const Add = ({ route }) => {
   const [addView, setAddView] = useState('');
   const [binarySearchL, setBinarySearchL] = useState(0);
   const [binarySearchR, setBinarySearchR] = useState(0);
+  const [newItemArtist, setNewItemArtist] = useState('');
+
   const [binarySearchM, setBinarySearchM] = useState(0);
   const [newItemFinalScore, setNewItemFinalScore] = useState(-1);
   const [loaded] = useFonts({
@@ -283,6 +285,7 @@ const Add = ({ route }) => {
                 trackUri: item.trackUri || null,
                 imageType: item.imageType || null,
                 id: item.id || null,
+                artist: item.artist || null,
                 content_description: item.content_description || null
               })
               .then(() => console.log(`Score updated for ${item.content} ${items}`))
@@ -316,7 +319,9 @@ const Add = ({ route }) => {
         'custom': presetDescription !== newItemDescription,
         'trackUri': trackUri,
         'id': newItemId,
-        'content_description': newItemDescription
+        'content_description': newItemDescription,
+        'artist': newItemArtist
+
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
       let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
@@ -342,6 +347,7 @@ const Add = ({ route }) => {
           custom: item.custom,
           trackUri: item.trackUri || null,
           id: item.id || null,
+          artist: item.artist || null,
           content_description: item.content_description || null
         })
         .then(() => console.log(`Score updated for ${item.content} ${items}`))
@@ -407,7 +413,9 @@ const Add = ({ route }) => {
               'trackUri': childSnapshot.val().trackUri || null,
               'imageType': childSnapshot.val().imageType || null,
               'id': childSnapshot.val().id || null,
-              'content_description': childSnapshot.val().content_description || null
+              'content_description': childSnapshot.val().content_description || null,
+              'artist': childSnapshot.val().artist || null
+
             });
           }
         });
@@ -831,6 +839,7 @@ const Add = ({ route }) => {
                   setNewItem(item.content)
                   setNewItemImageUris([item.image])
                   setNewItemDescription(item.description)
+                  setNewItemArtist(item.artist || null)
                   setNewItemId(item.id)
                   setNewItemContentDescription(item.content_description)
                   setPresetDescription(item.description)
