@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Vibration } from 'react-native';
+import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share } from 'react-native';
 import { Image } from 'expo-image';
 import { Image as ReactImage } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -50,7 +50,18 @@ const styles = StyleSheet.create({
     width: '48%',
     borderRadius: 10,
     alignItems: 'center',
-  }
+  },
+  shareButton: {
+    fontWeight: 'bold',
+  },
+  shareContainer: {
+    backgroundColor: '#00aced',
+    padding: 4,
+    fontSize: 8,
+    width: '48%',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
 });
 
 const Profile = ({ route, navigation }) => {
@@ -134,6 +145,25 @@ const Profile = ({ route, navigation }) => {
       console.error("Error fetching categories:", error);
     });
   }
+
+  const shareLink = () => {
+    Share.share({
+      message: 'Follow these steps and rank with me on ambora/social!',
+      url: 'https://testflight.apple.com/join/6VpEA1gh',
+    })
+    .then((result) => {
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log('Shared with activity type: ', result.activityType);
+        } else {
+          console.log('Shared');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Dismissed');
+      }
+    })
+    .catch((error) => console.error('Error sharing:', error));
+  };
 
   const onBackPress = () => {
     setFocusedList(null);
@@ -346,13 +376,23 @@ const Profile = ({ route, navigation }) => {
             </Hyperlink>
 
             {!visitingUserId ? (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
-                <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
-                  <Text style={styles.editButtons}>Edit Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('Add List Page')}>
-                  <Text style={styles.editButtons}>Add List</Text>
-                </TouchableOpacity>
+              <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+                <View style={{ alignItems: 'flex-start', marginBottom: 10 }}>
+                  <TouchableOpacity onPress={shareLink} style={styles.shareContainer}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="person-add-sharp" size={20} color="black" style={{ marginRight: 5 }} />
+                      <Text style={styles.shareButton}>Invite a Friend!</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
+                    <Text style={styles.editButtons}>Edit Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('Add List Page')}>
+                    <Text style={styles.editButtons}>Add List</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
               <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
