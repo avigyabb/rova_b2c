@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update, child } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -69,6 +69,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [artistNames, setArtistNames] = useState(null)
   const [songState, setSongState] = useState(0)
   const [didFinish, setDidFinish] = useState(false)
+  const [compareUserID, setCompareUserID] = useState([])
+  const [compareUserRating, setCompareUserRating] = useState([])
+  const [profilePicList, setProfilePicList] = useState([])
 
 
   const onImageLoad = (event) => {
@@ -76,7 +79,52 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     setDimensions({ width: 260, height: 260 * height / width });
   };
 
+  const getProfilePic = (userID) =>{
+
+    const userRef = ref(database, 'users/' + userID);
+    return get(userRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
+        return userData; 
+      } else {
+        console.log("Error");
+        return null;
+      }
+    });
+    
+  }
+
+  const getProfilePicList = (userIDList) =>{
+    for (userID in userIDList) {
+      profilePicList.push(getProfilePic(userID))
+    }
+  }
+
   useEffect(() => {
+    
+    const itemsRef = ref(database, 'items');
+    const itemsQuery = query(itemsRef, orderByChild('image'), equalTo(item.image))
+    onValue(itemsQuery, (snapshot) => {
+      const data = snapshot.val()
+      for (const key in data){
+        for (const key2 in data[key]){
+          if (key2 === 'user_id'){
+            compareUserID.push(data[key][key2])
+          } else if (key2 === 'score') {
+            compareUserRating.push(data[key][key2])
+          }
+        }
+      }
+
+      console.log(compareUserID)
+      console.log(compareUserRating)
+
+      getProfilePicList(compareUserID)
+      console.log(profilePicList)
+    }, (error) => {
+      console.error('Error fetching data: ', error);
+    })
+  
     getSpotifyAccessToken();
     const userRef = ref(database, `users/${item.user_id}`);
     get(userRef).then((snapshot) => {
@@ -454,6 +502,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
 
   const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
 
+
+
+
   return (
     <ScrollView style={{ backgroundColor: 'white' }}>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
@@ -651,6 +702,18 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           paddingTop: 7,
           paddingBottom: 10
         }}>
+ <FlatList
+        data={profilePicList}
+        horizontal
+        keyExtractor={(item) => item.profile_pic}
+        renderItem={({ item }) => (
+          <Image
+            style={{ height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
+            source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }}
+          />
+        )}
+        showsHorizontalScrollIndicator={false}
+      />
           <TextInput
             placeholder={`Add a comment for ${username}...`}
             placeholderTextColor="gray"

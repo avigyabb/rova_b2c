@@ -68,8 +68,11 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         setCategoryInfo(snapshot.val());
         // check item matches with user
         const sameUserCategoriesRef = ref(database, 'categories');
+        // console.log(sameUserCategoriesRef)
         const sameUserCategoriesQuery = query(sameUserCategoriesRef, orderByChild('user_id'), equalTo(visitingUserId));
+        // console.log(sameUserCategoriesQuery)
         get(sameUserCategoriesQuery).then((sameUserCategoriesSnapshot) => {
+          // console.log("got this")
           if (sameUserCategoriesSnapshot.exists()) {
             let promises = [];
             let visitingUserCategoriesTemp = [];
