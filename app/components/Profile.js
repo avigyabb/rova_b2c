@@ -47,18 +47,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'lightgrey',
     padding: 8,
     fontSize: 13,
-    width: '48%',
+    width: '44%',
     borderRadius: 10,
     alignItems: 'center',
   },
-  shareButton: {
-    fontWeight: 'bold',
-  },
   shareContainer: {
-    backgroundColor: '#00aced',
+    backgroundColor: '#33c1ff',
     padding: 4,
     fontSize: 8,
-    width: '48%',
+    width: '10%',
     borderRadius: 10,
     alignItems: 'center',
   },
@@ -377,20 +374,15 @@ const Profile = ({ route, navigation }) => {
 
             {!visitingUserId ? (
               <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
-                <View style={{ alignItems: 'flex-start', marginBottom: 10 }}>
-                  <TouchableOpacity onPress={shareLink} style={styles.shareContainer}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Ionicons name="person-add-sharp" size={20} color="black" style={{ marginRight: 5 }} />
-                      <Text style={styles.shareButton}>Invite a Friend!</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
                     <Text style={styles.editButtons}>Edit Profile</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('Add List Page')}>
                     <Text style={styles.editButtons}>Add List</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={shareLink} style={styles.shareContainer}>
+                      <Ionicons name="person-add-sharp" size={17} color="black" style={{ marginTop: 3 }} />
                   </TouchableOpacity>
                 </View>
               </View>

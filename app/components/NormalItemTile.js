@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update, child } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -49,6 +49,36 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
+const styles = StyleSheet.create({
+  container: {
+    width: 60,
+    height: 60,
+    position: 'relative',
+  },
+  icon: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+  },
+  badgeContainer: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    backgroundColor: 'red',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+});
+
+
 const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
@@ -69,14 +99,117 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [artistNames, setArtistNames] = useState(null)
   const [songState, setSongState] = useState(0)
   const [didFinish, setDidFinish] = useState(false)
-
+  const [compareUserID, setCompareUserID] = useState([])
+  const [compareUserRating, setCompareUserRating] = useState([])
+  const [profileList, setProfileList] = useState([])
+  const [loading, setLoading] = useState(true);
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
     setDimensions({ width: 260, height: 260 * height / width });
   };
 
+  const getProfile = (userID) => {
+    const userRef = ref(database, 'users/' + userID);
+    return get(userRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
+        return userData; 
+      } else {
+        console.log("Error fetching user");
+        return null;
+      }
+    });
+  }
+  
+  const getProfileList = async (userIDList) => {
+    for (let userID of userIDList) {
+      try {
+        const addition = await getProfile(userID);
+        if (addition) {profileList.push(addition);}
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    setLoading(false);
+    return profileList;
+  }
+  
   useEffect(() => {
+    setLoading(true);
+if (showComments){
+    // Define your Firebase database reference
+    const itemsRef = ref(database, 'items');
+    
+    // Create a query to fetch items with the specified image
+    const itemsQuery = query(itemsRef, orderByChild('image'), equalTo(item.image));
+    
+    // Use the `get` function to fetch the data once
+    get(itemsQuery).then((snapshot) => {
+      if (snapshot.exists()) {
+        const unfilteredData = snapshot.val();
+        const data = [];
+    
+        // Filter the data based on the content
+        for (let itemId in unfilteredData) {
+          console.log(itemId);
+          if (unfilteredData[itemId].content === item.content) {
+            data.push(unfilteredData[itemId]);
+          }
+        }
+    
+        console.log("data: ", data);
+    
+        // Extract user IDs and scores from the filtered data
+        var same_user = false;
+        // for (const key in data) {
+        //   for (const key2 in data[key]) {
+        //     if (data[key][key2] === item.user_id) {
+        //       continue;
+        //     }
+        //     if (key2 === 'user_id') {
+        //       compareUserID.push(data[key][key2]);
+        //     } else if (key2 === 'score') {
+        //       compareUserRating.push(data[key][key2]);
+        //     }
+        //   }
+        // }
+
+        for (const key in data) {
+          for (const key2 in data[key]) {
+            
+            if (key2 === 'user_id') {
+              if (data[key][key2] === item.user_id) {
+                same_user = true;
+              } else{
+                same_user = false;
+              }
+              if (!same_user){
+              compareUserID.push(data[key][key2]);
+            }
+            } else if (key2 === 'score') {
+              if (!same_user){
+              compareUserRating.push(data[key][key2]);
+            }
+            }
+          }
+        }
+
+        console.log(compareUserID);
+        console.log(compareUserRating);
+    
+        // Call a function to process the user IDs
+        getProfileList(compareUserID);
+
+        
+      } else {
+        console.log("No data available");
+      }
+    }).catch((error) => {
+      console.error('Error Fetching Data: ', error);
+    });
+  }
+
     getSpotifyAccessToken();
     const userRef = ref(database, `users/${item.user_id}`);
     get(userRef).then((snapshot) => {
@@ -345,7 +478,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       setCurrentSound(sound);
       await sound.playAsync();
     }
-    if (playState ===2){
+    if (playState === 2){
       currentSound.pauseAsync();
     }
   };
@@ -589,13 +722,14 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(stars).length}</Text>
         // </TouchableOpacity> uncomment for swiping*/
         }
-        {/* TODO: change music icon to the right */}
 
-        {item.artist != null && (<TouchableOpacity style={{ marginRight: 10, marginLeft: 'auto', justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); if (songState === 0){setSongState(1)} if(songState ===1){setSongState(2);} if(songState === 2){setSongState(1);} if (songState ===3 ){setSongState(1)} }}>
+        {/* Removed the son snippet feature due to too many bugs */}
+
+        {/*{item.artist != null && (<TouchableOpacity style={{ marginRight: 10, marginLeft: 'auto', justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); if (songState === 0){setSongState(1)} if(songState ===1){setSongState(2);} if(songState === 2){setSongState(1);} if (songState ===3 ){setSongState(1)} }}>
         
         <Ionicons name= {songState === 0 ? "musical-notes": (songState === 1 ? "play": (songState ===2 ? "pause": "reload"))} size={40} color={songState === 0 ? "grey": (songState === 3 ? 'grey': "green")} />
 
-        </TouchableOpacity>)}
+        </TouchableOpacity>)} */}
         
         {/* {songQ && (<TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() =>{ onSongImagePress(item); setSongQ(true);} }>
         
@@ -632,6 +766,39 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           <Ionicons style={{}} name="add-circle" size={30} color="grey" />
         </TouchableOpacity>
       </View>
+      {showComments && (
+        loading ? (
+          <View style={{ alignItems: 'center', justifyContent: 'center'}}>
+            <ActivityIndicator size="large" color="black" />
+          </View>
+        ) : (
+          <FlatList
+            data={profileList}
+            horizontal
+            keyExtractor={(item) => item.key}
+            renderItem={({ item, index }) => {
+              const roundedScore = compareUserRating[index].toFixed(1);
+              const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
+              
+              return (
+                <View style={{ alignItems: 'center', marginRight: 10 }}>
+                  <Image
+                    source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
+                    style={{ height: 60, width: 60, borderWidth: 0.5, borderRadius: 30, borderColor: 'lightgrey' }}
+                  />
+                  <Text style={{ marginTop: 5, textAlign: 'center' }}>
+                    {item.name}
+                  </Text>
+                  <View style={{ position: 'absolute', right: 0, top: 0, backgroundColor, borderRadius: 15, width: 30, height: 30, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: 'white' }}>{roundedScore}</Text>
+                  </View>
+                </View>
+              );
+            }}
+            showsHorizontalScrollIndicator={false}
+          />
+        )
+      )}
       </>
     </View>
     )}
