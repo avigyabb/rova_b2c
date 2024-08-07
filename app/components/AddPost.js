@@ -5,6 +5,9 @@ import * as ImagePicker from 'expo-image-picker';
 import LocationList from './AddFlow/TagLocation';
 import PeopleList from './AddFlow/TagFriends';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import axios from 'axios' 
+import * as FileSystem from 'expo-file-system'
+
 
 const styles = StyleSheet.create({
   postButtons: {
@@ -31,6 +34,8 @@ const styles = StyleSheet.create({
 const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView, setAddedCustomImage }) => {
 
   const [addPageView, setAddPageView] = useState(null);
+  var safety = false;
+
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -39,10 +44,83 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
       aspect: [4,3], // search up
       quality: 1,
     });
-    setNewItemImageUris([result.assets[0].uri]);
-    setAddedCustomImage(true);
-  }; 
+    
+  
 
+  try {
+    const apiKey = "AIzaSyDxK3oZA5yBjSC0Lvrs_wyT53Jputlx-IA";
+    const apiURL = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+    const base64ImageData = await FileSystem.readAsStringAsync(result.assets[0].uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const requestData ={
+      requests:[
+        {
+          image: {
+            content: base64ImageData
+          },
+          features: [{type: "SAFE_SEARCH_DETECTION"}]
+        }
+      ]
+    };
+
+    const apiResponse = await axios.post(apiURL, requestData) 
+
+    if (!((apiResponse.data.responses[0].safeSearchAnnotation.adult === "UNLIKELY") 
+    || (apiResponse.data.responses[0].safeSearchAnnotation.adult === "VERY_UNLIKELY"))){
+  console.log(1);
+
+  safety = true;
+    }
+    else if (!((apiResponse.data.responses[0].safeSearchAnnotation.racy === "UNLIKELY") 
+    || (apiResponse.data.responses[0].safeSearchAnnotation.racy === "VERY_UNLIKELY"))){
+  console.log(2);
+
+      safety = true;
+
+    }
+    
+    else if (!((apiResponse.data.responses[0].safeSearchAnnotation.medical === "UNLIKELY") 
+    || (apiResponse.data.responses[0].safeSearchAnnotation.medical === "VERY_UNLIKELY"))){
+  console.log(3);
+
+      safety = true;
+
+    }
+    
+    else if (!((apiResponse.data.responses[0].safeSearchAnnotation.violence === "UNLIKELY") 
+    || (apiResponse.data.responses[0].safeSearchAnnotation.violence === "VERY_UNLIKELY"))){
+  console.log(4);
+
+      safety = true;
+
+    }
+    else{
+      console.log(10);
+      safety = false;
+    }
+
+    // console.log(apiResponse.data.responses[0].safeSearchAnnotation.racy === "UNLIKELY" ||
+    //  apiResponse.data.responses[0].safeSearchAnnotation.racy === "VERY_UNLIKELY")
+    console.log(safety)
+    // setUnsafeResult(apiResponse) set to true if flaggable
+    console.log(apiResponse.data.responses[0].safeSearchAnnotation)
+
+
+  } catch(error){
+    console.log('Error analyzing image', error);
+    setUnsafeResult(false)
+  }
+
+
+if (safety){
+  alert("This image does not follow our guidelines")
+}else{
+  setNewItemImageUris([result.assets[0].uri]);
+  setAddedCustomImage(true);
+}
+    
+}; 
   // const getLocation = async () => {
   //   try {
   //     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -109,6 +187,15 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
     )
   }
 
+  const openaiAPIKey = "sk-ambora-service-tRGLRzm8TpX7LyaXbEJ1T3BlbkFJZUJGeBOwv2SUDUBYrn8o";
+const openaiApi = axios.create({
+  baseURL: 'https://api.openai.com/v1/moderations',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${openaiAPIKey}`,
+  }
+});
+
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
@@ -120,7 +207,22 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
           }}>
             <Text style={{ fontWeight: 'bold', color: 'black', fontSize: 16 }}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => {setAddView('')}} style={{
+          <TouchableOpacity onPress={async () => { 
+            
+            try {
+              const moderation_response = await openaiApi.post('', { input: newItemDescription });
+              if (moderation_response.data.results[0].flagged){
+                alert("This description does not follow our guidelines")
+                } else{
+                  setAddView('');
+                }
+              //moderation_response.data.results[0].flagged
+            } catch (error) {
+              console.error('Error moderating text:', error);
+            }
+            
+          }
+         } style={{
             backgroundColor: 'black',
             padding: 6,
             paddingHorizontal: 10,
