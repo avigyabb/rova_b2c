@@ -531,38 +531,40 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
-        <TouchableOpacity onPress={onBackPress}> 
-          <Ionicons name="arrow-back" size={30} color="black" />
-        </TouchableOpacity>
-        {editMode ? (
-          <>
-          <TouchableOpacity onPress={() => onDeleteCategoryPress()}>
-            <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
-          </TouchableOpacity>
-          </>
-        ) : (
-          <Text style={{ fontSize: 15, fontWeight: 'bold' }}></Text>
-        )}
+      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', alignItems: 'center' }}>
+  <TouchableOpacity onPress={onBackPress}> 
+    <Ionicons name="arrow-back" size={30} color="black" />
+  </TouchableOpacity>
+  
+  <View style={{ flex: 1, alignItems: 'center', position: 'absolute', left: 0, right: 0 }}>
+    {editMode ? (
+      <TouchableOpacity onPress={() => onDeleteCategoryPress()}>
+        <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
+      </TouchableOpacity>
+    ) : (
+      <Text style={{ fontSize: 15, fontWeight: 'bold' }}></Text>
+    )}
+  </View>
 
-        <View style={{ flexDirection: 'row' }}>
-          {!editMode && !isMyProfile && (
-            <TouchableOpacity onPress={() => setCategoryListView('Similarity Score')}>
-              <Text style={{ fontSize: 15 }}>Compare</Text>
-            </TouchableOpacity>
-          )}
+  <View style={{ flexDirection: 'row', marginLeft: 'auto' }}>
+    {!editMode && !isMyProfile && (
+      <TouchableOpacity onPress={() => setCategoryListView('Similarity Score')}>
+        <Text style={{ fontSize: 15 }}>Compare</Text>
+      </TouchableOpacity>
+    )}
+    
+    <TouchableOpacity onPress={() => onEditPress()}>
+      {editMode ? (
+        <Text style={{ fontSize: 15, fontWeight: 'bold', marginLeft: 25 }}>Done</Text>
+      ) : isMyProfile ? ( // change this variable to true to delete other people's comments
+        <Text style={{ fontSize: 15, marginLeft: 25 }}>Edit</Text>
+      ) : (
+        <></>
+      )}
+    </TouchableOpacity>
+  </View>
+</View>
 
-          <TouchableOpacity onPress={() => onEditPress()}>
-            {editMode ? (
-              <Text style={{ fontSize: 15, fontWeight: 'bold', marginLeft: 25 }}>Done</Text>
-            ) : isMyProfile ? ( //change this variable to true to delete other people's comments
-              <Text style={{ fontSize: 15, marginLeft: 25 }}>Edit</Text>
-            ) : (
-              <></>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
       
       <ScrollView>
       <View style={{ padding: 10 }}>

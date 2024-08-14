@@ -959,9 +959,10 @@ const Add = ({ route }) => {
                 backgroundColor: 'black',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 28,
-                height: 50,
-                width: 175,
+                borderRadius: 15, // Set borderRadius to 15 to match "Add to 'Later'"
+                width: 175, // Keep the width the same
+                height: 50, // Set height explicitly
+
               }}>
                 <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Add to List</Text>
               </TouchableOpacity>
