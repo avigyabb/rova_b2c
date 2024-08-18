@@ -37,6 +37,7 @@ const AddCategory = ({ onBackPress, userKey }) => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [newCategoryType, setNewCategoryType] = useState('');
+  const [newCategoryImageSet, setNewCategoryImageSet] = useState(false);
   const [buttonMessage, setButtonMessage] = useState('Add Category');
 
   const onAddCategoryPress = async (item) => { 
@@ -70,7 +71,8 @@ const AddCategory = ({ onBackPress, userKey }) => {
                 list_num: 0,
                 imageUri: downloadURL,
                 presetImage: true,
-                num_items: 0
+                num_items: 0,
+                user_set_image: newCategoryImageSet
               })
               .then(() => {
                 console.log('New category added with image URI.')
@@ -78,6 +80,7 @@ const AddCategory = ({ onBackPress, userKey }) => {
                 setNewCategoryDescription('');
                 setNewCategoryType('');
                 setNewCategoryImageUri(null);
+                setNewCategoryImageSet(false);
                 onBackPress();
               })
               .catch((error) => console.error('Error adding new category:', error));
@@ -91,7 +94,8 @@ const AddCategory = ({ onBackPress, userKey }) => {
                 list_num: 0,
                 imageUri: downloadURL,
                 presetImage: true,
-                num_items: 0
+                num_items: 0,
+                user_set_image: newCategoryImageSet
               })
               .then(() => {
                 console.log('New category added with image URI.')
@@ -99,6 +103,7 @@ const AddCategory = ({ onBackPress, userKey }) => {
                 setNewCategoryDescription('');
                 setNewCategoryType('');
                 setNewCategoryImageUri(null);
+                setNewCategoryImageSet(false);
                 onBackPress();
               })
               .catch((error) => console.error('Error adding new category:', error));
@@ -119,7 +124,8 @@ const AddCategory = ({ onBackPress, userKey }) => {
           imageUri: null, // Save the URI in the database
           latest_add: 0,
           presetImage: false,
-          num_items: 0
+          num_items: 0,
+          user_set_image: newCategoryImageSet
         })
         .then(() => {
           console.log('New category added without image URI.')
@@ -127,6 +133,7 @@ const AddCategory = ({ onBackPress, userKey }) => {
           setNewCategoryDescription('');
           setNewCategoryType('');
           setNewCategoryImageUri(null);
+          setNewCategoryImageSet(false);
           onBackPress();
         })
         .catch((error) => console.error('Error adding new category:', error));
@@ -141,7 +148,8 @@ const AddCategory = ({ onBackPress, userKey }) => {
           imageUri: null, // Save the URI in the database
           latest_add: 0,
           presetImage: false,
-          num_items: 0
+          num_items: 0,
+          user_set_image: newCategoryImageSet
         })
         .then(() => {
           console.log('New category added without image URI.')
@@ -149,6 +157,7 @@ const AddCategory = ({ onBackPress, userKey }) => {
           setNewCategoryDescription('');
           setNewCategoryType('');
           setNewCategoryImageUri(null);
+          setNewCategoryImageSet(false);
           onBackPress();
         })
         .catch((error) => console.error('Error adding new category:', error));
@@ -164,6 +173,7 @@ const AddCategory = ({ onBackPress, userKey }) => {
       quality: 1,
     });
     setNewCategoryImageUri(result.assets[0].uri);
+    setNewCategoryImageSet(true);
   }; 
 
   return (

@@ -295,7 +295,7 @@ const Add = ({ route }) => {
               if (item.score === 10.0) {
                 const categoryRef = ref(database, 'categories/' + newItemCategory);
                 get(categoryRef).then((snapshot) => {
-                  if (snapshot.exists() && !snapshot.val().presetImage) {
+                  if (snapshot.exists() && snapshot.val().presetImage && !snapshot.val().user_set_image) {
                     console.log("switched photos")
                     update(categoryRef, {
                       imageUri: item.image
@@ -357,7 +357,7 @@ const Add = ({ route }) => {
         if (item.score === 10.0) {
           const categoryRef = ref(database, 'categories/' + newItemCategory);
           get(categoryRef).then((snapshot) => {
-            if (snapshot.exists() && !snapshot.val().presetImage) {
+            if (snapshot.exists() && snapshot.val().presetImage && !snapshot.val().user_set_image) {
               console.log("switched photos")
               update(categoryRef, {
                 imageUri: item.image
