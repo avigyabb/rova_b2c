@@ -176,24 +176,22 @@ if (showComments){
         // }
 
         for (const key in data) {
+          const userId = data[key]['user_id'];
+
+          // Check if the current user ID matches item.userId
+          if (userId === item.user_id) {
+            continue; // Skip this iteration for both user_id and score
+          }
+
           for (const key2 in data[key]) {
-            
             if (key2 === 'user_id') {
-              if (data[key][key2] === item.user_id) {
-                same_user = true;
-              } else{
-                same_user = false;
-              }
-              if (!same_user){
-              compareUserID.push(data[key][key2]);
-            }
+              compareUserID.push(userId);
             } else if (key2 === 'score') {
-              if (!same_user){
               compareUserRating.push(data[key][key2]);
-            }
             }
           }
         }
+
 
         console.log(compareUserID);
         console.log(compareUserRating);
@@ -781,16 +779,32 @@ if (showComments){
               const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
               
               return (
-                <View style={{ alignItems: 'center', marginRight: 10 }}>
+                <View style={{ alignItems: 'center', marginRight: 9.5, marginLeft: 9.5, marginTop: 10 }}>
                   <Image
                     source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
-                    style={{ height: 60, width: 60, borderWidth: 0.5, borderRadius: 30, borderColor: 'lightgrey' }}
+                    style={{ height: 47.5, width: 47.5, borderWidth: 0.5, borderRadius: 23.75, borderColor: 'lightgrey' }}
                   />
-                  <Text style={{ marginTop: 5, textAlign: 'center' }}>
+                    <Text 
+                      style={{ marginTop: 5, textAlign: 'center', maxWidth: 50 }} // Adjust maxWidth as necessary
+                      numberOfLines={1} 
+                      ellipsizeMode="tail"
+                    >
                     {item.name}
                   </Text>
-                  <View style={{ position: 'absolute', right: 0, top: 0, backgroundColor, borderRadius: 15, width: 30, height: 30, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ color: 'white' }}>{roundedScore}</Text>
+                  <View style={{ 
+                    position: 'absolute', 
+                    right: -5, 
+                    top: -5, 
+                    backgroundColor, 
+                    borderRadius: 15, 
+                    width: 30, 
+                    height: 30, 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    borderWidth: 1, 
+                    borderColor: 'white' 
+                  }}>
+                    <Text style={{ color: 'white', fontSize: 12 }}>{roundedScore}</Text>
                   </View>
                 </View>
               );
