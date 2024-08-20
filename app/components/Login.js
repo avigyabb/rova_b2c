@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, SafeAreaView, TouchableWithoutFeedback, Keyboard, Touchable } from 'react-native';
 import { useFonts } from 'expo-font';
-import { ref, set, onValue, off, query, orderByChild, push, equalTo, get } from "firebase/database";
+import { ref, set, onValue, off, query, orderByChild, push, equalTo, get, getDatabase } from "firebase/database";
 import { database } from '../../firebaseConfig.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 
 const auth = getAuth();
 
@@ -13,6 +13,8 @@ const Login = ({ setView, setUserKeyIndex }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [wrongPassword, setWrongPassword] = useState('');
+  const [page, setPage] = useState();
+  const [resetEmail, setResetEmail] = useState('');
   const [loaded] = useFonts({
     'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
     'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
@@ -46,6 +48,64 @@ const Login = ({ setView, setUserKeyIndex }) => {
       }
     }
   };
+
+  const onSendResetEmail = () => {
+    const auth = getAuth();
+    const database = getDatabase();
+    const emailVal = resetEmail;
+    sendPasswordResetEmail(auth, emailVal).then(() => {
+      alert("Check your email for password reset");
+      console.log("Password reset email sent");
+    }).catch(err => {
+      alert("Error sending password reset email: " + err.message);
+    });
+    console.log(`Reset email sent to: ${resetEmail}`);
+    setPage(null);
+    setResetEmail('');
+  };
+
+  if (page === 'forgotPassword') {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: 'black', fontSize: 24, marginBottom: 20, textAlign: 'left', width: '80%' }}>Forgot Your Password? 🤔</Text>
+        
+        <TextInput
+          placeholder="email"
+          value={resetEmail}
+          onChangeText={setResetEmail}
+          placeholderTextColor={'gray'}
+          style={{ 
+            width: '80%', 
+            fontSize: 16, 
+            borderColor: 'black', 
+            borderBottomWidth: 0.5, 
+            padding: 10, 
+            marginBottom: 30,
+            letterSpacing: 1 
+          }}
+        />
+        
+        <TouchableOpacity 
+          onPress={onSendResetEmail} 
+          style={{ 
+            backgroundColor: 'black', 
+            padding: 20, 
+            paddingHorizontal: 60, 
+            borderRadius: 30 
+          }}
+        >
+          <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', letterSpacing: 1 }}>
+            Send Reset Email
+          </Text>
+        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity onPress={() => setPage(null)}>
+            <Text style={{ color: 'black', fontSize: 14, marginTop: 20, fontWeight: 'bold' }}>Back To Login.</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
+  }
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
@@ -89,6 +149,24 @@ const Login = ({ setView, setUserKeyIndex }) => {
         {wrongPassword && (
           <Text style={{ color: 'red', fontSize: 13, marginTop: 10, fontWeight: 'bold' }}>{wrongPassword}</Text>
         )}
+        <TouchableOpacity 
+          onPress={() => setPage('forgotPassword')}
+          style={{ 
+            marginTop: 10, 
+            width: '80%',
+            alignItems: 'flex-end' 
+          }}
+        >
+          <Text 
+            style={{ 
+              color: 'gray', 
+              fontSize: 14, 
+              textDecorationLine: 'underline' 
+            }}
+          >
+            Forgot Password?
+          </Text>
+        </TouchableOpacity>
 
         <TouchableOpacity onPress={() => onLogin()} style={{ 
           marginTop: '25%',
