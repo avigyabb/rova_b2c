@@ -397,6 +397,7 @@ if (showComments){
 
   const onCommentPress = () => {
     setItemInfo(item);
+    console.log(item.key)
   }  
 
   const CommentTile = ({ item }) => {
@@ -435,6 +436,12 @@ if (showComments){
               <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text>
             </View>
             <Text style={{ marginTop: 5, width: 320 }}>{item.comment}</Text>
+            {/*<TouchableOpacity onPress={() => console.log('Reply pressed')}>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: 'grey', marginTop: 5 }}>Reply</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => console.log('')}>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: 'grey', marginTop: 5 }}> ——— View 1 more replies</Text>
+            </TouchableOpacity>*/}
           </View>
         </View>
     );
@@ -747,9 +754,9 @@ if (showComments){
             taggedUserId: item.user_id,
             itemId: item.id 
           })}>
-          <Ionicons name="bookmark" size={30} color="grey" />
+          <Ionicons name="add-circle" size={30} color="grey" />
         </TouchableOpacity>
-        <TouchableOpacity
+        {/*<TouchableOpacity
           onPress={() => navigation.navigate('Add', {
             itemName: item.content,
             itemDescription: item.description,
@@ -761,8 +768,8 @@ if (showComments){
             itemId: item.id 
           })}
         >
-          <Ionicons style={{}} name="add-circle" size={30} color="grey" />
-        </TouchableOpacity>
+          <Ionicons style={{}} name="bookmark" size={30} color="grey" />
+        </TouchableOpacity> */}
       </View>
       {showComments && (
         loading ? (
@@ -773,7 +780,7 @@ if (showComments){
           <FlatList
             data={profileList}
             horizontal
-            keyExtractor={(item) => item.key}
+            keyExtractor={(item, index) => item.key ? item.key.toString() : index.toString()}
             renderItem={({ item, index }) => {
               const roundedScore = compareUserRating[index].toFixed(1);
               const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
