@@ -102,7 +102,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [compareUserID, setCompareUserID] = useState([])
   const [compareUserRating, setCompareUserRating] = useState([])
   const [profileList, setProfileList] = useState([])
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -136,13 +136,14 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   }
   
   useEffect(() => {
+    
+  if (showComments && item.image){
     setLoading(true);
-if (showComments){
     // Define your Firebase database reference
     const itemsRef = ref(database, 'items');
     
     // Create a query to fetch items with the specified image
-    const itemsQuery = query(itemsRef, orderByChild('image'), equalTo(item.image));
+    itemsQuery = query(itemsRef, orderByChild('image'), equalTo(item.image));
     
     // Use the `get` function to fetch the data once
     get(itemsQuery).then((snapshot) => {
@@ -181,6 +182,10 @@ if (showComments){
           // Check if the current user ID matches item.userId
           if (userId === item.user_id) {
             continue; // Skip this iteration for both user_id and score
+          }
+
+          if (data[key]['score'] === -1) {
+            continue; // Skip the entire iteration if score is -1
           }
 
           for (const key2 in data[key]) {
@@ -398,6 +403,7 @@ if (showComments){
   const onCommentPress = () => {
     setItemInfo(item);
     console.log(item.key)
+    console.log('item Image' + item.image)
   }  
 
   const CommentTile = ({ item }) => {
