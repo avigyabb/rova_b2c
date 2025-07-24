@@ -38,5 +38,10 @@ run npx expo start -c or npx expo start --tunnel
 enter email and password into terminal
 ALWAYS PULL BEFORE YOU PUSH
 
+# Troubleshooting
+
+Error: Expo is taking too long to load
+Run ```npx expo start --tunnel```
+
 IF LAN ERROR
 reset phone (power off) and then run npx expo start
