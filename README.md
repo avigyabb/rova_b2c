@@ -40,7 +40,8 @@ ALWAYS PULL BEFORE YOU PUSH
 
 # Troubleshooting
 
-Error: Expo is taking too long to load
+Error: Expo is taking too long to load 
+
 Run ```npx expo start --tunnel```
 
 IF LAN ERROR
