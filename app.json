@@ -21,11 +21,12 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "name": "ambora",
     "slug": "rova-b2c-app",
-    "version": "1.0.34",
+    "version": "1.0.36",
     "ios": {
       "bundleIdentifier": "com.swing.b2capp",
       "googleServicesFile": "./GoogleService-Info.plist",
