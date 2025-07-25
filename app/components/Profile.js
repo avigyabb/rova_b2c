@@ -20,6 +20,8 @@ import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
 import FollowUsers from './FollowUsers';
 import CategoryTile from './CategoryTile';
+import Settings from './Settings';
+import { useTheme } from '../context/ThemeContext';
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -63,6 +65,7 @@ const styles = StyleSheet.create({
 
 const Profile = ({ route, navigation }) => {
   const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
+  const { colors } = useTheme();
   const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
   const [focusedCategory, setFocusedCategory] = useState(null);
@@ -82,6 +85,7 @@ const Profile = ({ route, navigation }) => {
   });
   const [isFollowing, setIsFollowing] = useState(false);
   const [numItems, setNumItems] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
 
   const getUserInfo = () => {
     const userRef = ref(database, 'users/' + userKey);
@@ -178,28 +182,7 @@ const Profile = ({ route, navigation }) => {
     setImageUri(result.assets[0].uri);
   }; 
 
-  const onLogOutPress = () => {
-    Alert.alert(
-      "Log out of ambora/social?",
-      "You can sign back in at anytime",
-      [
-        {
-          text: "Cancel",
-          onPress: () => console.log("Logout cancelled"),
-          style: "cancel"
-        },
-        {
-          text: "Log out",
-          onPress: async () => {
-            await AsyncStorage.removeItem('username');
-            await AsyncStorage.removeItem('key');
-            fetchUserData();
-            setView('signin');
-          }
-        }
-      ]
-    );
-  }
+
 
   const followUser = async () => {
     // THIS IS TO VERIFY USERS
@@ -284,7 +267,13 @@ const Profile = ({ route, navigation }) => {
 
   return (
     <>
-      {focusedCategory === 'editProfile' ? (
+      {showSettings ? (
+        <Settings 
+          onBackPress={() => setShowSettings(false)} 
+          fetchUserData={fetchUserData} 
+          setView={setView} 
+        />
+      ) : focusedCategory === 'editProfile' ? (
         <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()} />
       ) : focusedCategory === 'Add List Page' ? (
         <>
@@ -310,14 +299,14 @@ const Profile = ({ route, navigation }) => {
           navigation={navigation}
         />
       ) : (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
           {scrollY < -110 && (
             <View style={{position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1000,}}>
-              <ActivityIndicator size="large" color="black" />
+              <ActivityIndicator size="large" color={colors.text} />
             </View>
           )}
           <ScrollView
-            style={{ backgroundColor: 'white', height: '100%' }}
+            style={{ backgroundColor: colors.background, height: '100%' }}
             onScroll={(event) => {
               const y = event.nativeEvent.contentOffset.y;
               setScrollY(y);
@@ -329,15 +318,15 @@ const Profile = ({ route, navigation }) => {
           >
             {!visitingUserId ? (
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
-                <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
-                <TouchableOpacity onPress={() => onLogOutPress()} style={{ marginLeft: 'auto' }}>
-                  <Ionicons name="exit-outline" size={25} color="black" />
+                <Text style={{ color: colors.text, fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+                <TouchableOpacity onPress={() => setShowSettings(true)} style={{ marginLeft: 'auto' }}>
+                  <Ionicons name="settings-outline" size={25} color={colors.text} />
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: colors.border, justifyContent: 'space-between', alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => setFeedView(null)}>
-                  <Ionicons name="arrow-back" size={30} color="black" />
+                  <Ionicons name="arrow-back" size={30} color={colors.text} />
                 </TouchableOpacity>
               </View>
             )}
@@ -350,51 +339,51 @@ const Profile = ({ route, navigation }) => {
               )}
               <View>
                 <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
-                  <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10 }}>
+                  <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10, color: colors.text }}>
                     {profileInfo.name}
                   </Text>
-                  {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color="#00aced" />}
+                  {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color={colors.accent} />}
                 </View>
-                <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'gray' }}>@{profileInfo.username}</Text>
+                <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: colors.textSecondary }}>@{profileInfo.username}</Text>
 
                 <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
                   <TouchableOpacity onPress={() => profileInfo.followers && setFocusedCategory('Followers')}>
-                    <Text style={{ marginRight: 30, fontWeight: 'bold' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
+                    <Text style={{ marginRight: 30, fontWeight: 'bold', color: colors.text }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => profileInfo.following && setFocusedCategory('Following')}>
-                    <Text style={{ fontWeight: 'bold' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
+                    <Text style={{ fontWeight: 'bold', color: colors.text }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
 
-            <Hyperlink linkDefault={true} linkStyle={{ color: '#2980b9', textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
-              <Text style={{ paddingHorizontal: 15, marginBottom: 20 }}>{profileInfo.bio}</Text>
+            <Hyperlink linkDefault={true} linkStyle={{ color: colors.accent, textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
+              <Text style={{ paddingHorizontal: 15, marginBottom: 20, color: colors.text }}>{profileInfo.bio}</Text>
             </Hyperlink>
 
             {!visitingUserId ? (
-              <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+              <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: colors.border, borderBottomWidth: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('editProfile')}>
-                    <Text style={styles.editButtons}>Edit Profile</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setFocusedCategory('editProfile')}>
+                    <Text style={[styles.editButtons, { color: colors.text }]}>Edit Profile</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.editContainer} onPress={() => setFocusedCategory('Add List Page')}>
-                    <Text style={styles.editButtons}>Add List</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setFocusedCategory('Add List Page')}>
+                    <Text style={[styles.editButtons, { color: colors.text }]}>Add List</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={shareLink} style={styles.shareContainer}>
-                      <Ionicons name="person-add-sharp" size={17} color="black" style={{ marginTop: 3 }} />
+                  <TouchableOpacity onPress={shareLink} style={[styles.shareContainer, { backgroundColor: colors.accent }]}>
+                      <Ionicons name="person-add-sharp" size={17} color={colors.background} style={{ marginTop: 3 }} />
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
-              <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: colors.border, borderBottomWidth: 1 }}>
                 {isFollowing ? (
-                  <TouchableOpacity style={styles.editContainer} onPress={() => unfollowUser()}>
-                    <Text style={styles.editButtons}>Unfollow</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => unfollowUser()}>
+                    <Text style={[styles.editButtons, { color: colors.text }]}>Unfollow</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity style={styles.editContainer} onPress={() => followUser()}>
-                    <Text style={styles.editButtons}>Follow</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => followUser()}>
+                    <Text style={[styles.editButtons, { color: colors.text }]}>Follow</Text>
                   </TouchableOpacity>
                 )}
               </View>

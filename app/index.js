@@ -13,6 +13,7 @@ import Explore from './components/Explore.js';
 import { useNavigation } from '@react-navigation/native';
 import Groups from './components/Groups.js';
 import PickCategory from './components/LoginFlow/PickCategory.js';
+import { ThemeProvider } from './context/ThemeContext';
 // import * as Analytics from 'expo-firebase-analytics';
 // import analytics from '@react-native-firebase/analytics';
 
@@ -143,21 +144,23 @@ const App = () => {
   }, []);
   
   return (
-    <NavigationContainer independent={true}>
-      {userKey ? (
-        <>
-        {view === 'pickCategory' ? (
-          <PickCategory userKey={userKey} setView={() => setView(null)}/>
+    <ThemeProvider>
+      <NavigationContainer independent={true}>
+        {userKey ? (
+          <>
+          {view === 'pickCategory' ? (
+            <PickCategory userKey={userKey} setView={() => setView(null)}/>
+          ) : (
+            <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData}/>
+          )}
+          </>
+        ) : view === 'signin' ? (
+          <SignIn setView={setView} setUserKeyIndex={setUserKey} />
         ) : (
-          <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData}/>
+          <Login setView={setView} setUserKeyIndex={setUserKey} />
         )}
-        </>
-      ) : view === 'signin' ? (
-        <SignIn setView={setView} setUserKeyIndex={setUserKey} />
-      ) : (
-        <Login setView={setView} setUserKeyIndex={setUserKey} />
-      )}
-    </NavigationContainer>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 };
 
