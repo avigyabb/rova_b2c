@@ -181,7 +181,7 @@ if (safety){
 
   const openaiAPIKey = "sk-ambora-service-tRGLRzm8TpX7LyaXbEJ1T3BlbkFJZUJGeBOwv2SUDUBYrn8o";
 const openaiApi = axios.create({
-  baseURL: 'https://api.openai.com/v1/moderations',
+  baseURL: 'https://api.openai.com/v1',
   headers: {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${openaiAPIKey}`,
@@ -199,27 +199,40 @@ const openaiApi = axios.create({
           }}>
             <Text style={{ fontWeight: 'bold', color: 'black', fontSize: 16 }}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={async () => { 
-            
-            try {
-              const moderation_response = await openaiApi.post('', { input: newItemDescription });
-              if (moderation_response.data.results[0].flagged){
-                alert("This description does not follow our guidelines")
-                } else{
-                  setAddView('');
-                }
-              //moderation_response.data.results[0].flagged
-            } catch (error) {
-              console.error('Error moderating text:', error);
-            }
-            
-          }
-         } style={{
-            backgroundColor: 'black',
-            padding: 6,
-            paddingHorizontal: 10,
-            borderRadius: 15
-          }}>
+                    <TouchableOpacity 
+            onPress={async () => { 
+              console.log('Done button pressed');
+              
+              // If description is empty, just close the view
+              if (!newItemDescription || newItemDescription.trim() === '') {
+                setAddView('');
+                return;
+              }
+              
+              try {
+                const moderation_response = await openaiApi.post('/moderations', { input: newItemDescription });
+                console.log('Moderation response:', moderation_response.data);
+                if (moderation_response.data.results[0].flagged){
+                  alert("This description does not follow our guidelines")
+                  } else{
+                    setAddView('');
+                  }
+                //moderation_response.data.results[0].flagged
+              } catch (error) {
+                console.error('Error moderating text:', error);
+                // If there's an error with moderation, still allow the user to proceed
+                setAddView('');
+              }
+              
+            }}
+            activeOpacity={0.7}
+            style={{
+              backgroundColor: 'black',
+              padding: 6,
+              paddingHorizontal: 10,
+              borderRadius: 15
+            }}
+          >
             <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 16 }}>Done</Text>
           </TouchableOpacity>
         </View>
