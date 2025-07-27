@@ -30,7 +30,9 @@ const styles = StyleSheet.create({
 });
 
 const ExploreItemTile = ({ item, index, itemsInCategory }) => {
-  let scoreColor = getScoreColorHSL(Number(item.score/item.num_items.toFixed(1)));
+  // Use weighted rating if available, otherwise fall back to simple average
+  const rating = item.weightedRating ? item.weightedRating : (item.score / item.num_items);
+  let scoreColor = getScoreColorHSL(Number(rating.toFixed(1)));
 
   return (
       <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
@@ -53,7 +55,7 @@ const ExploreItemTile = ({ item, index, itemsInCategory }) => {
           </View>
           <View>
             <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-              <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{(item.score/item.num_items).toFixed(1)}</Text>
+              <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{rating.toFixed(1)}</Text>
             </View>
             {itemsInCategory && itemsInCategory.has(item.image) && (
               <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 

@@ -66,13 +66,45 @@ const Explore = ({ route, navigation }) => {
         image: key,
         ...items[key]
       }))
-      .filter(item => item.num_items > 1)  // Filter items with num_items > 1
-      .sort((a, b) => b.score/b.num_items - a.score/a.num_items);  // Sort by score in decreasing order
+      .filter(item => item.num_items > 1);  // Filter items with num_items > 1
+
+      // Calculate weighted ratings using IMDb formula
+      const weightedMovies = calculateWeightedRatings(itemsArray);
+
+      // Sort by weighted rating in decreasing order
+      weightedMovies.sort((a, b) => b.weightedRating - a.weightedRating);
 
       // Update the state
-      setTopMovies(itemsArray);
+      setTopMovies(weightedMovies);
       setLoading(false);
     }
+  };
+
+  const calculateWeightedRatings = (movies) => {
+    if (movies.length === 0) return movies;
+
+  
+    const totalScore = movies.reduce((sum, movie) => sum + movie.score, 0);
+    const totalRatings = movies.reduce((sum, movie) => sum + movie.num_items, 0);
+    const C = totalScore / totalRatings;
+
+    const m = 10;
+
+   
+    return movies.map(movie => {
+      const R = movie.score / movie.num_items; 
+      const v = movie.num_items; 
+      
+      // IMDb formula: WR = (v / (v + m)) * R + (m / (v + m)) * C
+      const weightedRating = (v / (v + m)) * R + (m / (v + m)) * C;
+      
+      return {
+        ...movie,
+        weightedRating: weightedRating,
+        averageRating: R,
+        globalAverage: C
+      };
+    });
   };
 
   const checkUserMatches = async () => {
