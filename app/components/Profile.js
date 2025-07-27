@@ -21,7 +21,7 @@ import Hyperlink from 'react-native-hyperlink';
 import FollowUsers from './FollowUsers';
 import CategoryTile from './CategoryTile';
 import Settings from './Settings';
-import { useTheme } from '../context/ThemeContext';
+
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -32,8 +32,8 @@ const styles = StyleSheet.create({
     borderColor: 'lightgrey'
   },
   grid: {
-    // alignItems: 'center',
-    justifyContent: 'space-around'
+    width: '100%',
+    paddingHorizontal: 0,
   },
   tileText: {
     // existing text styles...
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
 
 const Profile = ({ route, navigation }) => {
   const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
-  const { colors } = useTheme();
+
   const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
   const [focusedCategory, setFocusedCategory] = useState(null);
@@ -86,6 +86,7 @@ const Profile = ({ route, navigation }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [numItems, setNumItems] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState('recent');
 
   const getUserInfo = () => {
     const userRef = ref(database, 'users/' + userKey);
@@ -299,14 +300,14 @@ const Profile = ({ route, navigation }) => {
           navigation={navigation}
         />
       ) : (
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={{ flex: 1, backgroundColor: 'white' }}>
           {scrollY < -110 && (
             <View style={{position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1000,}}>
-              <ActivityIndicator size="large" color={colors.text} />
+              <ActivityIndicator size="large" color="black" />
             </View>
           )}
           <ScrollView
-            style={{ backgroundColor: colors.background, height: '100%' }}
+            style={{ backgroundColor: 'white', height: '100%' }}
             onScroll={(event) => {
               const y = event.nativeEvent.contentOffset.y;
               setScrollY(y);
@@ -318,15 +319,15 @@ const Profile = ({ route, navigation }) => {
           >
             {!visitingUserId ? (
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+                <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
                 <TouchableOpacity onPress={() => setShowSettings(true)} style={{ marginLeft: 'auto' }}>
-                  <Ionicons name="settings-outline" size={25} color={colors.text} />
+                  <Ionicons name="settings-outline" size={25} color="black" />
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: colors.border, justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => setFeedView(null)}>
-                  <Ionicons name="arrow-back" size={30} color={colors.text} />
+                  <Ionicons name="arrow-back" size={30} color="black" />
                 </TouchableOpacity>
               </View>
             )}
@@ -339,75 +340,150 @@ const Profile = ({ route, navigation }) => {
               )}
               <View>
                 <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
-                  <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10, color: colors.text }}>
+                  <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10, color: 'black' }}>
                     {profileInfo.name}
                   </Text>
-                  {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color={colors.accent} />}
+                  {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color="#00aced" />}
                 </View>
-                <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: colors.textSecondary }}>@{profileInfo.username}</Text>
+                <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'grey' }}>@{profileInfo.username}</Text>
 
                 <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
                   <TouchableOpacity onPress={() => profileInfo.followers && setFocusedCategory('Followers')}>
-                    <Text style={{ marginRight: 30, fontWeight: 'bold', color: colors.text }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
+                    <Text style={{ marginRight: 30, fontWeight: 'bold', color: 'black' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => profileInfo.following && setFocusedCategory('Following')}>
-                    <Text style={{ fontWeight: 'bold', color: colors.text }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
+                    <Text style={{ fontWeight: 'bold', color: 'black' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
 
-            <Hyperlink linkDefault={true} linkStyle={{ color: colors.accent, textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
-              <Text style={{ paddingHorizontal: 15, marginBottom: 20, color: colors.text }}>{profileInfo.bio}</Text>
+            <Hyperlink linkDefault={true} linkStyle={{ color: '#00aced', textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
+              <Text style={{ paddingHorizontal: 15, marginBottom: 20, color: 'black' }}>{profileInfo.bio}</Text>
             </Hyperlink>
 
             {!visitingUserId ? (
-              <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: colors.border, borderBottomWidth: 1 }}>
+              <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setFocusedCategory('editProfile')}>
-                    <Text style={[styles.editButtons, { color: colors.text }]}>Edit Profile</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => setFocusedCategory('editProfile')}>
+                    <Text style={[styles.editButtons, { color: 'black' }]}>Edit Profile</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setFocusedCategory('Add List Page')}>
-                    <Text style={[styles.editButtons, { color: colors.text }]}>Add List</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => setFocusedCategory('Add List Page')}>
+                    <Text style={[styles.editButtons, { color: 'black' }]}>Add List</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={shareLink} style={[styles.shareContainer, { backgroundColor: colors.accent }]}>
-                      <Ionicons name="person-add-sharp" size={17} color={colors.background} style={{ marginTop: 3 }} />
+                  <TouchableOpacity onPress={shareLink} style={[styles.shareContainer, { backgroundColor: "#00aced" }]}>
+                      <Ionicons name="person-add-sharp" size={17} color="white" style={{ marginTop: 3 }} />
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Tab Buttons */}
+                <View style={{ flexDirection: 'row', marginTop: 10, paddingHorizontal: 15 }}>
+                  <TouchableOpacity 
+                    style={{ 
+                      flex: 1, 
+                      paddingVertical: 8, 
+                      backgroundColor: 'transparent',
+                      marginRight: 8,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderBottomWidth: 2,
+                      borderBottomColor: activeTab === 'recent' ? 'black' : 'transparent'
+                    }} 
+                    onPress={() => setActiveTab('recent')}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ 
+                        fontSize: 14, 
+                        marginRight: 6,
+                        color: activeTab === 'recent' ? 'black' : '#666',
+                        fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+                      }}>
+                        Recent
+                      </Text>
+                      <Ionicons 
+                        name="time-outline" 
+                        size={18} 
+                        color={activeTab === 'recent' ? 'black' : '#666'} 
+                      />
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={{ 
+                      flex: 1, 
+                      paddingVertical: 8, 
+                      backgroundColor: 'transparent',
+                      marginLeft: 8,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderBottomWidth: 2,
+                      borderBottomColor: activeTab === 'lists' ? 'black' : 'transparent'
+                    }} 
+                    onPress={() => setActiveTab('lists')}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ 
+                        fontSize: 14, 
+                        marginRight: 6,
+                        color: activeTab === 'lists' ? 'black' : '#666',
+                        fontWeight: activeTab === 'lists' ? 'bold' : 'normal'
+                      }}>
+                        Lists
+                      </Text>
+                      <Ionicons 
+                        name="grid-outline" 
+                        size={18} 
+                        color={activeTab === 'lists' ? 'black' : '#666'} 
+                      />
+                    </View>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
-              <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: colors.border, borderBottomWidth: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
                 {isFollowing ? (
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => unfollowUser()}>
-                    <Text style={[styles.editButtons, { color: colors.text }]}>Unfollow</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => unfollowUser()}>
+                    <Text style={[styles.editButtons, { color: 'black' }]}>Unfollow</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => followUser()}>
-                    <Text style={[styles.editButtons, { color: colors.text }]}>Follow</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => followUser()}>
+                    <Text style={[styles.editButtons, { color: 'black' }]}>Follow</Text>
                   </TouchableOpacity>
                 )}
               </View>
             )}
 
-            {categories.length > 0 ? (
-              <FlatList
-                data={categories}
-                renderItem={({ item }) => (
-                  <CategoryTile
-                    category_name={item.category_name}
-                    imageUri={item.imageUri}
-                    num_items={item.num_items}
-                    onCategoryPress={() => onCategoryPress(item.category_name, item.id, item.num_items)}
-                  />
-                )}
-                scrollEnabled={false}
-                numColumns={3}
-                contentContainerStyle={styles.grid}
-              />
+            {/* Tab Content */}
+            {activeTab === 'recent' ? (
+              <View style={{ paddingHorizontal: 15, paddingTop: 20 }}>
+                <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
+                  Recent activity coming soon...
+                </Text>
+              </View>
             ) : (
-              <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
-                add a list to get started...
-              </Text>
+              <View style={{ paddingTop: 5 }}>
+                {categories.length > 0 ? (
+                  <FlatList
+                    data={categories}
+                    renderItem={({ item }) => (
+                      <CategoryTile
+                        category_name={item.category_name}
+                        imageUri={item.imageUri}
+                        num_items={item.num_items}
+                        onCategoryPress={() => onCategoryPress(item.category_name, item.id, item.num_items)}
+                      />
+                    )}
+                    scrollEnabled={false}
+                    numColumns={3}
+                    contentContainerStyle={styles.grid}
+                    columnWrapperStyle={{ width: '100%' }}
+                    showsVerticalScrollIndicator={false}
+                  />
+                ) : (
+                  <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
+                    add a list to get started...
+                  </Text>
+                )}
+              </View>
             )}
           </ScrollView>
         </View>

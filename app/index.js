@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { Text, View, TouchableOpacity, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ import Explore from './components/Explore.js';
 import { useNavigation } from '@react-navigation/native';
 import Groups from './components/Groups.js';
 import PickCategory from './components/LoginFlow/PickCategory.js';
-import { ThemeProvider } from './context/ThemeContext';
+
 // import * as Analytics from 'expo-firebase-analytics';
 // import analytics from '@react-native-firebase/analytics';
 
@@ -55,7 +55,13 @@ function MyTabs({ userKey, setView, fetchUserData }) {
             </TouchableOpacity>
           );
         },
-        tabBarStyle: { paddingBottom: 0, height: '8%' },
+        tabBarStyle: { 
+          paddingBottom: 0, 
+          height: 60,
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: 'lightgrey'
+        },
       })}
 
       tabBarOptions={{
@@ -144,8 +150,13 @@ const App = () => {
   }, []);
   
   return (
-    <ThemeProvider>
-      <NavigationContainer independent={true}>
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <NavigationContainer independent={true} theme={{
+        colors: {
+          background: 'white',
+        },
+      }}>
         {userKey ? (
           <>
           {view === 'pickCategory' ? (
@@ -160,7 +171,7 @@ const App = () => {
           <Login setView={setView} setUserKeyIndex={setUserKey} />
         )}
       </NavigationContainer>
-    </ThemeProvider>
+    </>
   );
 };
 

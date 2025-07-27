@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '../context/ThemeContext';
+
 
 const Settings = ({ onBackPress, fetchUserData, setView }) => {
-  const { isDarkMode, toggleDarkMode, colors } = useTheme();
+
 
   const onLogOutPress = () => {
     Alert.alert(
@@ -31,31 +31,31 @@ const Settings = ({ onBackPress, fetchUserData, setView }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: 'white' }]}>
+      <View style={[styles.header, { borderBottomColor: 'lightgrey' }]}>
         <TouchableOpacity onPress={onBackPress}>
-          <Ionicons name="arrow-back" size={30} color={colors.text} />
+          <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
-        <Text style={[styles.headerText, { color: colors.text }]}>Settings</Text>
+        <Text style={[styles.headerText, { color: 'black' }]}>Settings</Text>
         <View style={{ width: 30 }} />
       </View>
 
       <View style={styles.settingsContainer}>
-        <View style={[styles.settingItem, { borderBottomColor: colors.borderLight }]}>
-          <Ionicons name="moon-outline" size={24} color={colors.text} />
-          <Text style={[styles.settingText, { color: colors.text }]}>Dark Mode</Text>
+        <View style={[styles.settingItem, { borderBottomColor: 'lightgrey' }]}>
+          <Ionicons name="moon-outline" size={24} color="black" />
+          <Text style={[styles.settingText, { color: 'black' }]}>Dark Mode</Text>
           <Switch
-            value={isDarkMode}
-            onValueChange={toggleDarkMode}
-            trackColor={{ false: colors.border, true: colors.accent }}
-            thumbColor={isDarkMode ? colors.glow : colors.surfaceSecondary}
+            value={false}
+            onValueChange={() => {}}
+            trackColor={{ false: 'lightgrey', true: '#00aced' }}
+            thumbColor="white"
           />
         </View>
         
-        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: colors.borderLight }]} onPress={onLogOutPress}>
-          <Ionicons name="exit-outline" size={24} color={colors.error} />
-          <Text style={[styles.settingText, { color: colors.error }]}>Log Out</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                  <TouchableOpacity style={[styles.settingItem, { borderBottomColor: 'lightgrey' }]} onPress={onLogOutPress}>
+            <Ionicons name="exit-outline" size={24} color="red" />
+            <Text style={[styles.settingText, { color: 'red' }]}>Log Out</Text>
+            <Ionicons name="chevron-forward" size={20} color="grey" />
         </TouchableOpacity>
       </View>
     </View>

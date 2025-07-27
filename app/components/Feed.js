@@ -16,7 +16,7 @@ import qs from 'qs';
 import { Buffer } from 'buffer';
 import * as AuthSession from 'expo-auth-session';
 import moment from 'moment';
-import { useTheme } from '../context/ThemeContext';
+
 
 const styles = StyleSheet.create({
   timesText: {
@@ -53,7 +53,7 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const Feed = ({ route, navigation }) => {
-  const { colors } = useTheme();
+
   const [profileInfo, setProfileInfo] = useState({});
   const [listData, setListData] = useState([]);
   const [feedView, setFeedView] = useState(null);
@@ -444,49 +444,49 @@ const Feed = ({ route, navigation }) => {
   }
 
   return (
-    <View style={{ backgroundColor: colors.background, height: '100%' }}>
+          <View style={{ backgroundColor: 'white', height: '100%' }}>
       <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20, justifyContent: 'space-between', }}>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
           {profileInfo && profileInfo.profile_pic ? (
             <Image
               source={{ uri: profileInfo.profile_pic }}
-              style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: colors.border }}
+              style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: 'lightgrey' }}
             />
           ) : (
             <Image
               source={'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-              style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: colors.border }}
+              style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: 'lightgrey' }}
             />
           )}
         </TouchableOpacity>
-        <Text style={{ color: colors.text, fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+        <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
         <TouchableOpacity onPress={() => getNotifications()}>
           {profileInfo.unreadNotifications ? (
-            <Ionicons name="notifications-sharp" size={28} color={colors.error}/>
+            <Ionicons name="notifications-sharp" size={28} color="red"/>
           ) : (
-            <Ionicons name="notifications-outline" size={28} color={colors.textSecondary}/>
+            <Ionicons name="notifications-outline" size={28} color="grey"/>
           )}
         </TouchableOpacity>
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', padding: 20, justifyContent: 'space-evenly', borderColor: colors.border, borderBottomWidth: 0.5 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', padding: 20, justifyContent: 'space-evenly', borderColor: 'lightgrey', borderBottomWidth: 0.5 }}>
         <TouchableOpacity onPress={() => {
           setFeedType('Top Posts')
           getTopPostsListData();
         }}>
-          <Text style={feedType === 'Top Posts' ? { color: colors.text, fontSize: 16, fontWeight: 'bold' } : { color: colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>Top Posts</Text>
+          <Text style={feedType === 'Top Posts' ? { color: 'black', fontSize: 16, fontWeight: 'bold' } : { color: 'grey', fontSize: 14, fontWeight: 'bold' }}>Top Posts</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {
           setFeedType('For You')
           getListData();
         }}>
-          <Text style={feedType === 'For You' ? { color: colors.text, fontSize: 16, fontWeight: 'bold' } : { color: colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>For You</Text>
+          <Text style={feedType === 'For You' ? { color: 'black', fontSize: 16, fontWeight: 'bold' } : { color: 'grey', fontSize: 14, fontWeight: 'bold' }}>For You</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {
           setFeedType('Following')
           getFollowingListData();
         }}>
-          <Text style={feedType === 'Following' ? { color: colors.text, fontSize: 16, fontWeight: 'bold' } : { color: colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>Following</Text>
+          <Text style={feedType === 'Following' ? { color: 'black', fontSize: 16, fontWeight: 'bold' } : { color: 'grey', fontSize: 14, fontWeight: 'bold' }}>Following</Text>
         </TouchableOpacity>
       </View>
       

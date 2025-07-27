@@ -601,7 +601,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   return (
     <ScrollView style={{ backgroundColor: 'white' }}>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-    <>
+      <View>
     {!commentTypingMode && (
     <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white' }}>
       <>
@@ -866,7 +866,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         {memoizedComments}
       </View>
     )}
-    </>
+      </View>
     </TouchableWithoutFeedback>
     </ScrollView>
   );
