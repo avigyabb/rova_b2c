@@ -21,6 +21,7 @@ import Hyperlink from 'react-native-hyperlink';
 import FollowUsers from './FollowUsers';
 import CategoryTile from './CategoryTile';
 import Settings from './Settings';
+import NormalItemTile from './NormalItemTile';
 
 
 const styles = StyleSheet.create({
@@ -87,6 +88,8 @@ const Profile = ({ route, navigation }) => {
   const [numItems, setNumItems] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState('recent');
+  const [userPosts, setUserPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
 
   const getUserInfo = () => {
     const userRef = ref(database, 'users/' + userKey);
@@ -122,6 +125,12 @@ const Profile = ({ route, navigation }) => {
 
     getUserInfo();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'recent' && userPosts.length === 0 && !loadingPosts) {
+      getUserPosts();
+    }
+  }, [activeTab]);
 
   const onCategoryPress = (category_name, category_id, num_items) => {
     const categoryItemsRef = ref(database, 'items');
@@ -239,7 +248,49 @@ const Profile = ({ route, navigation }) => {
   const refreshProfile = () => {
     setRefreshed(true);
     getUserInfo();
+    if (activeTab === 'recent') {
+      getUserPosts();
+    }
     setRefreshed(false);
+  }
+
+  const getUserPosts = () => {
+    try {
+      setLoadingPosts(true);
+      const itemsRef = ref(database, 'items');
+      
+      get(itemsRef).then((snapshot) => {
+        try {
+          if (snapshot.exists()) {
+            const posts = [];
+            snapshot.forEach((childSnapshot) => {
+              const postKey = childSnapshot.key;
+              const postData = childSnapshot.val();
+              // Only include posts from the current user
+              if (postData.user_id === userKey) {
+                posts.push({ key: postKey, ...postData });
+              }
+            });
+            setUserPosts(posts.sort((a, b) => b.timestamp - a.timestamp));
+          } else {
+            setUserPosts([]);
+          }
+        } catch (error) {
+          console.error('Error processing posts:', error);
+          setUserPosts([]);
+        } finally {
+          setLoadingPosts(false);
+        }
+      }).catch((error) => {
+        console.error('Error fetching posts:', error);
+        setUserPosts([]);
+        setLoadingPosts(false);
+      });
+    } catch (error) {
+      console.error('Error setting up posts query:', error);
+      setUserPosts([]);
+      setLoadingPosts(false);
+    }
   };
 
   if (focusedCategory === 'Followers') {
@@ -306,17 +357,21 @@ const Profile = ({ route, navigation }) => {
               <ActivityIndicator size="large" color="black" />
             </View>
           )}
-          <ScrollView
-            style={{ backgroundColor: 'white', height: '100%' }}
-            onScroll={(event) => {
-              const y = event.nativeEvent.contentOffset.y;
-              setScrollY(y);
-              if (y < -110 && !refreshed) {
-                refreshProfile();
-              }
-            }}
-            scrollEventThrottle={1} // This ensures the scroll position is updated frequently
-          >
+          
+          {/* Header Section */}
+          <View style={{ backgroundColor: 'white' }}>
+            <ScrollView
+              style={{ backgroundColor: 'white' }}
+              onScroll={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                setScrollY(y);
+                if (y < -110 && !refreshed) {
+                  refreshProfile();
+                }
+              }}
+              scrollEventThrottle={1}
+              scrollEnabled={activeTab !== 'recent'}
+            >
             {!visitingUserId ? (
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
                 <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
@@ -454,10 +509,43 @@ const Profile = ({ route, navigation }) => {
 
             {/* Tab Content */}
             {activeTab === 'recent' ? (
-              <View style={{ paddingHorizontal: 15, paddingTop: 20 }}>
-                <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
-                  Recent activity coming soon...
-                </Text>
+              <View style={{ flex: 1, height: 400 }}>
+                {loadingPosts ? (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
+                    <ActivityIndicator size="large" color="black" />
+                  </View>
+                ) : userPosts.length > 0 ? (
+                  <FlatList
+                    data={userPosts}
+                    renderItem={({ item }) => (
+                      <NormalItemTile 
+                        item={item} 
+                        userKey={userKey} 
+                        setFeedView={setFeedView} 
+                        navigation={navigation} 
+                        visitingUserId={userKey} 
+                        setItemInfo={() => {}} 
+                        individualSpotifyAccessToken={null} 
+                        promptAsync={() => {}} 
+                      />
+                    )}
+                    keyExtractor={(item) => item.key || item.id}
+                    numColumns={1}
+                    key={"single-column"}
+                    showsVerticalScrollIndicator={false}
+                    style={{ flex: 1 }}
+                    removeClippedSubviews={true}
+                    maxToRenderPerBatch={5}
+                    windowSize={10}
+                    initialNumToRender={3}
+                  />
+                ) : (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
+                    <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
+                      No posts yet
+                    </Text>
+                  </View>
+                )}
               </View>
             ) : (
               <View style={{ paddingTop: 5 }}>
@@ -486,6 +574,7 @@ const Profile = ({ route, navigation }) => {
               </View>
             )}
           </ScrollView>
+          </View>
         </View>
       )}
     </>
