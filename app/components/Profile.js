@@ -358,18 +358,264 @@ const Profile = ({ route, navigation }) => {
             </View>
           )}
           
-                    <ScrollView
-            style={{ backgroundColor: 'white' }}
-            onScroll={(event) => {
-              const y = event.nativeEvent.contentOffset.y;
-              setScrollY(y);
-              if (y < -110 && !refreshed) {
-                refreshProfile();
-              }
-            }}
-            scrollEventThrottle={1}
-            scrollEnabled={activeTab !== 'recent'}
-          >
+                    {activeTab === 'recent' ? (
+            <FlatList
+              style={{ backgroundColor: 'white' }}
+              data={userPosts}
+              renderItem={({ item }) => (
+                <NormalItemTile 
+                  item={item} 
+                  userKey={userKey} 
+                  setFeedView={setFeedView} 
+                  navigation={navigation} 
+                  visitingUserId={userKey} 
+                  setItemInfo={() => {}} 
+                  individualSpotifyAccessToken={null} 
+                  promptAsync={() => {}} 
+                />
+              )}
+              keyExtractor={(item) => item.key || item.id}
+              ListHeaderComponent={() => (
+                <>
+                  {!visitingUserId ? (
+                    <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
+                      <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+                      <TouchableOpacity onPress={() => setShowSettings(true)} style={{ marginLeft: 'auto' }}>
+                        <Ionicons name="settings-outline" size={25} color="black" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <TouchableOpacity onPress={() => setFeedView(null)}>
+                        <Ionicons name="arrow-back" size={30} color="black" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  <View style={{ flexDirection: 'row', padding: 15 }}>
+                    {profileInfo.profile_pic ? (
+                      <Image source={{ uri: profileInfo.profile_pic }} style={styles.profilePic} />
+                    ) : (
+                      <Image source={"https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png"} style={styles.profilePic} />
+                    )}
+                    <View>
+                      <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
+                        <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10, color: 'black' }}>
+                          {profileInfo.name}
+                        </Text>
+                        {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color="#00aced" />}
+                      </View>
+                      <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: 'grey' }}>@{profileInfo.username}</Text>
+
+                      <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
+                        <TouchableOpacity onPress={() => profileInfo.followers && setFocusedCategory('Followers')}>
+                          <Text style={{ marginRight: 30, fontWeight: 'bold', color: 'black' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => profileInfo.following && setFocusedCategory('Following')}>
+                          <Text style={{ fontWeight: 'bold', color: 'black' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+
+                  <Hyperlink linkDefault={true} linkStyle={{ color: '#00aced', textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
+                    <Text style={{ paddingHorizontal: 15, marginBottom: 20, color: 'black' }}>{profileInfo.bio}</Text>
+                  </Hyperlink>
+
+                  {!visitingUserId ? (
+                    <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => setFocusedCategory('editProfile')}>
+                          <Text style={[styles.editButtons, { color: 'black' }]}>Edit Profile</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => setFocusedCategory('Add List Page')}>
+                          <Text style={[styles.editButtons, { color: 'black' }]}>Add List</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={shareLink} style={[styles.shareContainer, { backgroundColor: "#00aced" }]}>
+                            <Ionicons name="person-add-sharp" size={17} color="white" style={{ marginTop: 3 }} />
+                        </TouchableOpacity>
+                      </View>
+                      
+                      {/* Tab Buttons */}
+                      <View style={{ flexDirection: 'row', marginTop: 10, paddingHorizontal: 15 }}>
+                        <TouchableOpacity 
+                          style={{ 
+                            flex: 1, 
+                            paddingVertical: 8, 
+                            backgroundColor: 'transparent',
+                            marginRight: 8,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderBottomWidth: 2,
+                            borderBottomColor: activeTab === 'recent' ? 'black' : 'transparent'
+                          }} 
+                          onPress={() => setActiveTab('recent')}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={{ 
+                              fontSize: 14, 
+                              marginRight: 6,
+                              color: activeTab === 'recent' ? 'black' : '#666',
+                              fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+                            }}>
+                              Recent
+                            </Text>
+                            <Ionicons 
+                              name="time-outline" 
+                              size={18} 
+                              color={activeTab === 'recent' ? 'black' : '#666'} 
+                            />
+                          </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={{ 
+                            flex: 1, 
+                            paddingVertical: 8, 
+                            backgroundColor: 'transparent',
+                            marginLeft: 8,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderBottomWidth: 2,
+                            borderBottomColor: activeTab === 'lists' ? 'black' : 'transparent'
+                          }} 
+                          onPress={() => setActiveTab('lists')}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={{ 
+                              fontSize: 14, 
+                              marginRight: 6,
+                              color: activeTab === 'lists' ? 'black' : '#666',
+                              fontWeight: activeTab === 'lists' ? 'bold' : 'normal'
+                            }}>
+                              Lists
+                            </Text>
+                            <Ionicons 
+                              name="grid-outline" 
+                              size={18} 
+                              color={activeTab === 'lists' ? 'black' : '#666'} 
+                            />
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                        {isFollowing ? (
+                          <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => unfollowUser()}>
+                            <Text style={[styles.editButtons, { color: 'black' }]}>Unfollow</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => followUser()}>
+                            <Text style={[styles.editButtons, { color: 'black' }]}>Follow</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                      
+                      {/* Tab Buttons */}
+                      <View style={{ flexDirection: 'row', marginTop: 15, paddingHorizontal: 15 }}>
+                        <TouchableOpacity 
+                          style={{ 
+                            flex: 1, 
+                            paddingVertical: 8, 
+                            backgroundColor: 'transparent',
+                            marginRight: 8,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderBottomWidth: 2,
+                            borderBottomColor: activeTab === 'recent' ? 'black' : 'transparent'
+                          }} 
+                          onPress={() => setActiveTab('recent')}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={{ 
+                              fontSize: 14, 
+                              marginRight: 6,
+                              color: activeTab === 'recent' ? 'black' : '#666',
+                              fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+                            }}>
+                              Recent
+                            </Text>
+                            <Ionicons 
+                              name="time-outline" 
+                              size={18} 
+                              color={activeTab === 'recent' ? 'black' : '#666'} 
+                            />
+                          </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={{ 
+                            flex: 1, 
+                            paddingVertical: 8, 
+                            backgroundColor: 'transparent',
+                            marginLeft: 8,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderBottomWidth: 2,
+                            borderBottomColor: activeTab === 'lists' ? 'black' : 'transparent'
+                          }} 
+                          onPress={() => setActiveTab('lists')}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={{ 
+                              fontSize: 14, 
+                              marginRight: 6,
+                              color: activeTab === 'lists' ? 'black' : '#666',
+                              fontWeight: activeTab === 'lists' ? 'bold' : 'normal'
+                            }}>
+                              Lists
+                            </Text>
+                            <Ionicons 
+                              name="grid-outline" 
+                              size={18} 
+                              color={activeTab === 'lists' ? 'black' : '#666'} 
+                            />
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </>
+              )}
+              ListEmptyComponent={() => (
+                loadingPosts ? (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
+                    <ActivityIndicator size="large" color="black" />
+                  </View>
+                ) : (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
+                    <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
+                      No posts yet
+                    </Text>
+                  </View>
+                )
+              )}
+              onScroll={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                setScrollY(y);
+                if (y < -110 && !refreshed) {
+                  refreshProfile();
+                }
+              }}
+              scrollEventThrottle={1}
+              showsVerticalScrollIndicator={true}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={5}
+              windowSize={10}
+              initialNumToRender={3}
+            />
+          ) : (
+            <ScrollView
+              style={{ backgroundColor: 'white' }}
+              onScroll={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                setScrollY(y);
+                if (y < -110 && !refreshed) {
+                  refreshProfile();
+                }
+              }}
+              scrollEventThrottle={1}
+            >
             {!visitingUserId ? (
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
                 <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
@@ -569,49 +815,7 @@ const Profile = ({ route, navigation }) => {
               </View>
             )}
 
-            {/* Tab Content */}
-            {activeTab === 'recent' ? (
-              <>
-                {loadingPosts ? (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
-                    <ActivityIndicator size="large" color="black" />
-                  </View>
-                ) : userPosts.length > 0 ? (
-                  <View style={{ height: 500 }}> {/* You can adjust this height */}
-  <FlatList
-    data={userPosts}
-    renderItem={({ item }) => (
-      <NormalItemTile 
-        item={item} 
-        userKey={userKey} 
-        setFeedView={setFeedView} 
-        navigation={navigation} 
-        visitingUserId={userKey} 
-        setItemInfo={() => {}} 
-        individualSpotifyAccessToken={null} 
-        promptAsync={() => {}} 
-      />
-    )}
-    keyExtractor={(item) => item.key || item.id}
-    numColumns={1}
-    key={"single-column"}
-    showsVerticalScrollIndicator={true}
-    removeClippedSubviews={true}
-    maxToRenderPerBatch={5}
-    windowSize={10}
-    initialNumToRender={3}
-  />
-</View>
-
-                ) : (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
-                    <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
-                      No posts yet
-                    </Text>
-                  </View>
-                )}
-              </>
-            ) : (
+              {/* Lists Tab Content */}
               <View style={{ paddingTop: 5 }}>
                 {categories.length > 0 ? (
                   <FlatList
@@ -636,8 +840,8 @@ const Profile = ({ route, navigation }) => {
                   </Text>
                 )}
               </View>
-            )}
-          </ScrollView>
+            </ScrollView>
+          )}
         </View>
       )}
     </>
