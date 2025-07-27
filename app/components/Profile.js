@@ -494,16 +494,80 @@ const Profile = ({ route, navigation }) => {
                 </View>
               </View>
             ) : (
-              <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
-                {isFollowing ? (
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => unfollowUser()}>
-                    <Text style={[styles.editButtons, { color: 'black' }]}>Unfollow</Text>
+              <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: 'lightgrey', borderBottomWidth: 1 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                  {isFollowing ? (
+                    <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => unfollowUser()}>
+                      <Text style={[styles.editButtons, { color: 'black' }]}>Unfollow</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => followUser()}>
+                      <Text style={[styles.editButtons, { color: 'black' }]}>Follow</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                
+                {/* Tab Buttons */}
+                <View style={{ flexDirection: 'row', marginTop: 15, paddingHorizontal: 15 }}>
+                  <TouchableOpacity 
+                    style={{ 
+                      flex: 1, 
+                      paddingVertical: 8, 
+                      backgroundColor: 'transparent',
+                      marginRight: 8,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderBottomWidth: 2,
+                      borderBottomColor: activeTab === 'recent' ? 'black' : 'transparent'
+                    }} 
+                    onPress={() => setActiveTab('recent')}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ 
+                        fontSize: 14, 
+                        marginRight: 6,
+                        color: activeTab === 'recent' ? 'black' : '#666',
+                        fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+                      }}>
+                        Recent
+                      </Text>
+                      <Ionicons 
+                        name="time-outline" 
+                        size={18} 
+                        color={activeTab === 'recent' ? 'black' : '#666'} 
+                      />
+                    </View>
                   </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: 'lightgrey' }]} onPress={() => followUser()}>
-                    <Text style={[styles.editButtons, { color: 'black' }]}>Follow</Text>
+                  <TouchableOpacity 
+                    style={{ 
+                      flex: 1, 
+                      paddingVertical: 8, 
+                      backgroundColor: 'transparent',
+                      marginLeft: 8,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderBottomWidth: 2,
+                      borderBottomColor: activeTab === 'lists' ? 'black' : 'transparent'
+                    }} 
+                    onPress={() => setActiveTab('lists')}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ 
+                        fontSize: 14, 
+                        marginRight: 6,
+                        color: activeTab === 'lists' ? 'black' : '#666',
+                        fontWeight: activeTab === 'lists' ? 'bold' : 'normal'
+                      }}>
+                        Lists
+                      </Text>
+                      <Ionicons 
+                        name="grid-outline" 
+                        size={18} 
+                        color={activeTab === 'lists' ? 'black' : '#666'} 
+                      />
+                    </View>
                   </TouchableOpacity>
-                )}
+                </View>
               </View>
             )}
 
@@ -568,7 +632,7 @@ const Profile = ({ route, navigation }) => {
                   />
                 ) : (
                   <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
-                    add a list to get started...
+                    {visitingUserId ? 'No lists yet' : 'add a list to get started...'}
                   </Text>
                 )}
               </View>
