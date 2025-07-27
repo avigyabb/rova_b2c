@@ -358,20 +358,18 @@ const Profile = ({ route, navigation }) => {
             </View>
           )}
           
-          {/* Header Section */}
-          <View style={{ backgroundColor: 'white' }}>
-            <ScrollView
-              style={{ backgroundColor: 'white' }}
-              onScroll={(event) => {
-                const y = event.nativeEvent.contentOffset.y;
-                setScrollY(y);
-                if (y < -110 && !refreshed) {
-                  refreshProfile();
-                }
-              }}
-              scrollEventThrottle={1}
-              scrollEnabled={activeTab !== 'recent'}
-            >
+                    <ScrollView
+            style={{ backgroundColor: 'white' }}
+            onScroll={(event) => {
+              const y = event.nativeEvent.contentOffset.y;
+              setScrollY(y);
+              if (y < -110 && !refreshed) {
+                refreshProfile();
+              }
+            }}
+            scrollEventThrottle={1}
+            scrollEnabled={activeTab !== 'recent'}
+          >
             {!visitingUserId ? (
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
                 <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
@@ -573,7 +571,7 @@ const Profile = ({ route, navigation }) => {
 
             {/* Tab Content */}
             {activeTab === 'recent' ? (
-              <View style={{ flex: 1, height: 400 }}>
+              <View style={{ flex: 1 }}>
                 {loadingPosts ? (
                   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
                     <ActivityIndicator size="large" color="black" />
@@ -638,7 +636,6 @@ const Profile = ({ route, navigation }) => {
               </View>
             )}
           </ScrollView>
-          </View>
         </View>
       )}
     </>
