@@ -7,6 +7,7 @@ import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Profile from './Profile';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import ExploreItemTile from './ExploreComponents/ExploreItemTile';
+import MovieDetailTile from './ExploreComponents/MovieDetailTile';
 
 
 const Explore = ({ route, navigation }) => {
@@ -17,6 +18,7 @@ const Explore = ({ route, navigation }) => {
   const [topMovies, setTopMovies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
+  const [selectedMovie, setSelectedMovie] = useState(null);
 
   const fetchTopMovies = async () => {
     if (topMovies.length > 0) {
@@ -316,6 +318,17 @@ const Explore = ({ route, navigation }) => {
   }
 
   if (exploreView === 'Top Movies') {
+    // If a movie is selected, show the movie detail view
+    if (selectedMovie) {
+      return (
+        <MovieDetailTile 
+          movie={selectedMovie} 
+          onBackPress={() => setSelectedMovie(null)}
+          navigation={navigation}
+        />
+      );
+    }
+
     return (
       <View style={{ backgroundColor: 'white', height: '100%' }}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -324,7 +337,7 @@ const Explore = ({ route, navigation }) => {
           }}> 
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
-          <Text>Top Movies</Text>
+  
         </View>
         <View style={{ padding: 20, borderBottomWidth: 1, borderColor: 'lightgrey' }}>
           <Text style={{ fontWeight: 'bold', fontSize: 30, fontStyle: 'italic' }}>Top Movies</Text>
@@ -338,7 +351,11 @@ const Explore = ({ route, navigation }) => {
           <>
           <FlatList
             data={topMovies}
-            renderItem={({ item, index }) => <ExploreItemTile item={item} index={index} itemsInCategory={itemsInCategory}/>}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity onPress={() => setSelectedMovie(item)}>
+                <ExploreItemTile item={item} index={index} itemsInCategory={itemsInCategory}/>
+              </TouchableOpacity>
+            )}
             keyExtractor={(item, index) => index.toString()}
             numColumns={1}
             key={"single-column"}
