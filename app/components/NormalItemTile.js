@@ -105,8 +105,13 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [loading, setLoading] = useState(false);
 
   const onImageLoad = (event) => {
-    const { width, height } = event.source;
-    setDimensions({ width: 260, height: 260 * height / width });
+    // Safe image load handler - only set dimensions if they haven't been set yet
+    if (!dimensions.width || !dimensions.height) {
+      const { width, height } = event.source;
+      if (width && height && width > 0 && height > 0) {
+        setDimensions({ width: 260, height: 260 * height / width });
+      }
+    }
   };
 
   const getProfile = (userID) => {

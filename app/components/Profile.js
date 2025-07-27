@@ -571,36 +571,38 @@ const Profile = ({ route, navigation }) => {
 
             {/* Tab Content */}
             {activeTab === 'recent' ? (
-              <View style={{ flex: 1 }}>
+              <>
                 {loadingPosts ? (
                   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
                     <ActivityIndicator size="large" color="black" />
                   </View>
                 ) : userPosts.length > 0 ? (
-                  <FlatList
-                    data={userPosts}
-                    renderItem={({ item }) => (
-                      <NormalItemTile 
-                        item={item} 
-                        userKey={userKey} 
-                        setFeedView={setFeedView} 
-                        navigation={navigation} 
-                        visitingUserId={userKey} 
-                        setItemInfo={() => {}} 
-                        individualSpotifyAccessToken={null} 
-                        promptAsync={() => {}} 
-                      />
-                    )}
-                    keyExtractor={(item) => item.key || item.id}
-                    numColumns={1}
-                    key={"single-column"}
-                    showsVerticalScrollIndicator={false}
-                    style={{ flex: 1 }}
-                    removeClippedSubviews={true}
-                    maxToRenderPerBatch={5}
-                    windowSize={10}
-                    initialNumToRender={3}
-                  />
+                  <View style={{ height: 500 }}> {/* You can adjust this height */}
+  <FlatList
+    data={userPosts}
+    renderItem={({ item }) => (
+      <NormalItemTile 
+        item={item} 
+        userKey={userKey} 
+        setFeedView={setFeedView} 
+        navigation={navigation} 
+        visitingUserId={userKey} 
+        setItemInfo={() => {}} 
+        individualSpotifyAccessToken={null} 
+        promptAsync={() => {}} 
+      />
+    )}
+    keyExtractor={(item) => item.key || item.id}
+    numColumns={1}
+    key={"single-column"}
+    showsVerticalScrollIndicator={true}
+    removeClippedSubviews={true}
+    maxToRenderPerBatch={5}
+    windowSize={10}
+    initialNumToRender={3}
+  />
+</View>
+
                 ) : (
                   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
                     <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
@@ -608,7 +610,7 @@ const Profile = ({ route, navigation }) => {
                     </Text>
                   </View>
                 )}
-              </View>
+              </>
             ) : (
               <View style={{ paddingTop: 5 }}>
                 {categories.length > 0 ? (

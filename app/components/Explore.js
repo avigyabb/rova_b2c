@@ -153,61 +153,139 @@ const Explore = ({ route, navigation }) => {
   }
 
   if (exploreView === 'Home') {
-    return (
-      <View style={{ backgroundColor: 'white', height: '100%', paddingHorizontal: 20 }}>
-        <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 10 }}>ambora\social</Text>
-        <View>
-          <TouchableOpacity 
-            style={{ 
-              flexDirection: 'row', 
-              alignItems: 'center', 
-              padding: 10, 
-              borderWidth: 1, 
-              borderRadius: 5, 
-              borderColor: 'lightgrey', 
-              marginTop: 20 
-            }}
+          return (
+        <View style={{ backgroundColor: 'white', height: '100%' }}>
+        
+          <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
+            <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+          </View>
+
+          <View style={{ paddingHorizontal: 20, marginTop: 30 }}>
+          
+
+                      <TouchableOpacity 
+              style={{ 
+                backgroundColor: '#FFE5E5',
+                borderRadius: 20,
+                padding: 18,
+                marginBottom: 20,
+                borderWidth: 2,
+                borderColor: '#FFB3B3',
+                shadowColor: '#FF6B6B',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 5
+              }}
             onPress={() => setExploreView(null)}
           >
-            <MaterialIcons name="person-search" size={30} color="black" />
-            <Text style={{ marginLeft: 10, fontWeight: 'bold', fontSize: 15 }}>Search Users</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                backgroundColor: '#FF6B6B', 
+                borderRadius: 30, 
+                width: 60, 
+                height: 60, 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                marginRight: 20,
+                shadowColor: '#FF6B6B',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+                elevation: 4
+              }}>
+                <MaterialIcons name="people" size={30} color="white" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#FF4757', marginBottom: 5 }}>Search Users</Text>
+                <Text style={{ fontSize: 16, color: '#666', lineHeight: 22 }}>find new people 🔍</Text>
+              </View>
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={{ 
-              flexDirection: 'row', 
-              alignItems: 'center', 
-              padding: 10, 
-              borderWidth: 1, 
-              borderRadius: 5, 
-              borderColor: 'lightgrey', 
-              marginTop: 20 
-            }}
+
+                      <TouchableOpacity 
+              style={{ 
+                backgroundColor: '#E8F4FD',
+                borderRadius: 20,
+                padding: 18,
+                marginBottom: 20,
+                borderWidth: 2,
+                borderColor: '#B3D9FF',
+                shadowColor: '#007AFF',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 5
+              }}
             onPress={() => {
               setExploreView('Top Movies')
               fetchTopMovies();
-
             }}
           >
-            <Ionicons name="film" size={30} color="black" />
-            <Text style={{ marginLeft: 10, fontWeight: 'bold', fontSize: 15 }}>Top Movies</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                backgroundColor: '#007AFF', 
+                borderRadius: 30, 
+                width: 60, 
+                height: 60, 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                marginRight: 20,
+                shadowColor: '#007AFF',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+                elevation: 4
+              }}>
+                <Ionicons name="film" size={30} color="white" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#0056CC', marginBottom: 5 }}>Top Movies</Text>
+                <Text style={{ fontSize: 16, color: '#666', lineHeight: 22 }}>see what's hot on ambora 👀</Text>
+              </View>
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={{ 
-              flexDirection: 'row', 
-              alignItems: 'center', 
-              padding: 10, 
-              borderWidth: 1, 
-              borderRadius: 5, 
-              borderColor: 'lightgrey', 
-              marginTop: 20 
-            }}
+
+
+
+
+                      <TouchableOpacity 
+              style={{ 
+                backgroundColor: '#FFF8E1',
+                borderRadius: 20,
+                padding: 18,
+                marginBottom: 20,
+                borderWidth: 2,
+                borderColor: '#FFE082',
+                opacity: 0.7
+              }}
             onPress={() => {
               setExploreView('Events')
             }}
           >
-            <Ionicons name="basketball-sharp" size={30} color="black" />
-            <Text style={{ marginLeft: 10, fontWeight: 'bold', fontSize: 15 }}>Events</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                backgroundColor: '#FFA000', 
+                borderRadius: 30, 
+                width: 60, 
+                height: 60, 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                marginRight: 20
+              }}>
+                <Ionicons name="basketball-sharp" size={30} color="white" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#F57C00', marginBottom: 5 }}>Events</Text>
+                <Text style={{ fontSize: 16, color: '#666', lineHeight: 22 }}>local events coming soon...🚧</Text>
+              </View>
+            </View>
           </TouchableOpacity>
+        </View>
+
+    
+        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+       
         </View>
       </View>
     )
@@ -295,7 +373,7 @@ const Explore = ({ route, navigation }) => {
           }}> 
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
-          <Text>User Search</Text>
+      
         </View>
         <View style={{ paddingHorizontal: 20 }}>
           <TextInput
