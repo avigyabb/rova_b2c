@@ -8,6 +8,7 @@ import Profile from './Profile';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import ExploreItemTile from './ExploreComponents/ExploreItemTile';
 import MovieDetailTile from './ExploreComponents/MovieDetailTile';
+import NormalItemTile from './NormalItemTile';
 
 // Dark mode theme colors
 const darkTheme = {
@@ -53,6 +54,11 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   const [loading, setLoading] = useState(false);
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [movieSearchVal, setMovieSearchVal] = useState('');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [sortBy, setSortBy] = useState('default'); // 'default', 'rankings', 'alphabetical', 'rating'
+  const [randomPosts, setRandomPosts] = useState([]);
+  const [randomLoading, setRandomLoading] = useState(false);
 
   const fetchTopMovies = async () => {
     if (topMovies.length > 0) {
@@ -139,6 +145,67 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
         globalAverage: C
       };
     });
+  };
+
+  const getSortedMovies = (movies) => {
+    const filteredMovies = movies.filter(movie => 
+      movie.name.toLowerCase().includes(movieSearchVal.toLowerCase())
+    );
+
+    // Create a map of original indices for ranking numbers
+    const originalIndices = {};
+    topMovies.forEach((movie, index) => {
+      originalIndices[movie.name] = index;
+    });
+
+    let sortedMovies;
+    switch (sortBy) {
+      case 'default':
+        sortedMovies = filteredMovies; // Original order from fetchTopMovies
+        break;
+      case 'rankings':
+        sortedMovies = filteredMovies.sort((a, b) => b.num_items - a.num_items); // Sort by number of rankings (most first)
+        break;
+      case 'alphabetical':
+        sortedMovies = filteredMovies.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'rating':
+        sortedMovies = filteredMovies.sort((a, b) => a.weightedRating - b.weightedRating); // Sort by rating (lowest first)
+        break;
+      default:
+        sortedMovies = filteredMovies;
+    }
+
+    // Add original index to each movie for ranking display
+    return sortedMovies.map(movie => ({
+      ...movie,
+      originalIndex: originalIndices[movie.name]
+    }));
+  };
+
+  const fetchRandomPosts = async () => {
+    setRandomLoading(true);
+    try {
+      const itemsRef = ref(database, 'items');
+      const snapshot = await get(itemsRef);
+      
+      if (snapshot.exists()) {
+        const allPosts = Object.entries(snapshot.val())
+          .filter(([key, value]) => key !== 'undefined' && value.custom)
+          .map(([key, value]) => ({ key, ...value }));
+        
+        // Shuffle the posts randomly
+        const shuffledPosts = allPosts.sort(() => Math.random() - 0.5);
+        
+        // Take first 20 posts (or all if less than 20)
+        const randomPostsData = shuffledPosts.slice(0, 20);
+        setRandomPosts(randomPostsData);
+      }
+    } catch (error) {
+      console.error("Error fetching random posts:", error);
+    } finally {
+      setRandomLoading(false);
+    }
   };
 
   const checkUserMatches = async () => {
@@ -330,7 +397,7 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                 <Ionicons name="film" size={30} color="white" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#0056CC', marginBottom: 5 }}>Top Movies</Text>
+                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#0056CC', marginBottom: 5 }}>Movies</Text>
                 <Text style={{ fontSize: 16, color: '#666', lineHeight: 22 }}>see what's hot on ambora 👀</Text>
               </View>
             </View>
@@ -367,6 +434,49 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#F57C00', marginBottom: 5 }}>Events</Text>
                 <Text style={{ fontSize: 16, color: '#666', lineHeight: 22 }}>local events coming soon...🚧</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+                      <TouchableOpacity 
+              style={{ 
+                backgroundColor: '#F0F8FF',
+                borderRadius: 20,
+                padding: 18,
+                marginBottom: 20,
+                borderWidth: 2,
+                borderColor: '#87CEEB',
+                shadowColor: '#4682B4',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 5
+              }}
+            onPress={() => {
+              setExploreView('Random')
+              fetchRandomPosts();
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                backgroundColor: '#4682B4', 
+                borderRadius: 30, 
+                width: 60, 
+                height: 60, 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                marginRight: 20,
+                shadowColor: '#4682B4',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+                elevation: 4
+              }}>
+                <MaterialIcons name="shuffle" size={30} color="white" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#2E5A88', marginBottom: 5 }}>Random</Text>
+                <Text style={{ fontSize: 16, color: '#666', lineHeight: 22 }}>posts from anywhere 🎲</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -419,6 +529,60 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
     )
   }
 
+  if (exploreView === 'Random') {
+    return (
+      <View style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white', height: '100%' }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          padding: 10, 
+          borderBottomWidth: 1, 
+          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          justifyContent: 'space-between', 
+          alignItems: 'center' 
+        }}>
+          <TouchableOpacity onPress={() => {
+            setExploreView('Home');
+          }}> 
+            <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+          </TouchableOpacity>
+          <Text style={{ color: isDarkMode ? darkTheme?.textPrimary : 'black', fontWeight: 'bold' }}>Random Posts</Text>
+          <TouchableOpacity onPress={() => fetchRandomPosts()}>
+            <MaterialIcons name="refresh" size={24} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+          </TouchableOpacity>
+        </View>
+        
+        <FlatList
+          data={randomPosts}
+          keyExtractor={(item) => item.key}
+          renderItem={({ item }) => (
+            <NormalItemTile 
+              item={item}
+              userKey={userKey}
+              setFeedView={setExploreView}
+              navigation={navigation}
+              visitingUserId={userKey}
+              isDarkMode={isDarkMode}
+              darkTheme={darkTheme}
+            />
+          )}
+          ListEmptyComponent={() => (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
+              {randomLoading ? (
+                <ActivityIndicator size="large" color={isDarkMode ? darkTheme?.accent : '#007AFF'} />
+              ) : (
+                <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'gray', fontSize: 16 }}>
+                  No random posts found
+                </Text>
+              )}
+            </View>
+          )}
+          refreshing={randomLoading}
+          onRefresh={fetchRandomPosts}
+        />
+      </View>
+    )
+  }
+
   if (exploreView === 'Top Movies') {
     // If a movie is selected, show the movie detail view
     if (selectedMovie) {
@@ -455,30 +619,119 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
           borderBottomWidth: 1, 
           borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
         }}>
-          <Text style={{ 
-            fontWeight: 'bold', 
-            fontSize: 30, 
-            fontStyle: 'italic',
-            color: isDarkMode ? darkTheme?.textPrimary : 'black'
-          }}>Top Movies</Text>
-          <Text style={{ 
-            color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
-            marginTop: 10 
-          }}>{topMovies.length} movies ranked.</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View>
+              <Text style={{ 
+                fontWeight: 'bold', 
+                fontSize: 30, 
+                fontStyle: 'italic',
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
+              }}>Top Movies</Text>
+              <Text style={{ 
+                color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+                marginTop: 10 
+              }}>{topMovies.length} movies ranked.</Text>
+            </View>
+            <TouchableOpacity 
+              style={{
+                backgroundColor: isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey',
+                paddingHorizontal: 15,
+                paddingVertical: 8,
+                borderRadius: 20,
+                flexDirection: 'row',
+                alignItems: 'center'
+              }}
+              onPress={() => setShowFilterDropdown(!showFilterDropdown)}
+            >
+              <Ionicons name="filter" size={16} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+              <Text style={{ 
+                marginLeft: 5, 
+                color: isDarkMode ? darkTheme?.textPrimary : 'black',
+                fontSize: 14,
+                fontWeight: '500'
+              }}>Sort</Text>
+            </TouchableOpacity>
+          </View>
+          {showFilterDropdown && (
+            <View style={{
+              position: 'absolute',
+              top: 80,
+              right: 20,
+              backgroundColor: isDarkMode ? darkTheme?.surface : 'white',
+              borderWidth: 1,
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
+              borderRadius: 8,
+              padding: 10,
+              zIndex: 1000,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5
+            }}>
+              <TouchableOpacity 
+                style={{ paddingVertical: 8, paddingHorizontal: 12 }}
+                onPress={() => {
+                  setSortBy('default');
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={{ 
+                  color: sortBy === 'default' ? (isDarkMode ? darkTheme?.accent : '#00aced') : (isDarkMode ? darkTheme?.textPrimary : 'black'),
+                  fontWeight: sortBy === 'default' ? 'bold' : 'normal'
+                }}>Default</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={{ paddingVertical: 8, paddingHorizontal: 12 }}
+                onPress={() => {
+                  setSortBy('rankings');
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={{ 
+                  color: sortBy === 'rankings' ? (isDarkMode ? darkTheme?.accent : '#00aced') : (isDarkMode ? darkTheme?.textPrimary : 'black'),
+                  fontWeight: sortBy === 'rankings' ? 'bold' : 'normal'
+                }}>Popularity</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={{ paddingVertical: 8, paddingHorizontal: 12 }}
+                onPress={() => {
+                  setSortBy('alphabetical');
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={{ 
+                  color: sortBy === 'alphabetical' ? (isDarkMode ? darkTheme?.accent : '#00aced') : (isDarkMode ? darkTheme?.textPrimary : 'black'),
+                  fontWeight: sortBy === 'alphabetical' ? 'bold' : 'normal'
+                }}>A-Z</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={{ paddingVertical: 8, paddingHorizontal: 12 }}
+                onPress={() => {
+                  setSortBy('rating');
+                  setShowFilterDropdown(false);
+                }}
+              >
+                <Text style={{ 
+                  color: sortBy === 'rating' ? (isDarkMode ? darkTheme?.accent : '#00aced') : (isDarkMode ? darkTheme?.textPrimary : 'black'),
+                  fontWeight: sortBy === 'rating' ? 'bold' : 'normal'
+                }}>Low to High</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color={isDarkMode ? darkTheme?.textPrimary : "black"} style={{ marginTop: 20 }} />
           </View>
         ) : (
-          <>
           <FlatList
-            data={topMovies}
+            data={getSortedMovies(topMovies)}
             renderItem={({ item, index }) => (
               <TouchableOpacity onPress={() => setSelectedMovie(item)}>
                 <ExploreItemTile 
                   item={item} 
-                  index={index} 
+                  index={item.originalIndex} 
                   itemsInCategory={itemsInCategory}
                   isDarkMode={isDarkMode}
                   darkTheme={darkTheme}
@@ -488,8 +741,35 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
             keyExtractor={(item, index) => index.toString()}
             numColumns={1}
             key={"single-column"}
+            ListHeaderComponent={() => (
+              <TextInput
+                placeholder={'Search movies...'}
+                value={movieSearchVal} 
+                onChangeText={setMovieSearchVal}
+                placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
+                style={{ 
+                  fontSize: 16, 
+                  borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
+                  borderWidth: 0.5,
+                  borderRadius: 30,
+                  padding: 10,
+                  marginRight: 10,
+                  marginLeft: 10,
+                  paddingHorizontal: 20,
+                  marginVertical: 15,
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black',
+                  backgroundColor: isDarkMode ? darkTheme?.inputBackground : 'white'
+                }}
+                autoCorrect={false}
+                autoCapitalize="none"
+                keyboardType="default"
+                returnKeyType="search"
+                blurOnSubmit={false}
+              />
+            )}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="none"
           />
-          </>
         )}
       </View> 
     )
