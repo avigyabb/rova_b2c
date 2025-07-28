@@ -734,12 +734,12 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       {/* {visitingUserId !== item.user_id && ( */}
       <View style={{ flexDirection: 'row', marginTop: 20 }}>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
-          <Ionicons name="thumbs-up-sharp" size={25} color={visitingUserId in likes ? "black" : "grey"} />
-          <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
+          <MaterialIcons name="thumb-up" size={25} color={visitingUserId in likes ? (isDarkMode ? darkTheme?.textPrimary : "black") : (isDarkMode ? darkTheme?.textSecondary : "grey")} />
+          <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'grey', fontSize: 12 }}>{Object.keys(likes).length}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onDislikePress(item)}>
-          <Ionicons name="thumbs-down-sharp" size={25} color={visitingUserId in dislikes ? "black" : "grey"} />
-          <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
+          <MaterialIcons name="thumb-down" size={25} color={visitingUserId in dislikes ? (isDarkMode ? darkTheme?.textPrimary : "black") : (isDarkMode ? darkTheme?.textSecondary : "grey")} />
+          <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'grey', fontSize: 12 }}>{Object.keys(dislikes).length}</Text>
         </TouchableOpacity>
         
         {!showComments && (
