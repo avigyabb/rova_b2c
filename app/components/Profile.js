@@ -346,6 +346,7 @@ const Profile = ({ route, navigation }) => {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [layoutReady, setLayoutReady] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false); // Start with light mode
+  const [itemInfo, setItemInfo] = useState(null);
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
@@ -603,7 +604,7 @@ const Profile = ({ route, navigation }) => {
                 posts.push({ key: postKey, ...postData });
               }
             });
-            setUserPosts(posts.sort((a, b) => b.timestamp - a.timestamp));
+            setUserPosts(posts.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
           } else {
             setUserPosts([]);
           }
@@ -646,10 +647,57 @@ const Profile = ({ route, navigation }) => {
       userKey={userKey}
       visitingUserId={visitingUserId}
       navigation={navigation}
-    />
-  }
+          />
+    }
 
-  return (
+      if (itemInfo) {
+    const onBackPress = (params) => {
+      if (setFeedView) {
+        setFeedView(params)
+      }
+      setItemInfo(null)
+    }
+
+      return (
+        <View style={{ 
+          backgroundColor: isDarkMode ? darkTheme?.background : 'black', 
+          height: '100%' 
+        }}>
+          <View style={{ 
+            flexDirection: 'row', 
+            padding: 10, 
+            borderBottomWidth: 1, 
+            borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+          }}>
+            <TouchableOpacity onPress={() => {
+              setItemInfo(null) 
+              if (setFeedView) {
+                setFeedView(null)
+              }
+            }}> 
+              <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+            </TouchableOpacity>
+          </View>
+          <NormalItemTile 
+            item={itemInfo} 
+            visitingUserId={userKey} 
+            navigation={navigation} 
+            editMode={false} 
+            showComments={true} 
+            setFeedView={onBackPress} 
+            individualSpotifyAccessToken={null} 
+            promptAsync={() => {}}
+            isDarkMode={isDarkMode}
+            darkTheme={darkTheme}
+          />
+        </View>
+      );
+    }
+  
+    return (
     <>
       {showSettings ? (
         <Settings 
@@ -716,12 +764,15 @@ const Profile = ({ route, navigation }) => {
                 <NormalItemTile 
                   item={item} 
                   userKey={userKey} 
-                  setFeedView={setFeedView} 
+                  setFeedView={setFeedView || (() => {})} 
                   navigation={navigation} 
                   visitingUserId={userKey} 
-                  setItemInfo={() => {}} 
+                  setItemInfo={setItemInfo} 
+                  topPostsTime={null}
                   individualSpotifyAccessToken={null} 
-                  promptAsync={() => {}} 
+                  promptAsync={() => {}}
+                  setIndex={() => {}}
+                  setFocusedItemDescription={() => {}}
                   isDarkMode={isDarkMode}
                   darkTheme={darkTheme}
                 />

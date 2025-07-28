@@ -126,7 +126,7 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
             return snapshot0.val().feedType === 'customDescription' ? value?.custom ?? true : true;
           })
           .map(([key, value]) => ({ key, ...value }));
-          setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp));
+          setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
         }
         setRefreshed(false);
       }).catch((error) => {
@@ -159,7 +159,7 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
           if (inner_snapshot.exists()) {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
             const filteredData = tempListData.filter(item => followingList.includes(item.user_id));
-            setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
+            setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
           }
           setRefreshed(false);
         }).catch((error) => {
@@ -197,10 +197,10 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
           .map(([key, value]) => ({ key, ...value }))
           .sort((a, b) => ((b.likes ? Object.keys(b.likes).length : 0) + (b.dislikes ? Object.keys(b.dislikes).length : 0)) - ((a.likes ? Object.keys(a.likes).length : 0) + (a.dislikes ? Object.keys(a.dislikes).length : 0)));
 
-        tempListData['Past Hour'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo)
-        tempListData['Past Day'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo)
-        tempListData['Past Week'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo)
-        tempListData['All Time'] = tempListDataSorted
+        tempListData['Past Hour'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo).slice(0, 30)
+        tempListData['Past Day'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo).slice(0, 30)
+        tempListData['Past Week'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo).slice(0, 30)
+        tempListData['All Time'] = tempListDataSorted.slice(0, 30)
         // console.log(tempListData)
         setListData(tempListData);
       }

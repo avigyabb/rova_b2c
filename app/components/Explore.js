@@ -59,6 +59,7 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   const [sortBy, setSortBy] = useState('default'); // 'default', 'rankings', 'alphabetical', 'rating'
   const [randomPosts, setRandomPosts] = useState([]);
   const [randomLoading, setRandomLoading] = useState(false);
+  const [itemInfo, setItemInfo] = useState(null);
 
   const fetchTopMovies = async () => {
     if (topMovies.length > 0) {
@@ -197,8 +198,8 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
         // Shuffle the posts randomly
         const shuffledPosts = allPosts.sort(() => Math.random() - 0.5);
         
-        // Take first 20 posts (or all if less than 20)
-        const randomPostsData = shuffledPosts.slice(0, 20);
+        // Take first 30 posts (or all if less than 30)
+        const randomPostsData = shuffledPosts.slice(0, 30);
         setRandomPosts(randomPostsData);
       }
     } catch (error) {
@@ -529,6 +530,49 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
     )
   }
 
+  if (itemInfo) {
+    const onBackPress = (params) => {
+      setExploreView(params)
+      setItemInfo(null)
+    }
+
+    return (
+      <View style={{ 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'black', 
+        height: '100%' 
+      }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          padding: 10, 
+          borderBottomWidth: 1, 
+          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+        }}>
+          <TouchableOpacity onPress={() => {
+            setItemInfo(null) 
+            setExploreView('Random')
+          }}> 
+            <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+          </TouchableOpacity>
+        </View>
+        <NormalItemTile 
+          item={itemInfo} 
+          visitingUserId={userKey} 
+          navigation={navigation} 
+          editMode={false} 
+          showComments={true} 
+          setFeedView={onBackPress} 
+          individualSpotifyAccessToken={null} 
+          promptAsync={() => {}}
+          isDarkMode={isDarkMode}
+          darkTheme={darkTheme}
+        />
+      </View>
+    );
+  }
+
   if (exploreView === 'Random') {
     return (
       <View style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white', height: '100%' }}>
@@ -561,6 +605,12 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
               setFeedView={setExploreView}
               navigation={navigation}
               visitingUserId={userKey}
+              setItemInfo={setItemInfo}
+              topPostsTime={null}
+              individualSpotifyAccessToken={null}
+              promptAsync={() => {}}
+              setIndex={() => {}}
+              setFocusedItemDescription={() => {}}
               isDarkMode={isDarkMode}
               darkTheme={darkTheme}
             />
