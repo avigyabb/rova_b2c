@@ -7,7 +7,41 @@ import { ref, get, query, orderByChild, equalTo } from "firebase/database";
 import { getScoreColorHSL } from '../../consts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const MovieDetailTile = ({ movie, onBackPress, navigation }) => {
+// Dark mode theme colors
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
+
+const MovieDetailTile = ({ movie, onBackPress, navigation, isDarkMode=false, darkTheme=null }) => {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [averageScore, setAverageScore] = useState(0);
@@ -125,20 +159,35 @@ const MovieDetailTile = ({ movie, onBackPress, navigation }) => {
     const scoreColor = getScoreColorHSL(item.score);
 
     return (
-      <View style={styles.ratingItem}>
+      <View style={[
+        styles.ratingItem,
+        { borderBottomColor: isDarkMode ? darkTheme?.border : '#f0f0f0' }
+      ]}>
         <View style={styles.userInfo}>
           <Image
             source={userData?.profile_pic ? { uri: userData.profile_pic } : require('../../../assets/images/emptyProfilePic3.png')}
             style={styles.profilePic}
           />
           <View style={styles.userDetails}>
-            <Text style={styles.username}>{userData?.username || 'Unknown'}</Text>
-            <Text style={styles.timestamp}>
+            <Text style={[
+              styles.username,
+              { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+            ]}>{userData?.username || 'Unknown'}</Text>
+            <Text style={[
+              styles.timestamp,
+              { color: isDarkMode ? darkTheme?.textSecondary : 'grey' }
+            ]}>
               {new Date(item.timestamp).toLocaleDateString()}
             </Text>
           </View>
         </View>
-        <View style={[styles.scoreCircle, { borderColor: scoreColor }]}>
+        <View style={[
+          styles.scoreCircle, 
+          { 
+            borderColor: scoreColor,
+            backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+          }
+        ]}>
           <Text style={[styles.scoreText, { color: scoreColor }]}>
             {item.score.toFixed(1)}
           </Text>
@@ -149,43 +198,79 @@ const MovieDetailTile = ({ movie, onBackPress, navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="black" />
+      <View style={[
+        styles.loadingContainer,
+        { backgroundColor: isDarkMode ? darkTheme?.background : 'white' }
+      ]}>
+        <ActivityIndicator size="large" color={isDarkMode ? darkTheme?.textPrimary : "black"} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      { backgroundColor: isDarkMode ? darkTheme?.background : 'white' }
+    ]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[
+        styles.header,
+        { 
+          borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey',
+          backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+        }
+      ]}>
         <TouchableOpacity onPress={onBackPress} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Movie Details</Text>
+        <Text style={[
+          styles.headerTitle,
+          { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+        ]}>Movie Details</Text>
       </View>
 
       {/* Movie Info */}
-      <View style={styles.movieInfo}>
+      <View style={[
+        styles.movieInfo,
+        { borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey' }
+      ]}>
         <Image
           source={{ uri: movie.image }}
-          style={styles.moviePoster}
+          style={[
+            styles.moviePoster,
+            { borderColor: isDarkMode ? darkTheme?.border : 'transparent' }
+          ]}
         />
         <View style={styles.movieDetails}>
-          <Text style={styles.movieTitle}>{movie.name}</Text>
-          <Text style={styles.movieStats}>
-            {ratings.length} ratings • Average: {averageScore.toFixed(1)}
+          <Text style={[
+            styles.movieTitle,
+            { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+          ]}>{movie.name}</Text>
+          <Text style={[
+            styles.movieStats,
+            { color: isDarkMode ? darkTheme?.textSecondary : 'grey' }
+          ]}>
+            {ratings.length} ratings • Overall: {movie.weightedRating ? movie.weightedRating.toFixed(1) : averageScore.toFixed(1)}
           </Text>
-                          <TouchableOpacity style={styles.addButton} onPress={onAddRatingPress}>
-            <Ionicons name="add-circle" size={20} color="white" />
-            <Text style={styles.addButtonText}>Add Rating</Text>
+          <TouchableOpacity style={[
+            styles.addButton,
+            { backgroundColor: isDarkMode ? darkTheme?.textPrimary : 'black' }
+          ]} onPress={onAddRatingPress}>
+            <Ionicons name="add-circle" size={20} color={isDarkMode ? darkTheme?.background : "white"} />
+            <Text style={[
+              styles.addButtonText,
+              { color: isDarkMode ? darkTheme?.background : 'white' }
+            ]}>Add Rating</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Ratings Section */}
       <View style={styles.ratingsSection}>
-        <Text style={styles.ratingsTitle}>Past Ratings</Text>
+        <Text style={[
+          styles.ratingsTitle,
+          { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+        ]}>Past Ratings</Text>
         <FlatList
           data={ratings}
           renderItem={renderRatingItem}

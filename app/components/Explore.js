@@ -9,8 +9,42 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import ExploreItemTile from './ExploreComponents/ExploreItemTile';
 import MovieDetailTile from './ExploreComponents/MovieDetailTile';
 
+// Dark mode theme colors
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
 
-const Explore = ({ route, navigation }) => {
+
+const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   const { userKey } = route.params;
   const [userListData, setUserListData] = useState([]);
   const [searchVal, setSearchVal] = useState(''); // ~ why does this work
@@ -168,17 +202,35 @@ const Explore = ({ route, navigation }) => {
     if (item.username && item.username.toLowerCase().includes(searchVal.toLowerCase())){
       return (
         <TouchableOpacity onPress={() => userKey === item.id ? {} : setExploreView({userKey: item.id, username: item.username })}>
-          <View style={{ flexDirection: 'row', padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white', alignItems: 'center' }}>
+          <View style={{ 
+            flexDirection: 'row', 
+            padding: 10, 
+            borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+            borderBottomWidth: 1, 
+            backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
+            alignItems: 'center' 
+          }}>
             <Image
               source={item.profile_pic ? { uri: item.profile_pic } : 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-              style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
+              style={{
+                height: 50, 
+                width: 50, 
+                borderWidth: 0.5, 
+                marginRight: 10, 
+                borderRadius: 25, 
+                borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+              }}
             />
             <View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+                <Text style={{ 
+                  fontWeight: 'bold', 
+                  fontSize: 16,
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black'
+                }}>{item.name}</Text>
                 {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
               </View>
-              <Text style={{ color: 'grey' }}>@{item.username}</Text>
+              <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'grey' }}>@{item.username}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -188,10 +240,14 @@ const Explore = ({ route, navigation }) => {
 
   if (exploreView === 'Home') {
           return (
-        <View style={{ backgroundColor: 'white', height: '100%' }}>
+        <View style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white', height: '100%' }}>
         
           <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
-            <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+            <Text style={{ 
+              color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+              fontSize: 24, 
+              fontFamily: 'Poppins Regular' 
+            }}>ambora\social</Text>
           </View>
 
           <View style={{ paddingHorizontal: 20, marginTop: 30 }}>
@@ -290,8 +346,7 @@ const Explore = ({ route, navigation }) => {
                 padding: 18,
                 marginBottom: 20,
                 borderWidth: 2,
-                borderColor: '#FFE082',
-                opacity: 0.7
+                borderColor: '#FFE082'
               }}
             onPress={() => {
               setExploreView('Events')
@@ -328,20 +383,35 @@ const Explore = ({ route, navigation }) => {
   if (exploreView === 'Events') {
     return (
       <View>
-          <View style={{ backgroundColor: 'white' }}>
-            <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
+            <View style={{ 
+              flexDirection: 'row', 
+              padding: 10, 
+              borderBottomWidth: 1, 
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+              justifyContent: 'space-between', 
+              alignItems: 'center' 
+            }}>
                 <TouchableOpacity onPress={() => {
                     setExploreView("Home")
                 }}> 
-                    <Ionicons name="arrow-back" size={30} color="black" />
+                    <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
                 </TouchableOpacity>
-                <Text>Events</Text>
+                <Text style={{ color: isDarkMode ? darkTheme?.textPrimary : 'black' }}>Events</Text>
             </View>
         </View>
           <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}> 
-              <View style={{ backgroundColor: 'white', paddingHorizontal: 20, height: '100%' }}>
+              <View style={{ 
+                backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
+                paddingHorizontal: 20, 
+                height: '100%' 
+              }}>
                   <View style={{ flex: 1, alignItems: 'center', marginTop: '30%' }}>
-                      <Text style={{ color: 'gray', fontSize: 20, marginBottom: 30 }}>Coming Soon! 🗓️</Text>
+                      <Text style={{ 
+                        color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+                        fontSize: 20, 
+                        marginBottom: 30 
+                      }}>Coming Soon! 🗓️</Text>
                   </View>
               </View> 
           </TouchableWithoutFeedback>
@@ -357,27 +427,48 @@ const Explore = ({ route, navigation }) => {
           movie={selectedMovie} 
           onBackPress={() => setSelectedMovie(null)}
           navigation={navigation}
+          isDarkMode={isDarkMode}
+          darkTheme={darkTheme}
         />
       );
     }
 
     return (
-      <View style={{ backgroundColor: 'white', height: '100%' }}>
-        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white', height: '100%' }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          padding: 10, 
+          borderBottomWidth: 1, 
+          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          justifyContent: 'space-between', 
+          alignItems: 'center' 
+        }}>
           <TouchableOpacity onPress={() => {
             setExploreView('Home');
           }}> 
-            <Ionicons name="arrow-back" size={30} color="black" />
+            <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
           </TouchableOpacity>
   
         </View>
-        <View style={{ padding: 20, borderBottomWidth: 1, borderColor: 'lightgrey' }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 30, fontStyle: 'italic' }}>Top Movies</Text>
-          <Text style={{ color: 'grey', marginTop: 10 }}>{topMovies.length} movies ranked.</Text>
+        <View style={{ 
+          padding: 20, 
+          borderBottomWidth: 1, 
+          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+        }}>
+          <Text style={{ 
+            fontWeight: 'bold', 
+            fontSize: 30, 
+            fontStyle: 'italic',
+            color: isDarkMode ? darkTheme?.textPrimary : 'black'
+          }}>Top Movies</Text>
+          <Text style={{ 
+            color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+            marginTop: 10 
+          }}>{topMovies.length} movies ranked.</Text>
         </View>
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
+            <ActivityIndicator size="large" color={isDarkMode ? darkTheme?.textPrimary : "black"} style={{ marginTop: 20 }} />
           </View>
         ) : (
           <>
@@ -385,7 +476,13 @@ const Explore = ({ route, navigation }) => {
             data={topMovies}
             renderItem={({ item, index }) => (
               <TouchableOpacity onPress={() => setSelectedMovie(item)}>
-                <ExploreItemTile item={item} index={index} itemsInCategory={itemsInCategory}/>
+                <ExploreItemTile 
+                  item={item} 
+                  index={index} 
+                  itemsInCategory={itemsInCategory}
+                  isDarkMode={isDarkMode}
+                  darkTheme={darkTheme}
+                />
               </TouchableOpacity>
             )}
             keyExtractor={(item, index) => index.toString()}
@@ -415,12 +512,23 @@ const Explore = ({ route, navigation }) => {
   return (
     <>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}> 
-      <View style={{ backgroundColor: 'white', paddingHOrizontal: 20, height: '100%' }}>
-        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View style={{ 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
+        paddingHorizontal: 20, 
+        height: '100%' 
+      }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          padding: 10, 
+          borderBottomWidth: 1, 
+          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          justifyContent: 'space-between', 
+          alignItems: 'center' 
+        }}>
           <TouchableOpacity onPress={() => {
             setExploreView('Home');
           }}> 
-            <Ionicons name="arrow-back" size={30} color="black" />
+            <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
           </TouchableOpacity>
       
         </View>
@@ -429,15 +537,17 @@ const Explore = ({ route, navigation }) => {
             placeholder={'Search Users...'}
             value={searchVal} 
             onChangeText={setSearchVal}
-            placeholderTextColor="gray"
+            placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
             style={{ 
               fontSize: 16, 
-              borderColor: 'lightgrey',
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
               borderWidth: 0.5,
               borderRadius: 30,
               padding: 10,
               paddingHorizontal: 20,
-              marginVertical: 15
+              marginVertical: 15,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black',
+              backgroundColor: isDarkMode ? darkTheme?.inputBackground : 'white'
             }}
           /> 
         </View>

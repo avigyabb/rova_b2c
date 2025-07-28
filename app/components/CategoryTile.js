@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   }
 })
 
-const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fromPage }) => {
+const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fromPage, isDarkMode=false, darkTheme=null }) => {
   console.log(imageUri)
   
   // Check if imageUri is valid (not null, undefined, empty, or just whitespace)
@@ -73,7 +73,13 @@ const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fro
           padding: 10, // Adjust or remove padding as needed
         }}>
           { num_items >= 0 && (
-            <Text style={{ marginLeft: 'auto', color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 'auto' }}>{num_items}</Text>
+            <Text style={{ 
+              marginLeft: 'auto', 
+              color: 'white', 
+              fontWeight: 'bold', 
+              fontSize: 18, 
+              marginBottom: 'auto' 
+            }}>{num_items}</Text>
           )}
           <Text style={{
             color: 'white', // Ensures the text is visible against a dark background

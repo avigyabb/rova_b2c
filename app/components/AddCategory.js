@@ -10,6 +10,40 @@ import RNPickerSelect from 'react-native-picker-select';
 import { signInCategories } from '../consts';
 import CategoryTile from './CategoryTile';
 
+// Dark mode theme colors
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
+
 const styles = StyleSheet.create({
   postButtons: {
     flexDirection: 'row',
@@ -32,7 +66,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const AddCategory = ({ onBackPress, userKey }) => {
+const AddCategory = ({ onBackPress, userKey, isDarkMode=false, darkTheme=null }) => {
   const [newCategoryImageUri, setNewCategoryImageUri] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
@@ -178,7 +212,11 @@ const AddCategory = ({ onBackPress, userKey }) => {
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View style={{ backgroundColor: 'white', padding: 10, height: '100%' }}>    
+      <View style={{ 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
+        padding: 10, 
+        height: '100%' 
+      }}>    
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {newCategoryImageUri ? (
             <>
@@ -186,34 +224,46 @@ const AddCategory = ({ onBackPress, userKey }) => {
               <View style={{ position: 'relative', height: 100, width: 100, marginRight: 10,}}>
                 <Image
                   source={{ uri: newCategoryImageUri }}
-                  style={styles.addedImages}
+                  style={[
+                    styles.addedImages,
+                    { borderColor: isDarkMode ? darkTheme?.border : 'gray' }
+                  ]}
                 />
                 <Ionicons name="pencil" size={30} color="white" style={{ position: 'absolute', bottom: 0, right: 5 }}/>
               </View>
             </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-                <Ionicons name="duplicate" size={40} color="gray" />
-                <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Add Cover Image</Text>
+            <TouchableOpacity onPress={pickImage} style={[
+              styles.addedImages,
+              { borderColor: isDarkMode ? darkTheme?.border : 'gray' }
+            ]}>
+                <Ionicons name="duplicate" size={40} color={isDarkMode ? darkTheme?.textSecondary : "gray"} />
+                <Text style={{ 
+                  marginTop: 8, 
+                  fontWeight: 'bold', 
+                  fontSize: 14, 
+                  color: isDarkMode ? darkTheme?.textSecondary : 'gray' 
+                }}>Add Cover Image</Text>
             </TouchableOpacity>
           )}
           
           <View style={{ width: 260 }}>
             <View style={{ flexDirection: 'row', marginTop: 15 }}>
-              <Ionicons name='add-circle' size={30} color="black" />
+              <Ionicons name='add-circle' size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
               <TextInput
                 placeholder={'Add a list title...'}
                 onChangeText={setNewCategoryName}
                 value={newCategoryName}
-                placeholderTextColor="gray"
+                placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
                 style={{ 
                   marginLeft: 10, 
                   fontSize: 20, 
                   flex: 1,
-                  borderColor: 'lightgrey',
+                  borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
                   borderBottomWidth: 1,
                   fontWeight: 'bold',
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black'
                 }}
               />
             </View>
@@ -222,16 +272,17 @@ const AddCategory = ({ onBackPress, userKey }) => {
               placeholder={'Add a list description...'}
               onChangeText={setNewCategoryDescription}
               value={newCategoryDescription}
-              placeholderTextColor="gray"
+              placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
               multiline={true}
               style={{ 
                 fontSize: 16, 
-                borderColor: 'lightgrey',
+                borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
                 borderBottomWidth: 1,
                 borderRadius: 10,
                 padding: 10,
                 paddingTop: 10,
-                marginTop: 10
+                marginTop: 10,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
               }}
             />
           </View>
@@ -239,7 +290,13 @@ const AddCategory = ({ onBackPress, userKey }) => {
         </View>
 
         <View style={{ marginTop: 40 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 14, color: 'gray', paddingLeft: 5, marginBottom: 5 }}>Choose A Category Type:</Text>
+          <Text style={{ 
+            fontWeight: 'bold', 
+            fontSize: 14, 
+            color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+            paddingLeft: 5, 
+            marginBottom: 5 
+          }}>Choose A Category Type:</Text>
           <FlatList
             data={signInCategories}
             renderItem={({ item }) => <CategoryTile 
@@ -250,6 +307,8 @@ const AddCategory = ({ onBackPress, userKey }) => {
                 buttonMessage === 'Add Category' ? onAddCategoryPress(item) : {}
               }}
               fromPage={'PickCategory'}
+              isDarkMode={isDarkMode}
+              darkTheme={darkTheme}
             />}
             numColumns={3}
             contentContainerStyle={{}}
@@ -264,7 +323,11 @@ const AddCategory = ({ onBackPress, userKey }) => {
             width: '80%',
             marginLeft: '10%'
           }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 20, color: 'gray' }}>Adding Category... 🚀</Text>
+            <Text style={{ 
+              fontWeight: 'bold', 
+              fontSize: 20, 
+              color: isDarkMode ? darkTheme?.textSecondary : 'gray' 
+            }}>Adding Category... 🚀</Text>
           </View>
         )}
       </View>

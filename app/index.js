@@ -78,7 +78,38 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       {/* this is wrong  */}
       <Tab.Screen 
         name="Feed" 
-        component={Feed} 
+        component={(props) => <Feed {...props} isDarkMode={isDarkMode} darkTheme={{
+          background: '#121212',
+          surface: '#121212',
+          textPrimary: '#FFFFFF',
+          textSecondary: '#CCCCCC',
+          textTertiary: '#999999',
+          border: '#333333',
+          borderLight: '#1e1e1e',
+          accent: '#00aced',
+          cardBackground: '#121212',
+          tabBarBackground: '#121212',
+          tabBarBorder: '#333333',
+          tabBarActive: '#FFFFFF',
+          tabBarInactive: '#999999',
+          buttonPrimary: '#FFFFFF',
+          buttonPrimaryText: '#121212',
+          buttonSecondary: '#333333',
+          buttonSecondaryText: '#FFFFFF',
+          inputBackground: '#333333',
+          inputBorder: '#444444',
+          placeholder: '#999999',
+          profileCardBackground: '#121212',
+          profileBorder: '#333333',
+          feedItemBackground: '#121212',
+          feedItemBorder: '#1e1e1e',
+          exploreCardBackground: '#121212',
+          exploreCardBorder: '#333333',
+          moviePosterBorder: '#333333',
+          ratingCircleBorder: '#333333',
+          shadow: '#121212',
+          overlay: 'rgba(18, 18, 18, 0.7)',
+        }} />}
         options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 
@@ -86,7 +117,38 @@ function MyTabs({ userKey, setView, fetchUserData }) {
         />
       <Tab.Screen 
         name="Explore" 
-        component={Explore} 
+        component={(props) => <Explore {...props} isDarkMode={isDarkMode} darkTheme={{
+          background: '#121212',
+          surface: '#121212',
+          textPrimary: '#FFFFFF',
+          textSecondary: '#CCCCCC',
+          textTertiary: '#999999',
+          border: '#333333',
+          borderLight: '#1e1e1e',
+          accent: '#00aced',
+          cardBackground: '#121212',
+          tabBarBackground: '#121212',
+          tabBarBorder: '#333333',
+          tabBarActive: '#FFFFFF',
+          tabBarInactive: '#999999',
+          buttonPrimary: '#FFFFFF',
+          buttonPrimaryText: '#121212',
+          buttonSecondary: '#333333',
+          buttonSecondaryText: '#FFFFFF',
+          inputBackground: '#333333',
+          inputBorder: '#444444',
+          placeholder: '#999999',
+          profileCardBackground: '#121212',
+          profileBorder: '#333333',
+          feedItemBackground: '#121212',
+          feedItemBorder: '#1e1e1e',
+          exploreCardBackground: '#121212',
+          exploreCardBorder: '#333333',
+          moviePosterBorder: '#333333',
+          ratingCircleBorder: '#333333',
+          shadow: '#121212',
+          overlay: 'rgba(18, 18, 18, 0.7)',
+        }} />}
         options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 
@@ -94,7 +156,38 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       />
       <Tab.Screen 
         name="Add" 
-        component={Add} 
+        component={(props) => <Add {...props} isDarkMode={isDarkMode} darkTheme={{
+          background: '#121212',
+          surface: '#121212',
+          textPrimary: '#FFFFFF',
+          textSecondary: '#CCCCCC',
+          textTertiary: '#999999',
+          border: '#333333',
+          borderLight: '#1e1e1e',
+          accent: '#00aced',
+          cardBackground: '#121212',
+          tabBarBackground: '#121212',
+          tabBarBorder: '#333333',
+          tabBarActive: '#FFFFFF',
+          tabBarInactive: '#999999',
+          buttonPrimary: '#FFFFFF',
+          buttonPrimaryText: '#121212',
+          buttonSecondary: '#333333',
+          buttonSecondaryText: '#FFFFFF',
+          inputBackground: '#333333',
+          inputBorder: '#444444',
+          placeholder: '#999999',
+          profileCardBackground: '#121212',
+          profileBorder: '#333333',
+          feedItemBackground: '#121212',
+          feedItemBorder: '#1e1e1e',
+          exploreCardBackground: '#121212',
+          exploreCardBorder: '#333333',
+          moviePosterBorder: '#333333',
+          ratingCircleBorder: '#333333',
+          shadow: '#121212',
+          overlay: 'rgba(18, 18, 18, 0.7)',
+        }} />}
         options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey,
@@ -106,7 +199,38 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       />
       <Tab.Screen 
         name="Groups" 
-        component={Groups} 
+        component={(props) => <Groups {...props} isDarkMode={isDarkMode} darkTheme={{
+          background: '#121212',
+          surface: '#121212',
+          textPrimary: '#FFFFFF',
+          textSecondary: '#CCCCCC',
+          textTertiary: '#999999',
+          border: '#333333',
+          borderLight: '#1e1e1e',
+          accent: '#00aced',
+          cardBackground: '#121212',
+          tabBarBackground: '#121212',
+          tabBarBorder: '#333333',
+          tabBarActive: '#FFFFFF',
+          tabBarInactive: '#999999',
+          buttonPrimary: '#FFFFFF',
+          buttonPrimaryText: '#121212',
+          buttonSecondary: '#333333',
+          buttonSecondaryText: '#FFFFFF',
+          inputBackground: '#333333',
+          inputBorder: '#444444',
+          placeholder: '#999999',
+          profileCardBackground: '#121212',
+          profileBorder: '#333333',
+          feedItemBackground: '#121212',
+          feedItemBorder: '#1e1e1e',
+          exploreCardBackground: '#121212',
+          exploreCardBorder: '#333333',
+          moviePosterBorder: '#333333',
+          ratingCircleBorder: '#333333',
+          shadow: '#121212',
+          overlay: 'rgba(18, 18, 18, 0.7)',
+        }} />}
         options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 

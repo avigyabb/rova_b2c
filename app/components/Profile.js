@@ -670,7 +670,12 @@ const Profile = ({ route, navigation }) => {
             <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> </Text>
           </View>
 
-          <AddCategory onBackPress={() => onBackPress()} userKey={userKey} />
+          <AddCategory 
+            onBackPress={() => onBackPress()} 
+            userKey={userKey} 
+            isDarkMode={isDarkMode}
+            darkTheme={darkTheme}
+          />
         </>
       ) : focusedCategoryId ? (
         <CategoryList
