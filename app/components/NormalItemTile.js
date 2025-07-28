@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
 });
 
 
-const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex }) => {
+const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex, isDarkMode=false, darkTheme=null }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState('https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
@@ -604,11 +604,11 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
 
   return (
-    <ScrollView style={{ backgroundColor: 'white' }}>
+    <ScrollView style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View>
     {!commentTypingMode && (
-    <View style={{ padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white' }}>
+    <View style={{ padding: 10, borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey', borderBottomWidth: 1, backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
       <>
       <View style={{ flexDirection: 'row' }}>
         <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: username})}>
@@ -619,14 +619,14 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         </TouchableOpacity>
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{username}</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: isDarkMode ? darkTheme?.textPrimary : 'black' }}>{username}</Text>
             {isVerified && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
-            <Text style={{ color: 'grey', fontSize: 12, marginLeft: 20 }}>{realDateStr}</Text>
+            <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'grey', fontSize: 12, marginLeft: 20 }}>{realDateStr}</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, width: 260 }}>
-            <Text style={{ color: 'gray', fontWeight: 'bold', fontSize: 13, fontStyle: 'italic' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, width: 260 }}>
+            <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'gray', fontWeight: 'bold', fontSize: 13, fontStyle: 'italic' }}>
               {item.category_name ? (item.score < 0 ? `${item.category_name}/Later/ ` : `${item.category_name}/ `) : null}
-              <Text style={{ fontWeight: 'bold', fontSize: 16, fontStyle: 'italic', color: 'black' }}>{item.content}</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, fontStyle: 'italic', color: isDarkMode ? darkTheme?.textPrimary : 'black' }}>{item.content}</Text>
             </Text>
           </View>
         </View>
@@ -639,9 +639,25 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           justifyContent: 'center',
           alignItems: 'center',
           marginBottom: 4,
-          borderWidth: 3
+          borderWidth: 3,
+          backgroundColor: isDarkMode ? darkTheme?.background : 'white',
+          shadowColor: isDarkMode ? '#000' : scoreColor,
+          shadowOffset: {
+            width: 0,
+            height: 2,
+          },
+          shadowOpacity: isDarkMode ? 0.3 : 0.2,
+          shadowRadius: 4,
+          elevation: isDarkMode ? 4 : 2,
         }}>
-          <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score > 0 ? item.score.toFixed(1) : '...'}</Text>
+          <Text style={{ 
+            color: scoreColor, 
+            fontWeight: 'bold',
+            fontSize: 14,
+            textShadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 2,
+          }}>{item.score > 0 ? item.score.toFixed(1) : '...'}</Text>
         </View>
       </View>
           
@@ -669,7 +685,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
               linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
               onPress={ (url, text) => Linking.openURL(url) }
             >
-              <Text style={{ fontSize: 15, marginTop: 5, lineHeight: 20 }}>
+              <Text style={{ fontSize: 15, marginTop: 5, lineHeight: 20, color: isDarkMode ? darkTheme?.textPrimary : 'black' }}>
                 {itemDescription}
               </Text>
             </Hyperlink>
@@ -785,7 +801,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       {showComments && (
         loading ? (
           <View style={{ alignItems: 'center', justifyContent: 'center'}}>
-            <ActivityIndicator size="large" color="black" />
+            <ActivityIndicator size="large" color={isDarkMode ? darkTheme?.textPrimary : 'black'} />
           </View>
         ) : (
           <FlatList
@@ -843,7 +859,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           marginTop: 15,
           paddingHorizontal: 10,
           borderWidth: 0.5,
-          borderColor: 'lightgrey',
+          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
           borderRadius: 25,
           alignItems: 'center', // Aligns the TextInput and the icon vertically
           marginBottom: 10,
@@ -852,11 +868,12 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         }}>
           <TextInput
             placeholder={`Add a comment for ${username}...`}
-            placeholderTextColor="gray"
+            placeholderTextColor={isDarkMode ? darkTheme?.textSecondary : 'gray'}
             style={{
               flex: 1, // Takes up the maximum space leaving the icon on the far side
               paddingHorizontal: 10, // Optional: Adds some space between the icon and the text input
               fontSize: 15,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
             }}
             value={newComment} // Binds the text input to your state
             onChangeText={text => setNewComment(text)} // Updates state upon every keystroke
@@ -865,7 +882,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             multiline={true}
           />
           <TouchableOpacity onPress={() => newComment.length > 0 && onNewCommentSubmit(item)}>
-            <Ionicons name="send" size={24} color="black" />
+            <Ionicons name="send" size={24} color={isDarkMode ? darkTheme?.textPrimary : 'black'} />
           </TouchableOpacity>
         </View>
         {memoizedComments}

@@ -3,8 +3,42 @@ import { View, Text, TouchableOpacity, Alert, StyleSheet, Switch } from 'react-n
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Dark mode theme colors
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
 
-const Settings = ({ onBackPress, fetchUserData, setView }) => {
+
+const Settings = ({ onBackPress, fetchUserData, setView, isDarkMode, toggleDarkMode }) => {
 
 
   const onLogOutPress = () => {
@@ -31,31 +65,31 @@ const Settings = ({ onBackPress, fetchUserData, setView }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: 'white' }]}>
-      <View style={[styles.header, { borderBottomColor: 'lightgrey' }]}>
+    <View style={[styles.container, { backgroundColor: isDarkMode ? darkTheme.background : 'white' }]}>
+      <View style={[styles.header, { borderBottomColor: isDarkMode ? darkTheme.border : 'lightgrey' }]}>
         <TouchableOpacity onPress={onBackPress}>
-          <Ionicons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme.textPrimary : 'black'} />
         </TouchableOpacity>
-        <Text style={[styles.headerText, { color: 'black' }]}>Settings</Text>
+        <Text style={[styles.headerText, { color: isDarkMode ? darkTheme.textPrimary : 'black' }]}>Settings</Text>
         <View style={{ width: 30 }} />
       </View>
 
       <View style={styles.settingsContainer}>
-        <View style={[styles.settingItem, { borderBottomColor: 'lightgrey' }]}>
-          <Ionicons name="moon-outline" size={24} color="black" />
-          <Text style={[styles.settingText, { color: 'black' }]}>Dark Mode</Text>
+        <View style={[styles.settingItem, { borderBottomColor: isDarkMode ? darkTheme.border : 'lightgrey' }]}>
+          <Ionicons name="moon-outline" size={24} color={isDarkMode ? darkTheme.textPrimary : 'black'} />
+          <Text style={[styles.settingText, { color: isDarkMode ? darkTheme.textPrimary : 'black' }]}>Dark Mode</Text>
           <Switch
-            value={false}
-            onValueChange={() => {}}
-            trackColor={{ false: 'lightgrey', true: '#00aced' }}
-            thumbColor="white"
+            value={isDarkMode}
+            onValueChange={toggleDarkMode}
+            trackColor={{ false: isDarkMode ? darkTheme.border : 'lightgrey', true: darkTheme.accent }}
+            thumbColor={isDarkMode ? darkTheme.background : 'white'}
           />
         </View>
         
-                  <TouchableOpacity style={[styles.settingItem, { borderBottomColor: 'lightgrey' }]} onPress={onLogOutPress}>
-            <Ionicons name="exit-outline" size={24} color="red" />
-            <Text style={[styles.settingText, { color: 'red' }]}>Log Out</Text>
-            <Ionicons name="chevron-forward" size={20} color="grey" />
+        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: isDarkMode ? darkTheme.border : 'lightgrey' }]} onPress={onLogOutPress}>
+          <Ionicons name="exit-outline" size={24} color="red" />
+          <Text style={[styles.settingText, { color: 'red' }]}>Log Out</Text>
+          <Ionicons name="chevron-forward" size={20} color={isDarkMode ? darkTheme.textSecondary : 'grey'} />
         </TouchableOpacity>
       </View>
     </View>

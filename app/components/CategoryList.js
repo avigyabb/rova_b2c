@@ -46,7 +46,7 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey }) => {
+const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey, isDarkMode=false, darkTheme=null }) => {
   const [listView, setListView] = useState('now');
   const [listData, setListData] = useState(focusedList);
   const [editMode, setEditMode] = useState(false);
@@ -258,8 +258,30 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             </View>
             { !editMode && (
               <View>
-                <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-                  <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
+                <View style={[
+                  styles.listTileScore, 
+                  { 
+                    borderColor: scoreColor, 
+                    marginLeft: 'auto',
+                    backgroundColor: isDarkMode ? darkTheme?.background : 'white',
+                    shadowColor: isDarkMode ? '#000' : scoreColor,
+                    shadowOffset: {
+                      width: 0,
+                      height: 2,
+                    },
+                    shadowOpacity: isDarkMode ? 0.3 : 0.2,
+                    shadowRadius: 4,
+                    elevation: isDarkMode ? 4 : 2,
+                  }
+                ]}>
+                  <Text style={{ 
+                    color: scoreColor, 
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    textShadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
                 </View>
                 { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryInfo.category_type !== "" && (
                   <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 

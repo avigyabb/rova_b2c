@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, StatusBar } from 'react-native';
+import { Text, View, TouchableOpacity, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,11 @@ const Tab = createBottomTabNavigator();
 
 function MyTabs({ userKey, setView, fetchUserData }) {
   const navigation = useNavigation();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const handleDarkModeChange = (newDarkMode) => {
+    setIsDarkMode(newDarkMode);
+  };
 
   return (
     <Tab.Navigator
@@ -58,15 +64,15 @@ function MyTabs({ userKey, setView, fetchUserData }) {
         tabBarStyle: { 
           paddingBottom: 0, 
           height: 60,
-          backgroundColor: 'white',
+          backgroundColor: isDarkMode ? '#121212' : 'white',
           borderTopWidth: 1,
-          borderTopColor: 'lightgrey'
+          borderTopColor: isDarkMode ? '#333333' : 'lightgrey'
         },
       })}
 
       tabBarOptions={{
-        activeTintColor: 'black',
-        inactiveTintColor: 'gray',
+        activeTintColor: isDarkMode ? '#FFFFFF' : 'black',
+        inactiveTintColor: isDarkMode ? '#999999' : 'gray',
       }}
     >
       {/* this is wrong  */}
@@ -114,7 +120,8 @@ function MyTabs({ userKey, setView, fetchUserData }) {
           userKey: userKey, 
           setView: setView, 
           fetchUserData: fetchUserData,
-          visitingUserId: null
+          visitingUserId: null,
+          onDarkModeChange: handleDarkModeChange
         }}
         />
     </Tab.Navigator>
@@ -151,26 +158,32 @@ const App = () => {
   
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-      <NavigationContainer independent={true} theme={{
-        colors: {
-          background: 'white',
-        },
+      <StatusBar translucent backgroundColor="transparent" style="dark" />
+      <View style={{ 
+        flex: 1, 
+        backgroundColor: 'white',
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
       }}>
-        {userKey ? (
-          <>
-          {view === 'pickCategory' ? (
-            <PickCategory userKey={userKey} setView={() => setView(null)}/>
+        <NavigationContainer independent={true} theme={{
+          colors: {
+            background: 'white',
+          },
+        }}>
+          {userKey ? (
+            <>
+            {view === 'pickCategory' ? (
+              <PickCategory userKey={userKey} setView={() => setView(null)}/>
+            ) : (
+              <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData}/>
+            )}
+            </>
+          ) : view === 'signin' ? (
+            <SignIn setView={setView} setUserKeyIndex={setUserKey} />
           ) : (
-            <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData}/>
+            <Login setView={setView} setUserKeyIndex={setUserKey} />
           )}
-          </>
-        ) : view === 'signin' ? (
-          <SignIn setView={setView} setUserKeyIndex={setUserKey} />
-        ) : (
-          <Login setView={setView} setUserKeyIndex={setUserKey} />
-        )}
-      </NavigationContainer>
+        </NavigationContainer>
+      </View>
     </>
   );
 };
