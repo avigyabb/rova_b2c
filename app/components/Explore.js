@@ -60,6 +60,7 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   const [randomPosts, setRandomPosts] = useState([]);
   const [randomLoading, setRandomLoading] = useState(false);
   const [itemInfo, setItemInfo] = useState(null);
+  const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
 
   const fetchTopMovies = async () => {
     if (topMovies.length > 0) {
@@ -259,7 +260,15 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
           id: key // Add the Firebase key as an 'id' field
           
         }));
-        setUserListData(usersArray);
+        
+        // Sort by account creation with newest at the top
+        // Firebase keys are typically chronological, so newer accounts have higher keys
+        const sortedUsers = usersArray.sort((a, b) => {
+          // Use Firebase key comparison - newer accounts typically have higher keys
+          return b.id.localeCompare(a.id);
+        });
+        
+        setUserListData(sortedUsers);
       }
     }).catch((error) => {
       console.error("Error fetching categories:", error);
@@ -318,47 +327,31 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
             }}>ambora\social</Text>
           </View>
 
-          <View style={{ paddingHorizontal: 20, marginTop: 30 }}>
+          <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
           
 
                       <TouchableOpacity 
               style={{ 
-                backgroundColor: '#FFE5E5',
-                borderRadius: 20,
-                padding: 18,
+                backgroundColor: isDarkMode ? darkTheme?.inputBackground : '#f5f5f5',
+                borderRadius: 15,
+                padding: 10,
                 marginBottom: 20,
-                borderWidth: 2,
-                borderColor: '#FFB3B3',
-                shadowColor: '#FF6B6B',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-                elevation: 5
+                borderWidth: 1,
+                borderColor: isDarkMode ? darkTheme?.border : '#ddd',
+                flexDirection: 'row',
+                alignItems: 'center'
               }}
-            onPress={() => setExploreView(null)}
+            onPress={() => {
+              setExploreView(null);
+              setShouldFocusSearch(true);
+            }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ 
-                backgroundColor: '#FF6B6B', 
-                borderRadius: 30, 
-                width: 60, 
-                height: 60, 
-                justifyContent: 'center', 
-                alignItems: 'center',
-                marginRight: 20,
-                shadowColor: '#FF6B6B',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.3,
-                shadowRadius: 6,
-                elevation: 4
-              }}>
-                <MaterialIcons name="people" size={30} color="white" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#FF4757', marginBottom: 5 }}>Search Users</Text>
-                <Text style={{ fontSize: 16, color: '#666', lineHeight: 22 }}>find new people 🔍</Text>
-              </View>
-            </View>
+            <Ionicons name="search" size={20} color={isDarkMode ? darkTheme?.textSecondary : '#666'} style={{ marginRight: 10 }} />
+            <Text style={{ 
+              fontSize: 16, 
+              color: isDarkMode ? darkTheme?.textSecondary : '#666',
+              flex: 1,
+            }}>Search Users</Text>
           </TouchableOpacity>
 
                       <TouchableOpacity 
@@ -842,51 +835,62 @@ const Explore = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   return (
     <>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}> 
-      <View style={{ 
-        backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
-        paddingHorizontal: 20, 
-        height: '100%' 
-      }}>
-        <View style={{ 
-          flexDirection: 'row', 
-          padding: 10, 
-          borderBottomWidth: 1, 
-          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
-          justifyContent: 'space-between', 
-          alignItems: 'center' 
-        }}>
-          <TouchableOpacity onPress={() => {
-            setExploreView('Home');
-          }}> 
-            <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
-          </TouchableOpacity>
-      
+      <View style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white', height: '100%' }}>
+        
+        <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
+          <Text style={{ 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            fontSize: 24, 
+            fontFamily: 'Poppins Regular' 
+          }}>ambora\social</Text>
         </View>
-        <View style={{ paddingHorizontal: 20 }}>
-          <TextInput
-            placeholder={'Search Users...'}
-            value={searchVal} 
-            onChangeText={setSearchVal}
-            placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
-            style={{ 
-              fontSize: 16, 
-              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
-              borderWidth: 0.5,
-              borderRadius: 30,
-              padding: 10,
-              paddingHorizontal: 20,
-              marginVertical: 15,
-              color: isDarkMode ? darkTheme?.textPrimary : 'black',
-              backgroundColor: isDarkMode ? darkTheme?.inputBackground : 'white'
-            }}
-          /> 
+
+        <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+            <TouchableOpacity onPress={() => setExploreView('Home')} style={{ marginRight: 10 }}>
+              <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={{ 
+                backgroundColor: isDarkMode ? darkTheme?.inputBackground : '#f5f5f5',
+                borderRadius: 15,
+                padding: 10,
+                borderWidth: 1,
+                borderColor: isDarkMode ? darkTheme?.border : '#ddd',
+                flexDirection: 'row',
+                alignItems: 'center',
+                flex: 1
+              }}
+              onPress={() => {
+                // Do nothing, already on search page
+              }}
+            >
+              <Ionicons name="search" size={20} color={isDarkMode ? darkTheme?.textSecondary : '#666'} style={{ marginRight: 10 }} />
+              <TextInput
+                placeholder={'Search Users...'}
+                value={searchVal} 
+                onChangeText={setSearchVal}
+                placeholderTextColor={isDarkMode ? darkTheme?.textSecondary : '#666'}
+                style={{ 
+                  fontSize: 16, 
+                  color: isDarkMode ? darkTheme?.textSecondary : '#666',
+                  flex: 1,
+                }}
+                autoFocus={shouldFocusSearch}
+                onFocus={() => setShouldFocusSearch(false)}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
+        
         <FlatList
           data={userListData}
           renderItem={({ item, index }) => <UserTile item={item} index={index}/>}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 20 }}
         />
       </View> 
     </TouchableWithoutFeedback>
