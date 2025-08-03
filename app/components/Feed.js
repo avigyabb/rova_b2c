@@ -99,8 +99,8 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
     'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
   });
-  const [feedType, setFeedType] = useState('Following');
-  const [topPostsTime, setTopPostsTime] = useState('Past Hour');
+  const [feedType, setFeedType] = useState('For You');
+  const [topPostsTime, setTopPostsTime] = useState('All Time');
   const [itemInfo, setItemInfo] = useState(null);
   const [notifications, setNotifications] = useState(null);
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
@@ -139,31 +139,59 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   const fetchComments = async (postId) => {
     if (!postId) return;
     
-    const commentsRef = ref(database, `comments/${postId}`);
-    const snapshot = await get(commentsRef);
+    let allComments = [];
     
-    if (snapshot.exists()) {
-      const commentsData = Object.entries(snapshot.val()).map(([key, value]) => ({
+    // Check new comments location
+    const newCommentsRef = ref(database, `comments/${postId}`);
+    const newSnapshot = await get(newCommentsRef);
+    
+    if (newSnapshot.exists()) {
+      const newCommentsData = Object.entries(newSnapshot.val()).map(([key, value]) => ({
         id: key,
         ...value
       }));
-      
+      allComments = [...allComments, ...newCommentsData];
+    }
+    
+    // Check old comments location
+    const oldCommentsRef = ref(database, `items/${postId}/comments`);
+    const oldSnapshot = await get(oldCommentsRef);
+    
+    if (oldSnapshot.exists()) {
+      const oldCommentsData = Object.entries(oldSnapshot.val()).map(([key, value]) => ({
+        id: key,
+        ...value
+      }));
+      allComments = [...allComments, ...oldCommentsData];
+    }
+    
+    if (allComments.length > 0) {
       // Fetch profile pictures for each commenter
       const commentsWithProfiles = await Promise.all(
-        commentsData.map(async (comment) => {
+        allComments.map(async (comment) => {
           try {
-            const userRef = ref(database, `users/${comment.user_id}`);
+            // Handle both old and new comment formats
+            const userId = comment.user_id || comment.userId;
+            const commentText = comment.text || comment.comment;
+            
+            const userRef = ref(database, `users/${userId}`);
             const userSnapshot = await get(userRef);
             if (userSnapshot.exists()) {
               const userData = userSnapshot.val();
               return {
                 ...comment,
+                user_id: userId, // Normalize to new format
+                text: commentText, // Normalize to new format
                 profile_pic: userData.profile_pic || null,
                 name: userData.name || comment.name,
                 username: userData.username || comment.username
               };
             }
-            return comment;
+            return {
+              ...comment,
+              user_id: userId,
+              text: commentText
+            };
           } catch (error) {
             console.error('Error fetching user profile:', error);
             return comment;
@@ -171,8 +199,10 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
         })
       );
       
+      console.log('Fetched comments:', commentsWithProfiles);
       setComments(commentsWithProfiles.sort((a, b) => a.timestamp - b.timestamp));
     } else {
+      console.log('No comments found for post:', postId);
       setComments([]);
     }
   };
@@ -245,77 +275,85 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
     }
   }, [itemInfo]);
 
-  const getListData = () => {
+  const getListData = async () => {
     setRefreshed(true);
-    const constsRef = ref(database, 'consts');
-    get(constsRef).then((snapshot0) => {
-      const categoryItemsRef = ref(database, 'items');
-
-      get(categoryItemsRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          const tempListData = Object.entries(snapshot.val())
+    
+    try {
+      // Make parallel calls instead of sequential
+      const [constsSnapshot, itemsSnapshot, userSnapshot] = await Promise.all([
+        get(ref(database, 'consts')),
+        get(ref(database, 'items')),
+        get(ref(database, 'users/' + userKey))
+      ]);
+      
+      // Process items immediately
+      if (itemsSnapshot.exists()) {
+        const tempListData = Object.entries(itemsSnapshot.val())
           .filter(([key, value]) => {
-            // return snapshot0.val().feedType === 'customDescription' ? value.description && !value.description.startsWith(": ") : true;
-            return snapshot0.val().feedType === 'customDescription' ? value?.custom ?? true : true;
+            if (constsSnapshot.exists() && constsSnapshot.val().feedType === 'customDescription') {
+              return value?.custom ?? true;
+            }
+            return true;
           })
-          .map(([key, value]) => ({ key, ...value }));
-          setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
-        }
-        setRefreshed(false);
-      }).catch((error) => {
-        console.error("Error fetching categories:", error);
-      });
-  
-      const userRef = ref(database, 'users/' + userKey);
-      get(userRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          console.log(snapshot.val());
-          setProfileInfo(snapshot.val());
-        } else {
-          console.log("No user data.");
-        }
-      }).catch((error) => {
-        console.error(error);
-      });
-    })
+          .map(([key, value]) => ({ key, ...value }))
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 30);
+        
+        setListData(tempListData);
+      }
+      
+      // Set user profile
+      if (userSnapshot.exists()) {
+        setProfileInfo(userSnapshot.val());
+      }
+      
+      setRefreshed(false);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setRefreshed(false);
+    }
   }
 
-  const getFollowingListData = () => {
+  const getFollowingListData = async () => {
     setRefreshed(true);
-    const userFollowingRef = ref(database, 'users/' + userKey + '/following');
-    let followingList = [];
-    get(userFollowingRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        followingList = Object.keys(snapshot.val());
-        const categoryItemsRef = ref(database, 'items');
-        get(categoryItemsRef).then((inner_snapshot) => {
-          if (inner_snapshot.exists()) {
-            const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
-            const filteredData = tempListData.filter(item => followingList.includes(item.user_id));
-            setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
-          }
-          setRefreshed(false);
-        }).catch((error) => {
-          console.error("Error fetching categories:", error);
-        });
+    
+    try {
+      // Make parallel calls
+      const [followingSnapshot, itemsSnapshot, userSnapshot] = await Promise.all([
+        get(ref(database, 'users/' + userKey + '/following')),
+        get(ref(database, 'items')),
+        get(ref(database, 'users/' + userKey))
+      ]);
+      
+      if (followingSnapshot.exists()) {
+        const followingList = Object.keys(followingSnapshot.val());
+        
+        if (itemsSnapshot.exists()) {
+          const tempListData = Object.entries(itemsSnapshot.val())
+            .map(([key, value]) => ({ key, ...value }))
+            .filter(item => followingList.includes(item.user_id))
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, 30);
+          
+          setListData(tempListData);
+        }
       } else {
         setNumFollowers(0);
       }
-    })
-
-    const userRef = ref(database, 'users/' + userKey);
-    get(userRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        setProfileInfo(snapshot.val());
-      } else {
-        console.log("No user data.");
+      
+      // Set user profile
+      if (userSnapshot.exists()) {
+        setProfileInfo(userSnapshot.val());
       }
-    }).catch((error) => {
-      console.error(error);
-    });
+      
+      setRefreshed(false);
+    } catch (error) {
+      console.error("Error fetching following data:", error);
+      setRefreshed(false);
+    }
   }
   
-  const getTopPostsListData = () => {
+  const getTopPostsListData = async () => {
     setRefreshed(true);
     const categoryItemsRef = ref(database, 'items');
     let tempListData = {};
@@ -323,24 +361,97 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
     const oneDayAgo = Date.now() - 86400000;
     const oneWeekAgo = Date.now() - 604800000;
 
-    get(categoryItemsRef).then((snapshot) => {
+    try {
+      const snapshot = await get(categoryItemsRef);
       if (snapshot.exists()) {
-        tempListDataSorted = Object.entries(snapshot.val())
+        // First, get all items and sort by likes/dislikes/stars (fast)
+        const allItems = Object.entries(snapshot.val())
           .filter(([key, value]) => key !== 'undefined')
           .map(([key, value]) => ({ key, ...value }))
-          .sort((a, b) => ((b.likes ? Object.keys(b.likes).length : 0) + (b.dislikes ? Object.keys(b.dislikes).length : 0)) - ((a.likes ? Object.keys(a.likes).length : 0) + (a.dislikes ? Object.keys(a.dislikes).length : 0)));
+          .sort((a, b) => {
+            const aLikes = a.likes ? Object.keys(a.likes).length : 0;
+            const aDislikes = a.dislikes ? Object.keys(a.dislikes).length : 0;
+            const aStars = a.stars ? Object.keys(a.stars).length : 0;
+            const aTotal = aLikes + aDislikes + aStars;
+            
+            const bLikes = b.likes ? Object.keys(b.likes).length : 0;
+            const bDislikes = b.dislikes ? Object.keys(b.dislikes).length : 0;
+            const bStars = b.stars ? Object.keys(b.stars).length : 0;
+            const bTotal = bLikes + bDislikes + bStars;
+            
+            return bTotal - aTotal; // Sort by interactions (highest first)
+          });
 
-        tempListData['Past Hour'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo).slice(0, 30)
-        tempListData['Past Day'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo).slice(0, 30)
-        tempListData['Past Week'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo).slice(0, 30)
-        tempListData['All Time'] = tempListDataSorted.slice(0, 30)
-        // console.log(tempListData)
+        // Create initial data without comment counts (fast)
+        tempListData['Past Hour'] = allItems.filter(item => item.timestamp && item.timestamp > oneHourAgo).slice(0, 30)
+        tempListData['Past Day'] = allItems.filter(item => item.timestamp && item.timestamp > oneDayAgo).slice(0, 30)
+        tempListData['Past Week'] = allItems.filter(item => item.timestamp && item.timestamp > oneWeekAgo).slice(0, 30)
+        tempListData['All Time'] = allItems.slice(0, 30)
+        
+        // Set data immediately (fast load)
         setListData(tempListData);
+        setRefreshed(false);
+        
+        // Now fetch comment counts in background and update
+        const topItems = allItems.slice(0, 100); // Only fetch for top 100 items
+        const itemsWithComments = await Promise.all(
+          topItems.map(async (item) => {
+            try {
+              const commentsRef = ref(database, `comments/${item.key}`);
+              const commentsSnapshot = await get(commentsRef);
+              const commentCount = commentsSnapshot.exists() ? Object.keys(commentsSnapshot.val()).length : 0;
+              
+              // Also check old comments location
+              const oldCommentsRef = ref(database, `items/${item.key}/comments`);
+              const oldCommentsSnapshot = await get(oldCommentsRef);
+              const oldCommentCount = oldCommentsSnapshot.exists() ? Object.keys(oldCommentsSnapshot.val()).length : 0;
+              
+              return { ...item, commentCount: commentCount + oldCommentCount };
+            } catch (error) {
+              return { ...item, commentCount: 0 };
+            }
+          })
+        );
+        
+        // Re-sort with comment counts
+        const finalSorted = itemsWithComments.sort((a, b) => {
+          const aLikes = a.likes ? Object.keys(a.likes).length : 0;
+          const aDislikes = a.dislikes ? Object.keys(a.dislikes).length : 0;
+          const aComments = a.commentCount || 0;
+          const aStars = a.stars ? Object.keys(a.stars).length : 0;
+          const aTotal = aLikes + aDislikes + aComments + aStars;
+          
+          const bLikes = b.likes ? Object.keys(b.likes).length : 0;
+          const bDislikes = b.dislikes ? Object.keys(b.dislikes).length : 0;
+          const bComments = b.commentCount || 0;
+          const bStars = b.stars ? Object.keys(b.stars).length : 0;
+          const bTotal = bLikes + bDislikes + bComments + bStars;
+          
+          return bTotal - aTotal;
+        });
+
+        // Update with final sorted data
+        const finalData = {
+          'Past Hour': finalSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo).slice(0, 30),
+          'Past Day': finalSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo).slice(0, 30),
+          'Past Week': finalSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo).slice(0, 30),
+          'All Time': finalSorted.slice(0, 30)
+        };
+        
+        setListData(finalData);
+        console.log('Top Posts Data Updated:', {
+          totalItems: finalSorted.length,
+          pastHour: finalData['Past Hour'].length,
+          pastDay: finalData['Past Day'].length,
+          pastWeek: finalData['Past Week'].length,
+          allTime: finalData['All Time'].length,
+          currentTime: topPostsTime
+        });
       }
-      setRefreshed(false);
-    }).catch((error) => {
+    } catch (error) {
       console.error("Error fetching categories:", error);
-    });
+      setRefreshed(false);
+    }
 
     const userRef = ref(database, 'users/' + userKey);
     get(userRef).then((snapshot) => {
@@ -397,33 +508,37 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   }
 
   useEffect(() => {
-    getSpotifyAccessToken()
-    if (response?.type === 'success') {
-      AuthSession.exchangeCodeAsync({
-        clientId: '3895cb48f70545b898a65747b63b430d',
-        redirectUri: 'exp://10.0.0.187:8081',
-        code: response.params.code,
-        extraParams: {
-          code_verifier: request.codeVerifier,  // Ensure this is correctly captured
-        }
-      }, {
-        tokenEndpoint: 'https://accounts.spotify.com/api/token',
-      })
-      .then(result => {
-        console.log('Access Token:', result.accessToken);
-        setIndividualSpotifyAccessToken(result.accessToken);
-      })
-      .catch(error => {
-        console.error("Failed to exchange token:", error);
-      });
-    }
-    if (feedType === 'For You') {
-      getListData();
-    } else if (feedType === 'Following') {
-      getFollowingListData();
-    } else if (feedType === 'Top Posts') {
-      getTopPostsListData();
-    }
+    const initializeData = async () => {
+      getSpotifyAccessToken()
+      if (response?.type === 'success') {
+        AuthSession.exchangeCodeAsync({
+          clientId: '3895cb48f70545b898a65747b63b430d',
+          redirectUri: 'exp://10.0.0.187:8081',
+          code: response.params.code,
+          extraParams: {
+            code_verifier: request.codeVerifier,  // Ensure this is correctly captured
+          }
+        }, {
+          tokenEndpoint: 'https://accounts.spotify.com/api/token',
+        })
+        .then(result => {
+          console.log('Access Token:', result.accessToken);
+          setIndividualSpotifyAccessToken(result.accessToken);
+        })
+        .catch(error => {
+          console.error("Failed to exchange token:", error);
+        });
+      }
+      if (feedType === 'For You') {
+        await getListData();
+      } else if (feedType === 'Following') {
+        await getFollowingListData();
+      } else if (feedType === 'Top Posts') {
+        await getTopPostsListData();
+      }
+    };
+    
+    initializeData();
   }, [response]);
 
   const NotificationsTile = ({ item, visitingUserId, isDarkMode=false, darkTheme=null }) => {
@@ -875,7 +990,7 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}
-          onScroll={(event) => {
+          onScroll={async (event) => {
             const scrollY = event.nativeEvent.contentOffset.y;
             // Save scroll position for restoration, but throttle updates
             if (scrollY > 0 && scrollY % 10 === 0) {
@@ -884,11 +999,11 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
             if (scrollY < -110 && !refreshed) {
               setRefreshed(true);
               if (feedType === 'For You') {
-                getListData();
+                await getListData();
               } else if (feedType === 'Following') {
-                getFollowingListData();
+                await getFollowingListData();
               } else if (feedType === 'Top Posts') {
-                getTopPostsListData();
+                await getTopPostsListData();
               }
             }
           }}
@@ -928,14 +1043,13 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
               }}
               onPress={() => {
                 setItemInfo(null)
-                setFeedType('For You')
               }}
             />
           </Animated.View>
           
           {/* Bottom sheet */}
-          <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-            <Animated.View style={{
+          <Animated.View 
+            style={{
               position: 'absolute',
               bottom: 0,
               left: 0,
@@ -948,7 +1062,9 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
               transform: [{
                 translateY: slideAnim
               }]
-            }}>
+            }}
+            onTouchStart={() => Keyboard.dismiss()}
+          >
               {/* Handle bar */}
               <View style={{
                 width: 40,
@@ -979,64 +1095,9 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                 </Text>
                 <TouchableOpacity onPress={() => {
                   setItemInfo(null)
-                  setFeedType('For You')
                 }}>
                   <Ionicons name="close" size={24} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
                 </TouchableOpacity>
-              </View>
-              
-              {/* Add comment section */}
-              <View style={{
-                paddingHorizontal: 20,
-                paddingVertical: 15,
-                borderBottomWidth: 1,
-                borderBottomColor: isDarkMode ? darkTheme?.border : '#eee'
-              }}>
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: isDarkMode ? darkTheme?.inputBackground : '#f5f5f5',
-                  borderRadius: 20,
-                  paddingHorizontal: 15,
-                  paddingVertical: 7.5,
-                }}>
-                  <TextInput
-                    placeholder="Add a comment..."
-                    placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "#999"}
-                    value={commentText}
-                    onChangeText={setCommentText}
-                    style={{
-                      flex: 1,
-                      fontSize: 16,
-                      color: isDarkMode ? darkTheme?.textPrimary : 'black'
-                    }}
-                    multiline={false}
-                    onSubmitEditing={postComment}
-                  />
-                  <TouchableOpacity 
-                    style={{
-                      backgroundColor: commentText.trim() ? (isDarkMode ? darkTheme?.textPrimary : '#000') : (isDarkMode ? darkTheme?.border : '#ccc'),
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      marginLeft: 10
-                    }}
-                    onPress={postComment}
-                    disabled={!commentText.trim() || commentLoading}
-                  >
-                    {commentLoading ? (
-                      <ActivityIndicator size="small" color={isDarkMode ? darkTheme?.background : 'white'} />
-                    ) : (
-                      <Ionicons 
-                        name="arrow-up" 
-                        size={16} 
-                        color={isDarkMode ? darkTheme?.background : 'white'} 
-                      />
-                    )}
-                  </TouchableOpacity>
-                </View>
               </View>
               
               {/* Comments list */}
@@ -1119,12 +1180,75 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                         </View>
                       </View>
                     )}
-                    showsVerticalScrollIndicator={false}
+                    showsVerticalScrollIndicator={true}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={false}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                    style={{ flex: 1 }}
+                    bounces={true}
+                    alwaysBounceVertical={false}
+                    scrollEventThrottle={16}
+                    removeClippedSubviews={false}
+                    onScrollBeginDrag={() => Keyboard.dismiss()}
                   />
                 )}
               </View>
+              
+              {/* Add comment section - moved to bottom */}
+              <View style={{
+                paddingHorizontal: 20,
+                paddingVertical: 15,
+                borderTopWidth: 1,
+                borderTopColor: isDarkMode ? darkTheme?.border : '#eee',
+                backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+              }}>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: isDarkMode ? darkTheme?.inputBackground : '#f5f5f5',
+                  borderRadius: 20,
+                  paddingHorizontal: 15,
+                  paddingVertical: 7.5,
+                }}>
+                  <TextInput
+                    placeholder="Add a comment..."
+                    placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "#999"}
+                    value={commentText}
+                    onChangeText={setCommentText}
+                    style={{
+                      flex: 1,
+                      fontSize: 16,
+                      color: isDarkMode ? darkTheme?.textPrimary : 'black'
+                    }}
+                    multiline={false}
+                    onSubmitEditing={postComment}
+                  />
+                  <TouchableOpacity 
+                    style={{
+                      backgroundColor: commentText.trim() ? (isDarkMode ? darkTheme?.textPrimary : '#000') : (isDarkMode ? darkTheme?.border : '#ccc'),
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginLeft: 10
+                    }}
+                    onPress={postComment}
+                    disabled={!commentText.trim() || commentLoading}
+                  >
+                    {commentLoading ? (
+                      <ActivityIndicator size="small" color={isDarkMode ? darkTheme?.background : 'white'} />
+                    ) : (
+                      <Ionicons 
+                        name="arrow-up" 
+                        size={16} 
+                        color={isDarkMode ? darkTheme?.background : 'white'} 
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
             </Animated.View>
-          </TouchableWithoutFeedback>
         </>
       )}
     </View>

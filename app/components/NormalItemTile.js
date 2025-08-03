@@ -144,18 +144,37 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const fetchComments = async () => {
     if (!item.key) return;
     
-    const commentsRef = ref(database, `comments/${item.key}`);
-    const snapshot = await get(commentsRef);
+    let allComments = [];
     
-    if (snapshot.exists()) {
-      const commentsData = Object.entries(snapshot.val()).map(([key, value]) => ({
+    // Check new comments location
+    const newCommentsRef = ref(database, `comments/${item.key}`);
+    const newSnapshot = await get(newCommentsRef);
+    
+    if (newSnapshot.exists()) {
+      const newCommentsData = Object.entries(newSnapshot.val()).map(([key, value]) => ({
         id: key,
-        ...value
+        userId: value.user_id,
+        comment: value.text,
+        timestamp: value.timestamp
       }));
-      setComments(commentsData);
-    } else {
-      setComments([]);
+      allComments = [...allComments, ...newCommentsData];
     }
+    
+    // Check old comments location
+    const oldCommentsRef = ref(database, `items/${item.key}/comments`);
+    const oldSnapshot = await get(oldCommentsRef);
+    
+    if (oldSnapshot.exists()) {
+      const oldCommentsData = Object.entries(oldSnapshot.val()).map(([key, value]) => ({
+        id: key,
+        userId: value.userId,
+        comment: value.comment,
+        timestamp: value.timestamp
+      }));
+      allComments = [...allComments, ...oldCommentsData];
+    }
+    
+    setComments(allComments);
   };
 
   // Fetch comments when component mounts
@@ -401,10 +420,10 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
 
   const onNewCommentSubmit = (item) => {
     console.log(item)
-    const itemCommentRef = push(ref(database, 'items/' + item.key + '/comments/'));
+    const itemCommentRef = push(ref(database, 'comments/' + item.key));
     set(itemCommentRef, {
-      userId: visitingUserId,
-      comment: newComment,
+      user_id: visitingUserId,
+      text: newComment,
       timestamp: Date.now()
     })
     setComments([{
