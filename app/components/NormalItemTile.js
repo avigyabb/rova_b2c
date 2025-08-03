@@ -140,6 +140,29 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     return profileList;
   }
   
+  // Fetch comments for this post
+  const fetchComments = async () => {
+    if (!item.key) return;
+    
+    const commentsRef = ref(database, `comments/${item.key}`);
+    const snapshot = await get(commentsRef);
+    
+    if (snapshot.exists()) {
+      const commentsData = Object.entries(snapshot.val()).map(([key, value]) => ({
+        id: key,
+        ...value
+      }));
+      setComments(commentsData);
+    } else {
+      setComments([]);
+    }
+  };
+
+  // Fetch comments when component mounts
+  useEffect(() => {
+    fetchComments();
+  }, [item.key]);
+
   useEffect(() => {
     
   if (showComments && item.image){
@@ -745,7 +768,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         {!showComments && (
           <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
             <Ionicons name="chatbubble-sharp" size={25} color="grey" />
-            <Text style={{ color: 'grey', fontSize: 12 }}>{Object.keys(comments).length}</Text>
+            <Text style={{ color: 'grey', fontSize: 12 }}>{comments.length}</Text>
           </TouchableOpacity>
         )}
   
