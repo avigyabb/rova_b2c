@@ -85,6 +85,17 @@ const useSpotifyAuth = (clientId, redirectUri) => {
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
+// Score color function
+function getScoreColorHSL(score) {
+  if (score < 0) {
+    return '#A3A3A3'; // Gray color for negative scores
+  }
+  const cappedScore = Math.max(0, Math.min(score, 10));
+  const hue = (cappedScore / 10) * 120;
+  const lightness = 50 - score ** 1.3;
+  return `hsl(${hue}, 100%, ${lightness}%)`;
+}
+
 const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
 
   const [profileInfo, setProfileInfo] = useState({});
@@ -121,6 +132,45 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   // Animation states
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Past Rankings states
+  const [pastRankingsInfo, setPastRankingsInfo] = useState(null);
+  const [pastRankingsSlideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
+  const [pastRankingsOverlayOpacity] = useState(new Animated.Value(0));
+
+  // Past Rankings Animation Functions
+  const showPastRankingsOverlay = (item, profileList, compareUserRating) => {
+    setPastRankingsInfo({ item, profileList, compareUserRating });
+    Animated.parallel([
+      Animated.timing(pastRankingsSlideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pastRankingsOverlayOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const hidePastRankingsOverlay = () => {
+    Animated.parallel([
+      Animated.timing(pastRankingsSlideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pastRankingsOverlayOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setPastRankingsInfo(null);
+    });
+  };
 
   // Restore scroll position when returning from comments
   useEffect(() => {
@@ -1009,6 +1059,7 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
             promptAsync={promptAsync}
             isDarkMode={isDarkMode}
             darkTheme={darkTheme}
+            onShowPastRankings={showPastRankingsOverlay}
           />}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
@@ -1285,6 +1336,212 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                     )}
                   </TouchableOpacity>
                 </View>
+              </View>
+            </Animated.View>
+        </>
+      )}
+
+      {/* Past Rankings overlay */}
+      {pastRankingsInfo && (
+        <>
+          {/* Semi-transparent overlay */}
+          <Animated.View 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              zIndex: 10,
+              opacity: pastRankingsOverlayOpacity
+            }}
+          >
+            <TouchableOpacity 
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
+              onPress={hidePastRankingsOverlay}
+            />
+          </Animated.View>
+          
+          {/* Bottom sheet */}
+          <Animated.View 
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: isDarkMode ? darkTheme?.background : 'white',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              height: '66%',
+              zIndex: 11,
+              transform: [{
+                translateY: pastRankingsSlideAnim
+              }]
+            }}
+            onTouchStart={() => Keyboard.dismiss()}
+          >
+              {/* Handle bar */}
+              <View style={{
+                width: 40,
+                height: 4,
+                backgroundColor: isDarkMode ? darkTheme?.border : '#ddd',
+                borderRadius: 2,
+                alignSelf: 'center',
+                marginTop: 10,
+                marginBottom: 10
+              }} />
+              
+              {/* Past Rankings header */}
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: 20,
+                paddingBottom: 15,
+                borderBottomWidth: 1,
+                borderBottomColor: isDarkMode ? darkTheme?.border : '#eee'
+              }}>
+                                  <Text style={{
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    color: isDarkMode ? darkTheme?.textPrimary : 'black'
+                  }}>
+                    Ranked by
+                  </Text>
+                <TouchableOpacity onPress={hidePastRankingsOverlay}>
+                  <Ionicons name="close" size={24} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Past Rankings list */}
+              <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                {pastRankingsInfo.profileList.length === 0 ? (
+                  <Text style={{
+                    fontSize: 16,
+                    color: isDarkMode ? darkTheme?.textSecondary : '#666',
+                    textAlign: 'center',
+                    marginTop: 50,
+                    fontStyle: 'italic'
+                  }}>
+                    No past rankings found
+                  </Text>
+                ) : (
+                                      <FlatList
+                      data={pastRankingsInfo.profileList.sort((a, b) => (b.postTimestamp || 0) - (a.postTimestamp || 0))}
+                      keyExtractor={(item, index) => item.key ? item.key.toString() : index.toString()}
+                    renderItem={({ item, index }) => {
+                      const score = pastRankingsInfo.compareUserRating[index];
+                      if (!score) return null;
+                      const roundedScore = score.toFixed(1);
+                      const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
+                      
+                      return (
+                        <View style={{
+                          paddingVertical: 12,
+                          borderBottomWidth: 1,
+                          borderBottomColor: isDarkMode ? darkTheme?.border : '#eee'
+                        }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ position: 'relative' }}>
+                              <Image
+                                source={item.profile_pic ? { uri: item.profile_pic } : require('../../assets/images/emptyProfilePic3.png')}
+                                style={{
+                                  width: 50,
+                                  height: 50,
+                                  borderRadius: 25,
+                                  marginRight: 12
+                                }}
+                              />
+                                                              <View style={{
+                                  position: 'absolute',
+                                  right: 10,
+                                  top: -5,
+                                  backgroundColor,
+                                  borderRadius: 12,
+                                  width: 24,
+                                  height: 24,
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  borderWidth: 1,
+                                  borderColor: 'white'
+                                }}>
+                                <Text style={{
+                                  color: 'white',
+                                  fontSize: 10,
+                                  fontWeight: 'bold'
+                                }}>
+                                  {roundedScore}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                                <Text style={{
+                                  fontSize: 14,
+                                  fontWeight: 'bold',
+                                  color: isDarkMode ? darkTheme?.textPrimary : '#333',
+                                  marginRight: 8
+                                }}>
+                                  {item.name || 'Anonymous'}
+                                </Text>
+                                                                  <Text style={{
+                                    fontSize: 12,
+                                    color: isDarkMode ? darkTheme?.textSecondary : '#666'
+                                  }}>
+                                    {(() => {
+                                      const now = Date.now();
+                                      const rankingTime = item.postTimestamp || now;
+                                      const diffMs = now - rankingTime;
+                                      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                      
+                                      if (diffDays >= 1) {
+                                        return new Date(rankingTime).toLocaleDateString("en-US", {
+                                          year: 'numeric',
+                                          month: '2-digit',
+                                          day: '2-digit',
+                                        });
+                                      } else {
+                                        const diffSeconds = Math.floor(diffMs / 1000);
+                                        const diffMinutes = Math.floor(diffSeconds / 60);
+                                        
+                                        if (diffHours > 0) {
+                                          return `${diffHours}h ago`;
+                                        } else if (diffMinutes > 0) {
+                                          return `${diffMinutes}m ago`;
+                                        } else if (diffSeconds > 0) {
+                                          return `${diffSeconds}s ago`;
+                                        } else {
+                                          return 'now';
+                                        }
+                                      }
+                                    })()}
+                                  </Text>
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    }}
+                    showsVerticalScrollIndicator={true}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={false}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                    style={{ flex: 1 }}
+                    bounces={true}
+                    alwaysBounceVertical={false}
+                    scrollEventThrottle={16}
+                    removeClippedSubviews={false}
+                    onScrollBeginDrag={() => Keyboard.dismiss()}
+                  />
+                )}
               </View>
             </Animated.View>
         </>

@@ -895,6 +895,7 @@ const Profile = ({ route, navigation }) => {
                   setFocusedItemDescription={() => {}}
                   isDarkMode={isDarkMode}
                   darkTheme={darkTheme}
+                  currentProfileUserKey={userKey}
                 />
               )}
               keyExtractor={(item) => item.key || item.id}

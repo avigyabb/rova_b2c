@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable, ActivityIndicator, Animated, Dimensions } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update, child } from "firebase/database";
 import { Image } from 'expo-image';
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
 });
 
 
-const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex, isDarkMode=false, darkTheme=null }) => {
+const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex, isDarkMode=false, darkTheme=null, onShowPastRankings=null, currentProfileUserKey=null }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState('https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
@@ -104,6 +104,8 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [profileList, setProfileList] = useState([])
   const [loading, setLoading] = useState(false);
 
+
+
   const onImageLoad = (event) => {
     // Safe image load handler - only set dimensions if they haven't been set yet
     if (!dimensions.width || !dimensions.height) {
@@ -127,17 +129,36 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     });
   }
   
-  const getProfileList = async (userIDList) => {
-    for (let userID of userIDList) {
+  const getProfileList = async (userIDList, timestamps) => {
+    // Clear the profileList first to prevent duplicates
+    setProfileList([]);
+    
+    console.log('Processing profiles with timestamps:', timestamps);
+    
+    const profilesWithTimestamps = [];
+    for (let i = 0; i < userIDList.length; i++) {
       try {
-        const addition = await getProfile(userID);
-        if (addition) {profileList.push(addition);}
+        const addition = await getProfile(userIDList[i]);
+        if (addition) {
+          // Add timestamp to the profile data, only if timestamp exists
+          if (timestamps[i] && timestamps[i] > 0) {
+            addition.postTimestamp = timestamps[i];
+            console.log(`Added timestamp ${timestamps[i]} to user ${addition.name}`);
+          } else {
+            // Skip this profile if no valid timestamp
+            console.log(`Skipping user ${addition.name} - no valid timestamp`);
+            continue;
+          }
+          profilesWithTimestamps.push(addition);
+        }
       } catch (error) {
         console.log(error);
       }
     }
+    console.log('Final profiles with timestamps:', profilesWithTimestamps);
+    setProfileList(profilesWithTimestamps);
     setLoading(false);
-    return profileList;
+    return profilesWithTimestamps;
   }
   
   // Fetch comments for this post
@@ -184,7 +205,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
 
   useEffect(() => {
     
-  if (showComments && item.image){
+  if (item.image){
     setLoading(true);
     // Define your Firebase database reference
     const itemsRef = ref(database, 'items');
@@ -208,48 +229,39 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     
         console.log("data: ", data);
     
-        // Extract user IDs and scores from the filtered data
+        // Extract user IDs, scores, and timestamps from the filtered data
         var same_user = false;
-        // for (const key in data) {
-        //   for (const key2 in data[key]) {
-        //     if (data[key][key2] === item.user_id) {
-        //       continue;
-        //     }
-        //     if (key2 === 'user_id') {
-        //       compareUserID.push(data[key][key2]);
-        //     } else if (key2 === 'score') {
-        //       compareUserRating.push(data[key][key2]);
-        //     }
-        //   }
-        // }
+        const postTimestamps = []; // Array to store timestamps of the posts
+        const compareUserID = []; // Clear and rebuild these arrays
+        const compareUserRating = [];
 
-        for (const key in data) {
-          const userId = data[key]['user_id'];
+        for (let i = 0; i < data.length; i++) {
+          const post = data[i];
+          const userId = post.user_id;
 
           // Check if the current user ID matches item.userId
           if (userId === item.user_id) {
-            continue; // Skip this iteration for both user_id and score
+            continue; // Skip this iteration
           }
 
-          if (data[key]['score'] === -1) {
+          if (post.score === -1) {
             continue; // Skip the entire iteration if score is -1
           }
 
-          for (const key2 in data[key]) {
-            if (key2 === 'user_id') {
-              compareUserID.push(userId);
-            } else if (key2 === 'score') {
-              compareUserRating.push(data[key][key2]);
-            }
-          }
+          // Add user ID, score, and timestamp
+          compareUserID.push(userId);
+          compareUserRating.push(post.score);
+          postTimestamps.push(post.timestamp);
         }
 
 
-        console.log(compareUserID);
-        console.log(compareUserRating);
+        console.log('User IDs:', compareUserID);
+        console.log('Scores:', compareUserRating);
+        console.log('Timestamps:', postTimestamps);
     
-        // Call a function to process the user IDs
-        getProfileList(compareUserID);
+        // Call a function to process the user IDs with timestamps
+        setCompareUserRating(compareUserRating); // Update the state with new data
+        getProfileList(compareUserID, postTimestamps);
 
         
       } else {
@@ -672,19 +684,28 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
 
   return (
-    <ScrollView style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
-    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+        <View>
     {!commentTypingMode && (
     <View style={{ padding: 10, borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey', borderBottomWidth: 1, backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
       <>
       <View style={{ flexDirection: 'row' }}>
-        <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: username})}>
+        {currentProfileUserKey && currentProfileUserKey !== userKey ? (
+          // When viewing another user's profile, don't make the profile image clickable
           <Image
             source={userImage}
             style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
           />
-        </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={() => userKey === item.user_id ? navigation.navigate('Profile') : setFeedView({userKey: item.user_id, username: username})}>
+            <Image
+              source={userImage}
+              style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
+            />
+          </TouchableOpacity>
+        )}
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, fontWeight: 'bold', color: isDarkMode ? darkTheme?.textPrimary : 'black' }}>{username}</Text>
@@ -799,6 +820,8 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         )}
       </View>
       
+
+      
       {/* {visitingUserId !== item.user_id && ( */}
       <View style={{ flexDirection: 'row', marginTop: 20 }}>
         <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onLikePress(item)}>
@@ -820,6 +843,162 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           >
             <Ionicons name="chatbubble-sharp" size={25} color="grey" />
             <Text style={{ color: 'grey', fontSize: 12 }}>{comments.length}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Past Rankings Circles */}
+        {profileList.length > 0 && !showComments && (
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}
+            onPress={() => onShowPastRankings && onShowPastRankings(item, profileList, compareUserRating)}
+            activeOpacity={0.7}
+          >
+            {profileList.length <= 3 ? (
+              // Show individual profiles for 3 or fewer
+              profileList.map((item, index) => {
+                const score = compareUserRating[index];
+                if (!score) return null;
+                const roundedScore = score.toFixed(1);
+                const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
+                
+                return (
+                  <View key={index} style={{ alignItems: 'center', marginRight: 8, paddingTop: 4 }}>
+                    <View style={{ position: 'relative' }}>
+                      <Image
+                        source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
+                        style={{ height: 28, width: 28, borderWidth: 0.5, borderRadius: 14, borderColor: 'lightgrey' }}
+                      />
+                      <View style={{ 
+                        position: 'absolute', 
+                        right: -2, 
+                        top: -2, 
+                        backgroundColor, 
+                        borderRadius: 8, 
+                        width: 16, 
+                        height: 16, 
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        borderWidth: 1, 
+                        borderColor: 'white',
+                        zIndex: 1000,
+                        elevation: 5
+                      }}>
+                        <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{roundedScore}</Text>
+                      </View>
+                    </View>
+                    <Text 
+                      style={{ 
+                        marginTop: 3, 
+                        textAlign: 'center', 
+                        maxWidth: 50,
+                        fontSize: 10,
+                        color: isDarkMode ? darkTheme?.textSecondary : '#666'
+                      }}
+                      numberOfLines={1} 
+                      ellipsizeMode="tail"
+                    >
+                      {item.name}
+                    </Text>
+                  </View>
+                );
+              })
+            ) : (
+              // Show grouped display for more than 3
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 4 }}>
+                {/* First 2 profiles with overlap */}
+                {profileList.slice(0, 2).map((item, index) => {
+                  const score = compareUserRating[index];
+                  if (!score) return null;
+                  const roundedScore = score.toFixed(1);
+                  const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
+                  
+                  return (
+                    <View key={index} style={{ 
+                      alignItems: 'center', 
+                      marginLeft: index === 0 ? 0 : -8,
+                      zIndex: 2 - index
+                    }}>
+                      <View style={{ position: 'relative' }}>
+                        <Image
+                          source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
+                          style={{ 
+                            height: 28, 
+                            width: 28, 
+                            borderWidth: 1.5, 
+                            borderRadius: 14, 
+                            borderColor: isDarkMode ? darkTheme?.background : 'white'
+                          }}
+                        />
+                        <View style={{ 
+                          position: 'absolute', 
+                          right: -2, 
+                          top: -2, 
+                          backgroundColor, 
+                          borderRadius: 8, 
+                          width: 16, 
+                          height: 16, 
+                          justifyContent: 'center', 
+                          alignItems: 'center',
+                          borderWidth: 1, 
+                          borderColor: 'white',
+                          zIndex: 1000,
+                          elevation: 5
+                        }}>
+                          <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{roundedScore}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+                
+                {/* Third profile with actual ranking */}
+                <View style={{ alignItems: 'center', marginLeft: -8, zIndex: 1 }}>
+                  <View style={{ position: 'relative' }}>
+                    <Image
+                      source={profileList[2].profile_pic ? { uri: profileList[2].profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
+                      style={{ 
+                        height: 28, 
+                        width: 28, 
+                        borderWidth: 1.5, 
+                        borderRadius: 14, 
+                        borderColor: isDarkMode ? darkTheme?.background : 'white'
+                      }}
+                    />
+                    <View style={{ 
+                      position: 'absolute', 
+                      right: -2, 
+                      top: -2, 
+                      backgroundColor: getScoreColorHSL(parseFloat(compareUserRating[2]?.toFixed(1) || 0)), 
+                      borderRadius: 8, 
+                      width: 16, 
+                      height: 16, 
+                      justifyContent: 'center', 
+                      alignItems: 'center',
+                      borderWidth: 1, 
+                      borderColor: 'white',
+                      zIndex: 1000,
+                      elevation: 5
+                    }}>
+                      <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>
+                        {compareUserRating[2] ? compareUserRating[2].toFixed(1) : '0.0'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                
+                {/* Text showing simplified format */}
+                <Text 
+                  style={{ 
+                    marginLeft: 8,
+                    fontSize: 12,
+                    color: isDarkMode ? darkTheme?.textSecondary : '#666',
+                    fontWeight: '500'
+                  }}
+                >
+                  {profileList[0]?.name || 'Unknown'} and others
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         )}
   
@@ -883,7 +1062,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             horizontal
             keyExtractor={(item, index) => item.key ? item.key.toString() : index.toString()}
             renderItem={({ item, index }) => {
-              const roundedScore = compareUserRating[index].toFixed(1);
+              const score = compareUserRating[index];
+              if (!score) return null; // Skip rendering if no score data
+              const roundedScore = score.toFixed(1);
               const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
               
               return (
@@ -962,10 +1143,14 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         {memoizedComments}
       </View>
     )}
+
       </View>
     </TouchableWithoutFeedback>
     </ScrollView>
+
+
+    </View>
   );
-})
+});
 
 export default NormalItemTile;
