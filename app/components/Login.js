@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, SafeAreaView, TouchableWithoutFeedback, Keyboard, Touchable } from 'react-native';
 import { useFonts } from 'expo-font';
-import { ref, set, onValue, off, query, orderByChild, push, equalTo, get, getDatabase } from "firebase/database";
+import { ref, set, onValue, off, query, orderByChild, push, equalTo, get } from "firebase/database";
 import { database } from '../../firebaseConfig.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
@@ -49,19 +49,32 @@ const Login = ({ setView, setUserKeyIndex }) => {
     }
   };
 
-  const onSendResetEmail = () => {
-    const auth = getAuth();
-    const database = getDatabase();
-    const emailVal = resetEmail;
-    sendPasswordResetEmail(auth, emailVal).then(() => {
-      alert("Check your email for password reset");
-      console.log("Password reset email sent");
-    }).catch(err => {
-      alert("Error sending password reset email: " + err.message);
-    });
-    console.log(`Reset email sent to: ${resetEmail}`);
-    setPage(null);
-    setResetEmail('');
+  const onSendResetEmail = async () => {
+    if (!resetEmail) {
+      alert("Please enter your email address");
+      return;
+    }
+    
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      alert("Password reset email sent! Check your inbox.");
+      console.log(`Password reset email sent to: ${resetEmail}`);
+      setPage(null);
+      setResetEmail('');
+    } catch (error) {
+      console.error("Error sending password reset email:", error);
+      let errorMessage = "Failed to send password reset email.";
+      
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = "No user found with this email address.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email address.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many requests. Please try again later.";
+      }
+      
+      alert(errorMessage);
+    }
   };
 
   if (page === 'forgotPassword') {

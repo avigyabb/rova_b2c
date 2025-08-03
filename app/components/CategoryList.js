@@ -490,19 +490,22 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     })
   }
 
-  const memoizedList = useMemo(() => {
+  const memoizedData = useMemo(() => {
     // Filter the items based on the search value, keeping the original index
-    const filteredList = listData[listView]
-      .map((item, index) => ({ ...item, originalIndex: index })) // Add the original index to each item
-      .filter(({ 1: item }) =>
+    return listData[listView]
+      .map((item, index) => ({ 
+        item: item[1], 
+        key: item[0], 
+        originalIndex: index 
+      }))
+      .filter(({ item }) =>
         item.content && item.content.toLowerCase().includes(searchVal.toLowerCase())
       );
-  
-    // Map the filtered items to ListItemTile components, using the original index
-    return filteredList.map(({ 1: item, 0: key, originalIndex }) => (
-      <ListItemTile item={item} item_key={key} index={originalIndex} key={key} />
-    ));
-  }, [listData, listView, searchVal, editMode, itemsInCategory]);  
+  }, [listData, listView, searchVal]);
+
+  const renderItem = ({ item: { item, key, originalIndex } }) => (
+    <ListItemTile item={item} item_key={key} index={originalIndex} />
+  );  
 
   if (categoryListView === 'Similarity Score') {
     return (
@@ -670,8 +673,14 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 </View>
 
       
-      <ScrollView style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
-      <View style={{ padding: 10 }}>
+      <FlatList
+        style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}
+        data={memoizedData}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.key}
+        ListHeaderComponent={() => (
+          <>
+          <View style={{ padding: 10 }}>
         {editMode ? (
           <>
           {categoryImage ? (
@@ -808,40 +817,53 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           </TouchableOpacity>
         </View>
       </View>
-
-      {listData[listView].length > 0 ? (  
-        <>
-        <TextInput
-          placeholder={'Search Items...'}
-          value={searchVal} 
-          onChangeText={setSearchVal}
-          placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
-          style={{ 
+          
+          {listData[listView].length > 0 && (
+            <TextInput
+              placeholder={'Search Items...'}
+              value={searchVal} 
+              onChangeText={setSearchVal}
+              placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
+              style={{ 
+                fontSize: 16, 
+                borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
+                borderWidth: 0.5,
+                borderRadius: 30,
+                padding: 10,
+                marginRight: 10,
+                marginLeft: 10,
+                paddingHorizontal: 20,
+                marginVertical: 15,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black',
+                backgroundColor: isDarkMode ? darkTheme?.inputBackground : 'white'
+              }}
+            />
+          )}
+          </>
+        )}
+        ListEmptyComponent={() => (
+          <Text style={{ 
+            textAlign: 'center', 
+            fontWeight: 'bold', 
+            color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
             fontSize: 16, 
-            borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
-            borderWidth: 0.5,
-            borderRadius: 30,
-            padding: 10,
-            marginRight: 10,
-            marginLeft: 10,
-            paddingHorizontal: 20,
-            marginVertical: 15,
-            color: isDarkMode ? darkTheme?.textPrimary : 'black',
-            backgroundColor: isDarkMode ? darkTheme?.inputBackground : 'white'
-          }}
-        />          
-        {memoizedList}
-        </>
-      ) : (
-        <Text style={{ 
-          textAlign: 'center', 
-          fontWeight: 'bold', 
-          color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
-          fontSize: 16, 
-          marginTop: '50%' 
-        }}>Add items to see your rankings... 😶‍🌫️</Text>
-      )}
-      </ScrollView>
+            marginTop: '50%' 
+          }}>
+            {listData[listView].length > 0 
+              ? 'No items match your search' 
+              : 'Add items to see your rankings... 😶‍🌫️'}
+          </Text>
+        )}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={15}
+        getItemLayout={(data, index) => ({
+          length: 80, // Approximate height of each item
+          offset: 80 * index,
+          index,
+        })}
+      />
     </View>
   );
 }

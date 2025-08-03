@@ -27,10 +27,23 @@
     "name": "ambora",
     "slug": "rova-b2c-app",
     "version": "1.0.36",
+    "backgroundColor": "#ffffff",
+    "statusBarStyle": "dark",
+    "splash": {
+      "image": "./assets/AppIcon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "bundleIdentifier": "com.swing.b2capp",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "icon": "./assets/AppIcon.png"
+      "icon": "./assets/AppIcon.png",
+      "supportsTablet": true,
+      "statusBarStyle": "dark",
+      "infoPlist": {
+        "UIViewControllerBasedStatusBarAppearance": false,
+        "UIStatusBarStyle": "UIStatusBarStyleDefault"
+      }
     },
     "android": {
       "package": "com.swing.b2capp"

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share, Platform } from 'react-native';
+import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share, Platform, SafeAreaView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { Image as ReactImage } from 'react-native';
@@ -187,35 +187,6 @@ const ProfileHeader = React.memo(({
               alignItems: 'center',
               justifyContent: 'center',
               borderBottomWidth: 2,
-              borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
-            }} 
-            onPress={() => setActiveTab('recent')}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ 
-                fontSize: 14, 
-                marginRight: 6,
-                color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
-                fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
-              }}>
-                Recent
-              </Text>
-              <Ionicons 
-                name="time-outline" 
-                size={18} 
-                color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
-              />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={{ 
-              flex: 1, 
-              paddingVertical: 8, 
-              backgroundColor: 'transparent',
-              marginLeft: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderBottomWidth: 2,
               borderBottomColor: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
             }} 
             onPress={() => setActiveTab('lists')}
@@ -233,6 +204,35 @@ const ProfileHeader = React.memo(({
                 name="grid-outline" 
                 size={18} 
                 color={activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+              />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ 
+              flex: 1, 
+              paddingVertical: 8, 
+              backgroundColor: 'transparent',
+              marginLeft: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderBottomWidth: 2,
+              borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+            }} 
+            onPress={() => setActiveTab('recent')}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ 
+                fontSize: 14, 
+                marginRight: 6,
+                color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+              }}>
+                Recent
+              </Text>
+              <Ionicons 
+                name="time-outline" 
+                size={18} 
+                color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
               />
             </View>
           </TouchableOpacity>
@@ -263,35 +263,6 @@ const ProfileHeader = React.memo(({
               alignItems: 'center',
               justifyContent: 'center',
               borderBottomWidth: 2,
-              borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
-            }} 
-            onPress={() => setActiveTab('recent')}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ 
-                fontSize: 14, 
-                marginRight: 6,
-                color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
-                fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
-              }}>
-                Recent
-              </Text>
-              <Ionicons 
-                name="time-outline" 
-                size={18} 
-                color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
-              />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={{ 
-              flex: 1, 
-              paddingVertical: 8, 
-              backgroundColor: 'transparent',
-              marginLeft: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderBottomWidth: 2,
               borderBottomColor: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
             }} 
             onPress={() => setActiveTab('lists')}
@@ -309,6 +280,35 @@ const ProfileHeader = React.memo(({
                 name="grid-outline" 
                 size={18} 
                 color={activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+              />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ 
+              flex: 1, 
+              paddingVertical: 8, 
+              backgroundColor: 'transparent',
+              marginLeft: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderBottomWidth: 2,
+              borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+            }} 
+            onPress={() => setActiveTab('recent')}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ 
+                fontSize: 14, 
+                marginRight: 6,
+                color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+              }}>
+                Recent
+              </Text>
+              <Ionicons 
+                name="time-outline" 
+                size={18} 
+                color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
               />
             </View>
           </TouchableOpacity>
@@ -341,7 +341,7 @@ const Profile = ({ route, navigation }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [numItems, setNumItems] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState('recent');
+  const [activeTab, setActiveTab] = useState('lists');
   const [userPosts, setUserPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [layoutReady, setLayoutReady] = useState(false);
@@ -888,35 +888,6 @@ const Profile = ({ route, navigation }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderBottomWidth: 2,
-                        borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
-                      }} 
-                      onPress={() => setActiveTab('recent')}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ 
-                          fontSize: 14, 
-                          marginRight: 6,
-                          color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
-                          fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
-                        }}>
-                          Recent
-                        </Text>
-                        <Ionicons 
-                          name="time-outline" 
-                          size={18} 
-                          color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
-                        />
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={{ 
-                        flex: 1, 
-                        paddingVertical: 8, 
-                        backgroundColor: 'transparent',
-                        marginLeft: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderBottomWidth: 2,
                         borderBottomColor: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
                       }} 
                       onPress={() => setActiveTab('lists')}
@@ -934,6 +905,35 @@ const Profile = ({ route, navigation }) => {
                           name="grid-outline" 
                           size={18} 
                           color={activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+                        />
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={{ 
+                        flex: 1, 
+                        paddingVertical: 8, 
+                        backgroundColor: 'transparent',
+                        marginLeft: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderBottomWidth: 2,
+                        borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+                      }} 
+                      onPress={() => setActiveTab('recent')}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ 
+                          fontSize: 14, 
+                          marginRight: 6,
+                          color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                          fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+                        }}>
+                          Recent
+                        </Text>
+                        <Ionicons 
+                          name="time-outline" 
+                          size={18} 
+                          color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
                         />
                       </View>
                     </TouchableOpacity>
@@ -964,35 +964,6 @@ const Profile = ({ route, navigation }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderBottomWidth: 2,
-                        borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
-                      }} 
-                      onPress={() => setActiveTab('recent')}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ 
-                          fontSize: 14, 
-                          marginRight: 6,
-                          color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
-                          fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
-                        }}>
-                          Recent
-                        </Text>
-                        <Ionicons 
-                          name="time-outline" 
-                          size={18} 
-                          color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
-                        />
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={{ 
-                        flex: 1, 
-                        paddingVertical: 8, 
-                        backgroundColor: 'transparent',
-                        marginLeft: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderBottomWidth: 2,
                         borderBottomColor: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
                       }} 
                       onPress={() => setActiveTab('lists')}
@@ -1010,6 +981,35 @@ const Profile = ({ route, navigation }) => {
                           name="grid-outline" 
                           size={18} 
                           color={activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+                        />
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={{ 
+                        flex: 1, 
+                        paddingVertical: 8, 
+                        backgroundColor: 'transparent',
+                        marginLeft: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderBottomWidth: 2,
+                        borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+                      }} 
+                      onPress={() => setActiveTab('recent')}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ 
+                          fontSize: 14, 
+                          marginRight: 6,
+                          color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                          fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+                        }}>
+                          Recent
+                        </Text>
+                        <Ionicons 
+                          name="time-outline" 
+                          size={18} 
+                          color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
                         />
                       </View>
                     </TouchableOpacity>

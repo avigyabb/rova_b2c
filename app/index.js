@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, Platform } from 'react-native';
+import { Text, View, TouchableOpacity, Platform, SafeAreaView, StatusBar as RNStatusBar } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -27,6 +27,39 @@ const ComingSoon = () => (
 
 const Tab = createBottomTabNavigator();
 
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
+
 function MyTabs({ userKey, setView, fetchUserData }) {
   const navigation = useNavigation();
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -34,6 +67,22 @@ function MyTabs({ userKey, setView, fetchUserData }) {
   const handleDarkModeChange = (newDarkMode) => {
     setIsDarkMode(newDarkMode);
   };
+
+  const FeedScreen = React.useCallback((props) => (
+    <Feed {...props} isDarkMode={isDarkMode} darkTheme={darkTheme} />
+  ), [isDarkMode]);
+
+  const ExploreScreen = React.useCallback((props) => (
+    <Explore {...props} isDarkMode={isDarkMode} darkTheme={darkTheme} />
+  ), [isDarkMode]);
+
+  const AddScreen = React.useCallback((props) => (
+    <Add {...props} isDarkMode={isDarkMode} darkTheme={darkTheme} />
+  ), [isDarkMode]);
+
+  const GroupsScreen = React.useCallback((props) => (
+    <Groups {...props} isDarkMode={isDarkMode} darkTheme={darkTheme} />
+  ), [isDarkMode]);
 
   return (
     <Tab.Navigator
@@ -53,7 +102,7 @@ function MyTabs({ userKey, setView, fetchUserData }) {
           } else if (route.name === 'Profile') {
             iconName = 'person';
           }
-          size = focused ? 33 : 30;
+          size = focused ? 28 : 25;
 
           return (
             <TouchableOpacity onPress={() => navigation.navigate(route.name)}>
@@ -62,11 +111,16 @@ function MyTabs({ userKey, setView, fetchUserData }) {
           );
         },
         tabBarStyle: { 
-          paddingBottom: 0, 
-          height: 60,
+          paddingBottom: 10, 
+          paddingTop: 5,
+          height: 55,
           backgroundColor: isDarkMode ? '#121212' : 'white',
           borderTopWidth: 1,
-          borderTopColor: isDarkMode ? '#333333' : 'lightgrey'
+          borderTopColor: isDarkMode ? '#333333' : 'lightgrey',
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0
         },
       })}
 
@@ -75,41 +129,9 @@ function MyTabs({ userKey, setView, fetchUserData }) {
         inactiveTintColor: isDarkMode ? '#999999' : 'gray',
       }}
     >
-      {/* this is wrong  */}
       <Tab.Screen 
         name="Feed" 
-        component={(props) => <Feed {...props} isDarkMode={isDarkMode} darkTheme={{
-          background: '#121212',
-          surface: '#121212',
-          textPrimary: '#FFFFFF',
-          textSecondary: '#CCCCCC',
-          textTertiary: '#999999',
-          border: '#333333',
-          borderLight: '#1e1e1e',
-          accent: '#00aced',
-          cardBackground: '#121212',
-          tabBarBackground: '#121212',
-          tabBarBorder: '#333333',
-          tabBarActive: '#FFFFFF',
-          tabBarInactive: '#999999',
-          buttonPrimary: '#FFFFFF',
-          buttonPrimaryText: '#121212',
-          buttonSecondary: '#333333',
-          buttonSecondaryText: '#FFFFFF',
-          inputBackground: '#333333',
-          inputBorder: '#444444',
-          placeholder: '#999999',
-          profileCardBackground: '#121212',
-          profileBorder: '#333333',
-          feedItemBackground: '#121212',
-          feedItemBorder: '#1e1e1e',
-          exploreCardBackground: '#121212',
-          exploreCardBorder: '#333333',
-          moviePosterBorder: '#333333',
-          ratingCircleBorder: '#333333',
-          shadow: '#121212',
-          overlay: 'rgba(18, 18, 18, 0.7)',
-        }} />}
+        component={FeedScreen}
         options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 
@@ -117,38 +139,7 @@ function MyTabs({ userKey, setView, fetchUserData }) {
         />
       <Tab.Screen 
         name="Explore" 
-        component={(props) => <Explore {...props} isDarkMode={isDarkMode} darkTheme={{
-          background: '#121212',
-          surface: '#121212',
-          textPrimary: '#FFFFFF',
-          textSecondary: '#CCCCCC',
-          textTertiary: '#999999',
-          border: '#333333',
-          borderLight: '#1e1e1e',
-          accent: '#00aced',
-          cardBackground: '#121212',
-          tabBarBackground: '#121212',
-          tabBarBorder: '#333333',
-          tabBarActive: '#FFFFFF',
-          tabBarInactive: '#999999',
-          buttonPrimary: '#FFFFFF',
-          buttonPrimaryText: '#121212',
-          buttonSecondary: '#333333',
-          buttonSecondaryText: '#FFFFFF',
-          inputBackground: '#333333',
-          inputBorder: '#444444',
-          placeholder: '#999999',
-          profileCardBackground: '#121212',
-          profileBorder: '#333333',
-          feedItemBackground: '#121212',
-          feedItemBorder: '#1e1e1e',
-          exploreCardBackground: '#121212',
-          exploreCardBorder: '#333333',
-          moviePosterBorder: '#333333',
-          ratingCircleBorder: '#333333',
-          shadow: '#121212',
-          overlay: 'rgba(18, 18, 18, 0.7)',
-        }} />}
+        component={ExploreScreen}
         options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 
@@ -156,38 +147,7 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       />
       <Tab.Screen 
         name="Add" 
-        component={(props) => <Add {...props} isDarkMode={isDarkMode} darkTheme={{
-          background: '#121212',
-          surface: '#121212',
-          textPrimary: '#FFFFFF',
-          textSecondary: '#CCCCCC',
-          textTertiary: '#999999',
-          border: '#333333',
-          borderLight: '#1e1e1e',
-          accent: '#00aced',
-          cardBackground: '#121212',
-          tabBarBackground: '#121212',
-          tabBarBorder: '#333333',
-          tabBarActive: '#FFFFFF',
-          tabBarInactive: '#999999',
-          buttonPrimary: '#FFFFFF',
-          buttonPrimaryText: '#121212',
-          buttonSecondary: '#333333',
-          buttonSecondaryText: '#FFFFFF',
-          inputBackground: '#333333',
-          inputBorder: '#444444',
-          placeholder: '#999999',
-          profileCardBackground: '#121212',
-          profileBorder: '#333333',
-          feedItemBackground: '#121212',
-          feedItemBorder: '#1e1e1e',
-          exploreCardBackground: '#121212',
-          exploreCardBorder: '#333333',
-          moviePosterBorder: '#333333',
-          ratingCircleBorder: '#333333',
-          shadow: '#121212',
-          overlay: 'rgba(18, 18, 18, 0.7)',
-        }} />}
+        component={AddScreen}
         options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey,
@@ -199,38 +159,7 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       />
       <Tab.Screen 
         name="Groups" 
-        component={(props) => <Groups {...props} isDarkMode={isDarkMode} darkTheme={{
-          background: '#121212',
-          surface: '#121212',
-          textPrimary: '#FFFFFF',
-          textSecondary: '#CCCCCC',
-          textTertiary: '#999999',
-          border: '#333333',
-          borderLight: '#1e1e1e',
-          accent: '#00aced',
-          cardBackground: '#121212',
-          tabBarBackground: '#121212',
-          tabBarBorder: '#333333',
-          tabBarActive: '#FFFFFF',
-          tabBarInactive: '#999999',
-          buttonPrimary: '#FFFFFF',
-          buttonPrimaryText: '#121212',
-          buttonSecondary: '#333333',
-          buttonSecondaryText: '#FFFFFF',
-          inputBackground: '#333333',
-          inputBorder: '#444444',
-          placeholder: '#999999',
-          profileCardBackground: '#121212',
-          profileBorder: '#333333',
-          feedItemBackground: '#121212',
-          feedItemBorder: '#1e1e1e',
-          exploreCardBackground: '#121212',
-          exploreCardBorder: '#333333',
-          moviePosterBorder: '#333333',
-          ratingCircleBorder: '#333333',
-          shadow: '#121212',
-          overlay: 'rgba(18, 18, 18, 0.7)',
-        }} />}
+        component={GroupsScreen}
         options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 
@@ -282,15 +211,19 @@ const App = () => {
   
   return (
     <>
-      <StatusBar translucent backgroundColor="transparent" style="dark" />
-      <View style={{ 
-        flex: 1, 
-        backgroundColor: 'white',
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
-      }}>
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'white' }} />
+      <View style={{ flex: 1, backgroundColor: 'white' }}>
+        <StatusBar style="dark" />
+        <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
         <NavigationContainer independent={true} theme={{
+          dark: false,
           colors: {
+            primary: 'rgb(255, 45, 85)',
             background: 'white',
+            card: 'white',
+            text: 'black',
+            border: 'rgb(199, 199, 204)',
+            notification: 'rgb(255, 69, 58)',
           },
         }}>
           {userKey ? (
@@ -307,6 +240,7 @@ const App = () => {
             <Login setView={setView} setUserKeyIndex={setUserKey} />
           )}
         </NavigationContainer>
+        </SafeAreaView>
       </View>
     </>
   );
