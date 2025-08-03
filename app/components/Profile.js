@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share, Platform } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share, Platform, Dimensions, TextInput, TouchableWithoutFeedback, Keyboard, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { Image as ReactImage } from 'react-native';
@@ -347,6 +347,16 @@ const Profile = ({ route, navigation }) => {
   const [layoutReady, setLayoutReady] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false); // Start with light mode
   const [itemInfo, setItemInfo] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState('');
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [savedScrollPosition, setSavedScrollPosition] = useState(0);
+  const [currentScrollPosition, setCurrentScrollPosition] = useState(0);
+  const flatListRef = useRef(null);
+  
+  // Animation states
+  const slideAnim = useRef(new Animated.Value(Dimensions.get('window').height)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
@@ -587,6 +597,160 @@ const Profile = ({ route, navigation }) => {
     />
   ), [profileInfo, isDarkMode, visitingUserId, activeTab, isFollowing]);
 
+  // Fetch comments for a specific post
+  const fetchComments = async (postId) => {
+    if (!postId) return;
+    
+    let allComments = [];
+    
+    // Check new comments location
+    const newCommentsRef = ref(database, `comments/${postId}`);
+    const newSnapshot = await get(newCommentsRef);
+    
+    if (newSnapshot.exists()) {
+      const newCommentsData = Object.entries(newSnapshot.val()).map(([key, value]) => ({
+        id: key,
+        ...value
+      }));
+      allComments = [...allComments, ...newCommentsData];
+    }
+    
+    // Check old comments location
+    const oldCommentsRef = ref(database, `items/${postId}/comments`);
+    const oldSnapshot = await get(oldCommentsRef);
+    
+    if (oldSnapshot.exists()) {
+      const oldCommentsData = Object.entries(oldSnapshot.val()).map(([key, value]) => ({
+        id: key,
+        ...value
+      }));
+      allComments = [...allComments, ...oldCommentsData];
+    }
+    
+    if (allComments.length > 0) {
+      // Fetch profile pictures for each commenter
+      const commentsWithProfiles = await Promise.all(
+        allComments.map(async (comment) => {
+          try {
+            // Handle both old and new comment formats
+            const userId = comment.user_id || comment.userId;
+            const commentText = comment.text || comment.comment;
+            
+            const userRef = ref(database, `users/${userId}`);
+            const userSnapshot = await get(userRef);
+            if (userSnapshot.exists()) {
+              const userData = userSnapshot.val();
+              return {
+                ...comment,
+                user_id: userId, // Normalize to new format
+                text: commentText, // Normalize to new format
+                profile_pic: userData.profile_pic || null,
+                name: userData.name || comment.name,
+                username: userData.username || comment.username
+              };
+            }
+            return {
+              ...comment,
+              user_id: userId,
+              text: commentText
+            };
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+            return comment;
+          }
+        })
+      );
+      
+      console.log('Fetched comments:', commentsWithProfiles);
+      setComments(commentsWithProfiles.sort((a, b) => a.timestamp - b.timestamp));
+    } else {
+      console.log('No comments found for post:', postId);
+      setComments([]);
+    }
+  };
+
+  // Post a new comment
+  const postComment = async () => {
+    if (!commentText.trim() || !itemInfo?.key) return;
+    
+    setCommentLoading(true);
+    try {
+      const commentsRef = ref(database, `comments/${itemInfo.key}`);
+      const newCommentRef = push(commentsRef);
+      
+      const commentData = {
+        text: commentText.trim(),
+        user_id: userKey,
+        username: profileInfo?.username || 'Anonymous',
+        name: profileInfo?.name || 'Anonymous',
+        timestamp: Date.now()
+      };
+      
+      await set(newCommentRef, commentData);
+      setCommentText('');
+      
+      // Dismiss keyboard
+      Keyboard.dismiss();
+      
+      // Refresh comments
+      await fetchComments(itemInfo.key);
+    } catch (error) {
+      console.error('Error posting comment:', error);
+    } finally {
+      setCommentLoading(false);
+    }
+  };
+
+  // Restore scroll position when returning from comments
+  useEffect(() => {
+    if (itemInfo === null && savedScrollPosition > 0) {
+      // Use requestAnimationFrame to ensure the FlatList is ready
+      requestAnimationFrame(() => {
+        if (flatListRef.current) {
+          flatListRef.current.scrollToOffset({ offset: savedScrollPosition, animated: false });
+        }
+      });
+      // Reset saved position after restoration
+      setSavedScrollPosition(0);
+    }
+  }, [itemInfo]);
+
+  // Fetch comments when itemInfo changes
+  useEffect(() => {
+    if (itemInfo?.key) {
+      fetchComments(itemInfo.key);
+      // Animate comments overlay in
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      setComments([]);
+      setCommentText('');
+      // Animate comments overlay out
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: Dimensions.get('window').height,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [itemInfo]);
+
   const getUserPosts = () => {
     try {
       setLoadingPosts(true);
@@ -650,52 +814,7 @@ const Profile = ({ route, navigation }) => {
           />
     }
 
-      if (itemInfo) {
-    const onBackPress = (params) => {
-      if (setFeedView) {
-        setFeedView(params)
-      }
-      setItemInfo(null)
-    }
 
-      return (
-        <View style={{ 
-          backgroundColor: isDarkMode ? darkTheme?.background : 'black', 
-          height: '100%' 
-        }}>
-          <View style={{ 
-            flexDirection: 'row', 
-            padding: 10, 
-            borderBottomWidth: 1, 
-            borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
-          }}>
-            <TouchableOpacity onPress={() => {
-              setItemInfo(null) 
-              if (setFeedView) {
-                setFeedView(null)
-              }
-            }}> 
-              <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
-            </TouchableOpacity>
-          </View>
-          <NormalItemTile 
-            item={itemInfo} 
-            visitingUserId={userKey} 
-            navigation={navigation} 
-            editMode={false} 
-            showComments={true} 
-            setFeedView={onBackPress} 
-            individualSpotifyAccessToken={null} 
-            promptAsync={() => {}}
-            isDarkMode={isDarkMode}
-            darkTheme={darkTheme}
-          />
-        </View>
-      );
-    }
   
     return (
     <>
@@ -758,6 +877,7 @@ const Profile = ({ route, navigation }) => {
               
               {activeTab === 'recent' ? (
             <FlatList
+              ref={flatListRef}
               style={{ backgroundColor: isDarkMode ? darkTheme.background : 'white' }}
               data={userPosts}
               renderItem={({ item }) => (
@@ -795,6 +915,11 @@ const Profile = ({ route, navigation }) => {
               onScroll={(event) => {
                 const y = event.nativeEvent.contentOffset.y;
                 setScrollY(y);
+                setCurrentScrollPosition(y);
+                // Save scroll position for restoration, but only when comments overlay is not active
+                if (y > 0 && itemInfo === null) {
+                  setSavedScrollPosition(y);
+                }
                 if (y < -110 && !refreshed) {
                   refreshProfile();
                 }
@@ -1047,6 +1172,254 @@ const Profile = ({ route, navigation }) => {
             </>
           )}
         </View>
+      )}
+
+      {/* Comments overlay */}
+      {itemInfo && (
+        <>
+          {/* Semi-transparent overlay */}
+          <Animated.View 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              zIndex: 10,
+              opacity: overlayOpacity
+            }}
+          >
+            <TouchableOpacity 
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
+              onPress={() => {
+                // Save current scroll position before closing comments
+                setSavedScrollPosition(currentScrollPosition);
+                setItemInfo(null)
+              }}
+            />
+          </Animated.View>
+          
+          {/* Bottom sheet */}
+          <Animated.View 
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: isDarkMode ? darkTheme?.background : 'white',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              height: '66%',
+              zIndex: 11,
+              transform: [{
+                translateY: slideAnim
+              }]
+            }}
+            onTouchStart={() => Keyboard.dismiss()}
+          >
+              {/* Handle bar */}
+              <View style={{
+                width: 40,
+                height: 4,
+                backgroundColor: isDarkMode ? darkTheme?.border : '#ddd',
+                borderRadius: 2,
+                alignSelf: 'center',
+                marginTop: 10,
+                marginBottom: 10
+              }} />
+              
+              {/* Comments header */}
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: 20,
+                paddingBottom: 15,
+                borderBottomWidth: 1,
+                borderBottomColor: isDarkMode ? darkTheme?.border : '#eee'
+              }}>
+                <Text style={{
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black'
+                }}>
+                  Comments
+                </Text>
+                <TouchableOpacity onPress={() => {
+                  // Save current scroll position before closing comments
+                  setSavedScrollPosition(currentScrollPosition);
+                  setItemInfo(null)
+                }}>
+                  <Ionicons name="close" size={24} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Comments list */}
+              <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                {comments.length === 0 ? (
+                  <Text style={{
+                    fontSize: 16,
+                    color: isDarkMode ? darkTheme?.textSecondary : '#666',
+                    textAlign: 'center',
+                    marginTop: 50,
+                    fontStyle: 'italic'
+                  }}>
+                    Be the first to comment
+                  </Text>
+                ) : (
+                  <FlatList
+                    data={comments}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <View style={{
+                        paddingVertical: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDarkMode ? darkTheme?.border : '#eee'
+                      }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                          <Image
+                            source={item.profile_pic ? { uri: item.profile_pic } : require('../../assets/images/emptyProfilePic3.png')}
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 16,
+                              marginRight: 12
+                            }}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                              <Text style={{
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                color: isDarkMode ? darkTheme?.textPrimary : '#333',
+                                marginRight: 8
+                              }}>
+                                {item.name || 'Anonymous'}
+                              </Text>
+                              <Text style={{
+                                fontSize: 12,
+                                color: isDarkMode ? darkTheme?.textSecondary : '#666'
+                              }}>
+                                {(() => {
+                                  const now = Date.now();
+                                  const commentTime = item.timestamp;
+                                  const diffMs = now - commentTime;
+                                  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                  
+                                  if (diffDays >= 1) {
+                                    // Show date for comments older than 1 day
+                                    return new Date(commentTime).toLocaleDateString("en-US", {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                    });
+                                  } else {
+                                    // Show relative time for comments less than 1 day old
+                                    const diffSeconds = Math.floor(diffMs / 1000);
+                                    const diffMinutes = Math.floor(diffSeconds / 60);
+                                    
+                                    if (diffHours > 0) {
+                                      return `${diffHours}h ago`;
+                                    } else if (diffMinutes > 0) {
+                                      return `${diffMinutes}m ago`;
+                                    } else if (diffSeconds > 0) {
+                                      return `${diffSeconds}s ago`;
+                                    } else {
+                                      return 'now';
+                                    }
+                                  }
+                                })()}
+                              </Text>
+                            </View>
+                            <Text style={{
+                              fontSize: 14,
+                              color: isDarkMode ? darkTheme?.textPrimary : '#333',
+                              lineHeight: 20
+                            }}>
+                              {item.text}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                    showsVerticalScrollIndicator={true}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={false}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                    style={{ flex: 1 }}
+                    bounces={true}
+                    alwaysBounceVertical={false}
+                    scrollEventThrottle={16}
+                    removeClippedSubviews={false}
+                    onScrollBeginDrag={() => Keyboard.dismiss()}
+                  />
+                )}
+              </View>
+              
+              {/* Add comment section - moved to bottom */}
+              <View style={{
+                paddingHorizontal: 20,
+                paddingVertical: 15,
+                borderTopWidth: 1,
+                borderTopColor: isDarkMode ? darkTheme?.border : '#eee',
+                backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+              }}>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: isDarkMode ? darkTheme?.inputBackground : '#f5f5f5',
+                  borderRadius: 20,
+                  paddingHorizontal: 15,
+                  paddingVertical: 7.5,
+                }}>
+                  <TextInput
+                    placeholder="Add a comment..."
+                    placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "#999"}
+                    value={commentText}
+                    onChangeText={setCommentText}
+                    style={{
+                      flex: 1,
+                      fontSize: 16,
+                      color: isDarkMode ? darkTheme?.textPrimary : 'black'
+                    }}
+                    multiline={false}
+                    onSubmitEditing={postComment}
+                  />
+                  <TouchableOpacity 
+                    style={{
+                      backgroundColor: commentText.trim() ? (isDarkMode ? darkTheme?.textPrimary : '#000') : (isDarkMode ? darkTheme?.border : '#ccc'),
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginLeft: 10
+                    }}
+                    onPress={postComment}
+                    disabled={!commentText.trim() || commentLoading}
+                  >
+                    {commentLoading ? (
+                      <ActivityIndicator size="small" color={isDarkMode ? darkTheme?.background : 'white'} />
+                    ) : (
+                      <Ionicons 
+                        name="arrow-up" 
+                        size={16} 
+                        color={isDarkMode ? darkTheme?.background : 'white'} 
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Animated.View>
+        </>
       )}
     </>
   );

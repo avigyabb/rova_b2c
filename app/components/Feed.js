@@ -116,6 +116,7 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState([]);
   const [commentLoading, setCommentLoading] = useState(false);
+  const [currentScrollPosition, setCurrentScrollPosition] = useState(0);
   
   // Animation states
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -124,14 +125,14 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   // Restore scroll position when returning from comments
   useEffect(() => {
     if (itemInfo === null && savedScrollPosition > 0) {
-      // Restore scroll position after a delay to ensure FlatList is rendered
-      setTimeout(() => {
+      // Use requestAnimationFrame to ensure the FlatList is ready
+      requestAnimationFrame(() => {
         if (flatListRef.current) {
           flatListRef.current.scrollToOffset({ offset: savedScrollPosition, animated: false });
         }
-        // Reset saved position after restoration
-        setSavedScrollPosition(0);
-      }, 100);
+      });
+      // Reset saved position after restoration
+      setSavedScrollPosition(0);
     }
   }, [itemInfo]);
 
@@ -567,7 +568,29 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
     }, [])
 
     const date = new Date(item.timestamp);
-    const realDateStr = moment(item.timestamp).fromNow();
+    
+    // Function to format timestamp - show relative time for posts less than 1 day old, date for older posts
+    const formatTimestamp = (timestamp) => {
+      const now = Date.now();
+      const postTime = timestamp;
+      const diffMs = now - postTime;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays >= 1) {
+        // Show date for posts older than 1 day
+        return new Date(timestamp).toLocaleDateString("en-US", {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        });
+      } else {
+        // Show relative time for posts less than 1 day old
+        return moment(timestamp).fromNow();
+      }
+    };
+    
+    const realDateStr = formatTimestamp(item.timestamp);
     const dateString = date ? date.toLocaleDateString("en-US", {
       year: 'numeric',
       month: '2-digit',
@@ -992,8 +1015,10 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
           key={"single-column"}
           onScroll={async (event) => {
             const scrollY = event.nativeEvent.contentOffset.y;
-            // Save scroll position for restoration, but throttle updates
-            if (scrollY > 0 && scrollY % 10 === 0) {
+            // Always track current scroll position
+            setCurrentScrollPosition(scrollY);
+            // Save scroll position for restoration, but only when comments overlay is not active
+            if (scrollY > 0 && itemInfo === null) {
               setSavedScrollPosition(scrollY);
             }
             if (scrollY < -110 && !refreshed) {
@@ -1042,6 +1067,8 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                 bottom: 0,
               }}
               onPress={() => {
+                // Save current scroll position before closing comments
+                setSavedScrollPosition(currentScrollPosition);
                 setItemInfo(null)
               }}
             />
@@ -1094,6 +1121,8 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                   Comments
                 </Text>
                 <TouchableOpacity onPress={() => {
+                  // Save current scroll position before closing comments
+                  setSavedScrollPosition(currentScrollPosition);
                   setItemInfo(null)
                 }}>
                   <Ionicons name="close" size={24} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
@@ -1150,21 +1179,30 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                                   const now = Date.now();
                                   const commentTime = item.timestamp;
                                   const diffMs = now - commentTime;
-                                  const diffSeconds = Math.floor(diffMs / 1000);
-                                  const diffMinutes = Math.floor(diffSeconds / 60);
-                                  const diffHours = Math.floor(diffMinutes / 60);
-                                  const diffDays = Math.floor(diffHours / 24);
+                                  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                                   
-                                  if (diffDays > 0) {
-                                    return new Date(commentTime).toLocaleDateString();
-                                  } else if (diffHours > 0) {
-                                    return `${diffHours}h ago`;
-                                  } else if (diffMinutes > 0) {
-                                    return `${diffMinutes}m ago`;
-                                  } else if (diffSeconds > 0) {
-                                    return `${diffSeconds}s ago`;
+                                  if (diffDays >= 1) {
+                                    // Show date for comments older than 1 day
+                                    return new Date(commentTime).toLocaleDateString("en-US", {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                    });
                                   } else {
-                                    return 'now';
+                                    // Show relative time for comments less than 1 day old
+                                    const diffSeconds = Math.floor(diffMs / 1000);
+                                    const diffMinutes = Math.floor(diffSeconds / 60);
+                                    
+                                    if (diffHours > 0) {
+                                      return `${diffHours}h ago`;
+                                    } else if (diffMinutes > 0) {
+                                      return `${diffMinutes}m ago`;
+                                    } else if (diffSeconds > 0) {
+                                      return `${diffSeconds}s ago`;
+                                    } else {
+                                      return 'now';
+                                    }
                                   }
                                 })()}
                               </Text>

@@ -286,7 +286,29 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
 
   let scoreColor = getScoreColorHSL(Number(item.score));
   const date = new Date(item.timestamp);
-  const realDateStr = moment(item.timestamp).fromNow();
+  
+  // Function to format timestamp - show relative time for posts less than 1 day old, date for older posts
+  const formatTimestamp = (timestamp) => {
+    const now = Date.now();
+    const postTime = timestamp;
+    const diffMs = now - postTime;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays >= 1) {
+      // Show date for posts older than 1 day
+      return new Date(timestamp).toLocaleDateString("en-US", {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } else {
+      // Show relative time for posts less than 1 day old
+      return moment(timestamp).fromNow();
+    }
+  };
+  
+  const realDateStr = formatTimestamp(item.timestamp);
   const dateString = date.toLocaleDateString("en-US", {
     year: 'numeric',
     month: '2-digit',
@@ -447,10 +469,14 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     })
   }
 
-  const onCommentPress = () => {
+  const onCommentPress = (item) => {
+    console.log('onCommentPress called with item:', item);
+    console.log('setItemInfo function:', setItemInfo);
+    console.log('item.key:', item.key);
+    console.log('item.image:', item.image);
+    console.log('About to call setItemInfo with:', item);
     setItemInfo(item);
-    console.log(item.key)
-    console.log('item Image' + item.image)
+    console.log('setItemInfo called successfully');
   }  
 
   const CommentTile = ({ item }) => {
@@ -466,7 +492,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     }, [])
 
     const date = new Date(item.timestamp);
-    const realDateStr = moment(item.timestamp).fromNow();
+    const realDateStr = formatTimestamp(item.timestamp);
     const dateString = date ? date.toLocaleDateString("en-US", {
       year: 'numeric',
       month: '2-digit',
@@ -485,7 +511,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           </TouchableOpacity>
           <View>
             <View style={{ flexDirection: 'row' }}>
-              <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
+              <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 5 }}>{userInfo.name}</Text>
               <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text>
             </View>
             <Text style={{ marginTop: 5, width: 320 }}>{item.comment}</Text>
@@ -663,7 +689,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, fontWeight: 'bold', color: isDarkMode ? darkTheme?.textPrimary : 'black' }}>{username}</Text>
             {isVerified && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
-            <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'grey', fontSize: 12, marginLeft: 20 }}>{realDateStr}</Text>
+            <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'grey', fontSize: 12, marginLeft: 5 }}>{realDateStr}</Text>
           </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, width: 260 }}>
             <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'gray', fontWeight: 'bold', fontSize: 13, fontStyle: 'italic' }}>
@@ -785,7 +811,13 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         </TouchableOpacity>
         
         {!showComments && (
-          <TouchableOpacity style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} onPress={() => onCommentPress(item)}>
+          <TouchableOpacity 
+            style={{ marginRight: 10, justifyContent: 'center', alignItems: 'center' }} 
+            onPress={() => {
+              console.log('Comment button pressed!');
+              onCommentPress(item);
+            }}
+          >
             <Ionicons name="chatbubble-sharp" size={25} color="grey" />
             <Text style={{ color: 'grey', fontSize: 12 }}>{comments.length}</Text>
           </TouchableOpacity>
