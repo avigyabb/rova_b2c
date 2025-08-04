@@ -1077,9 +1077,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             horizontal
             keyExtractor={(item, index) => item.key ? item.key.toString() : index.toString()}
             renderItem={({ item, index }) => {
-              const score = compareUserRating[index];
-              if (!score) return null; // Skip rendering if no score data
-              const roundedScore = score.toFixed(1);
+              const roundedScore = compareUserRating[index].toFixed(1);
               const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
               
               return (
