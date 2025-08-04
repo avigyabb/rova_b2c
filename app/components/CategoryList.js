@@ -11,6 +11,7 @@ import FeedItemTile from "./FeedItemTile";
 import NormalItemTile from "./NormalItemTile";
 import Profile from './Profile';
 import CategoryComparison from "./CategoryListComponents/CategoryComparison";
+import { useFocusEffect } from '@react-navigation/native';
 
 const styles = StyleSheet.create({
   listTileScore: {
@@ -60,6 +61,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
   const [visitingUserCategories, setVisitingUserCategories] = useState([]);
   const [categoryListView, setCategoryListView] = useState(null);
+  const [itemRankingCounts, setItemRankingCounts] = useState({});
+
+
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
@@ -110,6 +114,180 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       console.error(error);
     });
   }, [focusedCategoryId, database, visitingUserId]);
+
+  // Calculate ranking counts for initial focusedList
+  useEffect(() => {
+    console.log('Initial focusedList useEffect triggered:', focusedList);
+    if (focusedList && (focusedList.now || focusedList.later)) {
+      const allItems = [...(focusedList.now || []), ...(focusedList.later || [])].map(([key, value]) => ({ 
+        key, 
+        ...value,
+        item_key: key // Add item_key for consistency
+      }));
+      console.log('Mapped allItems:', allItems.length, 'items');
+      
+      // Calculate ranking counts from database efficiently
+      const uniqueImages = [...new Set(allItems.filter(item => item.image).map(item => item.image))];
+      
+      if (uniqueImages.length > 0) {
+        // Fetch ranking counts efficiently
+        const fetchRankingCounts = async () => {
+          try {
+            const itemsRef = ref(database, 'items');
+            const snapshot = await get(itemsRef);
+            
+            if (snapshot.exists()) {
+              const allDbItems = Object.values(snapshot.val());
+              const counts = {};
+              
+              // Process each item in our list
+              for (const item of allItems) {
+                if (item.image) {
+                  // Find items with same image and content, excluding current user
+                  const sameContentItems = allDbItems.filter(dbItem => 
+                    dbItem.image === item.image &&
+                    dbItem.content === item.content && 
+                    dbItem.score !== -1 && 
+                    dbItem.user_id !== userKey
+                  );
+                  
+                  const itemKey = item.item_key || item.key || item.image;
+                  counts[itemKey] = sameContentItems.length;
+                }
+              }
+              
+              console.log('Setting ranking counts for focusedList:', counts);
+              setItemRankingCounts(counts);
+            }
+          } catch (error) {
+            console.error('Error fetching ranking counts:', error);
+            setItemRankingCounts({});
+          }
+        };
+        
+        fetchRankingCounts();
+      } else {
+        setItemRankingCounts({});
+      }
+    }
+  }, [focusedList]);
+
+  // Calculate ranking counts when component mounts and listData is available
+  useEffect(() => {
+    console.log('Component mount useEffect triggered, listData:', listData);
+    if (listData && (listData.now || listData.later)) {
+      const allItems = [...(listData.now || []), ...(listData.later || [])].map(([key, value]) => ({ 
+        key, 
+        ...value,
+        item_key: key
+      }));
+      console.log('Mapped allItems from listData:', allItems.length, 'items');
+      
+      // Calculate ranking counts from database efficiently
+      const uniqueImages = [...new Set(allItems.filter(item => item.image).map(item => item.image))];
+      
+      if (uniqueImages.length > 0) {
+        // Fetch ranking counts efficiently
+        const fetchRankingCounts = async () => {
+          try {
+            const itemsRef = ref(database, 'items');
+            const snapshot = await get(itemsRef);
+            
+            if (snapshot.exists()) {
+              const allDbItems = Object.values(snapshot.val());
+              const counts = {};
+              
+              // Process each item in our list
+              for (const item of allItems) {
+                if (item.image) {
+                  // Find items with same image and content, excluding current user
+                  const sameContentItems = allDbItems.filter(dbItem => 
+                    dbItem.image === item.image &&
+                    dbItem.content === item.content && 
+                    dbItem.score !== -1 && 
+                    dbItem.user_id !== userKey
+                  );
+                  
+                  const itemKey = item.item_key || item.key || item.image;
+                  counts[itemKey] = sameContentItems.length;
+                }
+              }
+              
+              console.log('Setting ranking counts for listData:', counts);
+              setItemRankingCounts(counts);
+            }
+          } catch (error) {
+            console.error('Error fetching ranking counts:', error);
+            setItemRankingCounts({});
+          }
+        };
+        
+        fetchRankingCounts();
+      } else {
+        setItemRankingCounts({});
+      }
+    }
+  }, [listData]);
+
+  // Calculate ranking counts whenever the component becomes visible or data changes
+  useEffect(() => {
+    console.log('Visibility/data change useEffect triggered');
+    const currentData = focusedList || listData;
+    if (currentData && (currentData.now || currentData.later)) {
+      const allItems = [...(currentData.now || []), ...(currentData.later || [])].map(([key, value]) => ({ 
+        key, 
+        ...value,
+        item_key: key
+      }));
+      console.log('Mapped allItems from currentData:', allItems.length, 'items');
+      
+      // Calculate ranking counts from database efficiently
+      const uniqueImages = [...new Set(allItems.filter(item => item.image).map(item => item.image))];
+      
+      if (uniqueImages.length > 0) {
+        // Fetch ranking counts efficiently
+        const fetchRankingCounts = async () => {
+          try {
+            const itemsRef = ref(database, 'items');
+            const snapshot = await get(itemsRef);
+            
+            if (snapshot.exists()) {
+              const allDbItems = Object.values(snapshot.val());
+              const counts = {};
+              
+              // Process each item in our list
+              for (const item of allItems) {
+                if (item.image) {
+                  // Find items with same image and content, excluding current user
+                  const sameContentItems = allDbItems.filter(dbItem => 
+                    dbItem.image === item.image &&
+                    dbItem.content === item.content && 
+                    dbItem.score !== -1 && 
+                    dbItem.user_id !== userKey
+                  );
+                  
+                  const itemKey = item.item_key || item.key || item.image;
+                  counts[itemKey] = sameContentItems.length;
+                }
+              }
+              
+              console.log('Setting ranking counts for visibility/data change:', counts);
+              setItemRankingCounts(counts);
+            }
+          } catch (error) {
+            console.error('Error fetching ranking counts:', error);
+            setItemRankingCounts({});
+          }
+        };
+        
+        fetchRankingCounts();
+      } else {
+        setItemRankingCounts({});
+      }
+    }
+  }, [focusedList, listData]);
+
+
 
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
@@ -199,6 +377,57 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
       }
       setListData(tempFocusedList);
+      
+      // Calculate ranking counts from database efficiently
+      const allItems = [...tempFocusedList.now, ...tempFocusedList.later].map(([key, value]) => ({ 
+        key, 
+        ...value,
+        item_key: key // Add item_key for consistency
+      }));
+      
+      // Get unique images to query efficiently
+      const uniqueImages = [...new Set(allItems.filter(item => item.image).map(item => item.image))];
+      
+      if (uniqueImages.length > 0) {
+        // Fetch ranking counts efficiently
+        const fetchRankingCounts = async () => {
+          try {
+            const itemsRef = ref(database, 'items');
+            const snapshot = await get(itemsRef);
+            
+            if (snapshot.exists()) {
+              const allDbItems = Object.values(snapshot.val());
+              const counts = {};
+              
+              // Process each item in our list
+              for (const item of allItems) {
+                if (item.image) {
+                  // Find items with same image and content, excluding current user
+                  const sameContentItems = allDbItems.filter(dbItem => 
+                    dbItem.image === item.image &&
+                    dbItem.content === item.content && 
+                    dbItem.score !== -1 && 
+                    dbItem.user_id !== userKey
+                  );
+                  
+                  const itemKey = item.item_key || item.key || item.image;
+                  counts[itemKey] = sameContentItems.length;
+                }
+              }
+              
+              console.log('Setting ranking counts:', counts);
+              setItemRankingCounts(counts);
+            }
+          } catch (error) {
+            console.error('Error fetching ranking counts:', error);
+            setItemRankingCounts({});
+          }
+        };
+        
+        fetchRankingCounts();
+      } else {
+        setItemRankingCounts({});
+      }
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
@@ -219,8 +448,14 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     });
   }
 
+
+
   const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
+    const rankingCount = itemRankingCounts[item_key || item.image] || 0;
+    
+    console.log(`ListItemTile for ${item.content}: rankingCount = ${rankingCount}, item_key = ${item_key}, item.image = ${item.image}`);
+    console.log('Current itemRankingCounts state:', itemRankingCounts);
 
     return (
       <TouchableOpacity onPress={() => onItemPress(item_key)}>
@@ -302,6 +537,35 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                     textShadowRadius: 2,
                   }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
                 </View>
+                
+                {/* Ranking count display */}
+                {rankingCount > 0 && (
+                  <View style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    marginTop: 4,
+                    marginLeft: 'auto',
+                    backgroundColor: isDarkMode ? darkTheme?.buttonSecondary : '#f0f0f0',
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 10
+                  }}>
+                    <Ionicons 
+                      name="people" 
+                      size={14} 
+                      color={isDarkMode ? darkTheme?.textSecondary : "gray"} 
+                    />
+                    <Text style={{ 
+                      color: isDarkMode ? darkTheme?.textSecondary : "gray",
+                      fontSize: 11,
+                      marginLeft: 3,
+                      fontWeight: '600'
+                    }}>
+                      {rankingCount}
+                    </Text>
+                  </View>
+                )}
+                
                 { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryInfo.category_type !== "" && (
                   <MaterialIcons 
                     name="playlist-add-check-circle" 
@@ -502,7 +766,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     return filteredList.map(({ 1: item, 0: key, originalIndex }) => (
       <ListItemTile item={item} item_key={key} index={originalIndex} key={key} />
     ));
-  }, [listData, listView, searchVal, editMode, itemsInCategory]);  
+  }, [listData, listView, searchVal, editMode, itemsInCategory, itemRankingCounts]);  
 
   if (categoryListView === 'Similarity Score') {
     return (
@@ -648,11 +912,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       </TouchableOpacity>
     )}
     
+
     <TouchableOpacity onPress={() => onEditPress()}>
       {editMode ? (
         <Text style={{ 
           fontSize: 15, 
-          fontWeight: 'bold', 
+          fontWeight: 'bold',
           marginLeft: 25,
           color: isDarkMode ? darkTheme?.textPrimary : 'black'
         }}>Done</Text>

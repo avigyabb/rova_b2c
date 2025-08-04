@@ -405,6 +405,7 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   }
   
   const getTopPostsListData = async () => {
+    console.log('getTopPostsListData called');
     setRefreshed(true);
     const categoryItemsRef = ref(database, 'items');
     let tempListData = {};
@@ -413,7 +414,9 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
     const oneWeekAgo = Date.now() - 604800000;
 
     try {
+      console.log('Fetching items from database...');
       const snapshot = await get(categoryItemsRef);
+      console.log('Snapshot exists:', snapshot.exists());
       if (snapshot.exists()) {
         // First, get all items and sort by likes/dislikes/stars (fast)
         const allItems = Object.entries(snapshot.val())
@@ -434,12 +437,32 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
           });
 
         // Create initial data without comment counts (fast)
-        tempListData['Past Hour'] = allItems.filter(item => item.timestamp && item.timestamp > oneHourAgo).slice(0, 30)
-        tempListData['Past Day'] = allItems.filter(item => item.timestamp && item.timestamp > oneDayAgo).slice(0, 30)
-        tempListData['Past Week'] = allItems.filter(item => item.timestamp && item.timestamp > oneWeekAgo).slice(0, 30)
-        tempListData['All Time'] = allItems.slice(0, 30)
+        const pastHourItems = allItems.filter(item => item.timestamp && item.timestamp > oneHourAgo);
+        const pastDayItems = allItems.filter(item => item.timestamp && item.timestamp > oneDayAgo);
+        const pastWeekItems = allItems.filter(item => item.timestamp && item.timestamp > oneWeekAgo);
+        
+        tempListData['Past Hour'] = pastHourItems.slice(0, 30);
+        tempListData['Past Day'] = pastDayItems.slice(0, 30);
+        tempListData['Past Week'] = pastWeekItems.slice(0, 30);
+        tempListData['All Time'] = allItems.slice(0, 30);
+        
+        console.log('Time filtering results:', {
+          totalItems: allItems.length,
+          oneHourAgo: new Date(oneHourAgo).toISOString(),
+          oneDayAgo: new Date(oneDayAgo).toISOString(),
+          oneWeekAgo: new Date(oneWeekAgo).toISOString(),
+          pastHourCount: pastHourItems.length,
+          pastDayCount: pastDayItems.length,
+          pastWeekCount: pastWeekItems.length,
+          sampleTimestamps: allItems.slice(0, 3).map(item => ({
+            key: item.key,
+            timestamp: item.timestamp,
+            date: new Date(item.timestamp).toISOString()
+          }))
+        });
         
         // Set data immediately (fast load)
+        console.log('Setting initial Top Posts data:', tempListData);
         setListData(tempListData);
         setRefreshed(false);
         
@@ -482,13 +505,26 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
         });
 
         // Update with final sorted data
+        const finalPastHour = finalSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo);
+        const finalPastDay = finalSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo);
+        const finalPastWeek = finalSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo);
+        
         const finalData = {
-          'Past Hour': finalSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo).slice(0, 30),
-          'Past Day': finalSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo).slice(0, 30),
-          'Past Week': finalSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo).slice(0, 30),
+          'Past Hour': finalPastHour.length > 0 ? finalPastHour.slice(0, 30) : finalSorted.slice(0, 30),
+          'Past Day': finalPastDay.length > 0 ? finalPastDay.slice(0, 30) : finalSorted.slice(0, 30),
+          'Past Week': finalPastWeek.length > 0 ? finalPastWeek.slice(0, 30) : finalSorted.slice(0, 30),
           'All Time': finalSorted.slice(0, 30)
         };
         
+        console.log('Final time filtering results:', {
+          totalSortedItems: finalSorted.length,
+          finalPastHourCount: finalPastHour.length,
+          finalPastDayCount: finalPastDay.length,
+          finalPastWeekCount: finalPastWeek.length,
+          finalAllTimeCount: finalSorted.length
+        });
+        
+        console.log('Setting final Top Posts data:', finalData);
         setListData(finalData);
         console.log('Top Posts Data Updated:', {
           totalItems: finalSorted.length,
@@ -500,7 +536,7 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
         });
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching Top Posts data:", error);
       setRefreshed(false);
     }
 
@@ -591,6 +627,15 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
     
     initializeData();
   }, [response]);
+
+  // Handle feed type changes
+  useEffect(() => {
+    console.log('Feed type changed to:', feedType);
+    if (feedType === 'Top Posts' && (!listData || typeof listData === 'object' && Object.keys(listData).length === 0)) {
+      console.log('Loading Top Posts data...');
+      getTopPostsListData();
+    }
+  }, [feedType]);
 
   const NotificationsTile = ({ item, visitingUserId, isDarkMode=false, darkTheme=null }) => {
     const [userInfo, setUserInfo] = useState({});
@@ -907,7 +952,10 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                 borderBottomWidth: 0.5 
               }}>
         <TouchableOpacity onPress={() => {
-          setFeedType('Top Posts')
+          console.log('Top Posts button pressed');
+          setFeedType('Top Posts');
+          // Clear the old array data and set to empty object for Top Posts
+          setListData({});
           getTopPostsListData();
         }}>
           <Text style={feedType === 'Top Posts' ? { 
@@ -959,7 +1007,10 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                 (isDarkMode ? darkTheme?.textPrimary : 'black') : 
                 (isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey')
             }
-          ]} onPress={() => {setTopPostsTime('Past Hour') }}>
+          ]} onPress={() => {
+            console.log('Setting topPostsTime to Past Hour');
+            setTopPostsTime('Past Hour');
+          }}>
             <Text style={[
               styles.timesText, 
               { 
@@ -976,7 +1027,10 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                 (isDarkMode ? darkTheme?.textPrimary : 'black') : 
                 (isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey')
             }
-          ]} onPress={() => {setTopPostsTime('Past Day')}}>
+          ]} onPress={() => {
+            console.log('Setting topPostsTime to Past Day');
+            setTopPostsTime('Past Day');
+          }}>
             <Text style={[
               styles.timesText, 
               { 
@@ -993,7 +1047,10 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                 (isDarkMode ? darkTheme?.textPrimary : 'black') : 
                 (isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey')
             }
-          ]} onPress={() => setTopPostsTime('Past Week')}>
+          ]} onPress={() => {
+            console.log('Setting topPostsTime to Past Week');
+            setTopPostsTime('Past Week');
+          }}>
             <Text style={[
               styles.timesText, 
               { 
@@ -1010,7 +1067,10 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
                 (isDarkMode ? darkTheme?.textPrimary : 'black') : 
                 (isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey')
             }
-          ]} onPress={() => setTopPostsTime('All Time')}>
+          ]} onPress={() => {
+            console.log('Setting topPostsTime to All Time');
+            setTopPostsTime('All Time');
+          }}>
             <Text style={[
               styles.timesText, 
               { 
@@ -1046,7 +1106,28 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
         )} uncomment this for swiping*/}
         <FlatList
           ref={flatListRef}
-          data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
+          key={`${feedType}-${topPostsTime}`}
+          data={(() => {
+            let data;
+            if (feedType === 'Top Posts' && listData && typeof listData === 'object' && !Array.isArray(listData) && listData[topPostsTime]) {
+              data = listData[topPostsTime].slice(0, numFeedItems);
+            } else if (Array.isArray(listData)) {
+              data = listData.slice(0, numFeedItems);
+            } else {
+              data = [];
+            }
+            console.log('FlatList data:', {
+              feedType,
+              topPostsTime,
+              hasListData: !!listData,
+              listDataType: typeof listData,
+              isArray: Array.isArray(listData),
+              hasTopPostsData: !!(listData && typeof listData === 'object' && !Array.isArray(listData) && listData[topPostsTime]),
+              dataLength: data.length,
+              listDataKeys: listData && typeof listData === 'object' && !Array.isArray(listData) ? Object.keys(listData) : []
+            });
+            return data;
+          })()}
           renderItem={({ item }) => <NormalItemTile 
             item={item} 
             userKey={userKey} 
@@ -1063,7 +1144,6 @@ const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
           />}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
-          key={"single-column"}
           onScroll={async (event) => {
             const scrollY = event.nativeEvent.contentOffset.y;
             // Always track current scroll position

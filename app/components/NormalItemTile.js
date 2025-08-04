@@ -156,9 +156,14 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       }
     }
     console.log('Final profiles with timestamps:', profilesWithTimestamps);
-    setProfileList(profilesWithTimestamps);
+    
+    // Sort by most recent first
+    const sortedProfiles = profilesWithTimestamps.sort((a, b) => (b.postTimestamp || 0) - (a.postTimestamp || 0));
+    console.log('Sorted profiles (most recent first):', sortedProfiles);
+    
+    setProfileList(sortedProfiles);
     setLoading(false);
-    return profilesWithTimestamps;
+    return sortedProfiles;
   }
   
   // Fetch comments for this post
@@ -849,85 +854,33 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         {/* Past Rankings Circles */}
         {profileList.length > 0 && !showComments && (
           <TouchableOpacity 
-            style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}
+            style={{ marginRight: 10 }}
             onPress={() => onShowPastRankings && onShowPastRankings(item, profileList, compareUserRating)}
             activeOpacity={0.7}
           >
-            {profileList.length <= 3 ? (
-              // Show individual profiles for 3 or fewer
-              profileList.map((item, index) => {
-                const score = compareUserRating[index];
-                if (!score) return null;
-                const roundedScore = score.toFixed(1);
-                const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
-                
-                return (
-                  <View key={index} style={{ alignItems: 'center', marginRight: 8, paddingTop: 4 }}>
-                    <View style={{ position: 'relative' }}>
-                      <Image
-                        source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
-                        style={{ height: 28, width: 28, borderWidth: 0.5, borderRadius: 14, borderColor: 'lightgrey' }}
-                      />
-                      <View style={{ 
-                        position: 'absolute', 
-                        right: -2, 
-                        top: -2, 
-                        backgroundColor, 
-                        borderRadius: 8, 
-                        width: 16, 
-                        height: 16, 
-                        justifyContent: 'center', 
-                        alignItems: 'center',
-                        borderWidth: 1, 
-                        borderColor: 'white',
-                        zIndex: 1000,
-                        elevation: 5
-                      }}>
-                        <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{roundedScore}</Text>
-                      </View>
-                    </View>
-                    <Text 
-                      style={{ 
-                        marginTop: 3, 
-                        textAlign: 'center', 
-                        maxWidth: 50,
-                        fontSize: 10,
-                        color: isDarkMode ? darkTheme?.textSecondary : '#666'
-                      }}
-                      numberOfLines={1} 
-                      ellipsizeMode="tail"
-                    >
-                      {item.name}
-                    </Text>
-                  </View>
-                );
-              })
-            ) : (
-              // Show grouped display for more than 3
-              <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 4 }}>
-                {/* First 2 profiles with overlap */}
-                {profileList.slice(0, 2).map((item, index) => {
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ 
+                flexDirection: 'row', 
+                alignItems: 'center',
+                paddingRight: 10
+              }}
+            >
+              {profileList.length <= 3 ? (
+                // Show individual profiles for 3 or fewer
+                profileList.map((item, index) => {
                   const score = compareUserRating[index];
                   if (!score) return null;
                   const roundedScore = score.toFixed(1);
                   const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
                   
                   return (
-                    <View key={index} style={{ 
-                      alignItems: 'center', 
-                      marginLeft: index === 0 ? 0 : -8,
-                      zIndex: 2 - index
-                    }}>
+                    <View key={index} style={{ alignItems: 'center', marginRight: 8, paddingTop: 4 }}>
                       <View style={{ position: 'relative' }}>
                         <Image
                           source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
-                          style={{ 
-                            height: 28, 
-                            width: 28, 
-                            borderWidth: 1.5, 
-                            borderRadius: 14, 
-                            borderColor: isDarkMode ? darkTheme?.background : 'white'
-                          }}
+                          style={{ height: 28, width: 28, borderWidth: 0.5, borderRadius: 14, borderColor: 'lightgrey' }}
                         />
                         <View style={{ 
                           position: 'absolute', 
@@ -947,58 +900,120 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
                           <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{roundedScore}</Text>
                         </View>
                       </View>
-                    </View>
-                  );
-                })}
-                
-                {/* Third profile with actual ranking */}
-                <View style={{ alignItems: 'center', marginLeft: -8, zIndex: 1 }}>
-                  <View style={{ position: 'relative' }}>
-                    <Image
-                      source={profileList[2].profile_pic ? { uri: profileList[2].profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
-                      style={{ 
-                        height: 28, 
-                        width: 28, 
-                        borderWidth: 1.5, 
-                        borderRadius: 14, 
-                        borderColor: isDarkMode ? darkTheme?.background : 'white'
-                      }}
-                    />
-                    <View style={{ 
-                      position: 'absolute', 
-                      right: -2, 
-                      top: -2, 
-                      backgroundColor: getScoreColorHSL(parseFloat(compareUserRating[2]?.toFixed(1) || 0)), 
-                      borderRadius: 8, 
-                      width: 16, 
-                      height: 16, 
-                      justifyContent: 'center', 
-                      alignItems: 'center',
-                      borderWidth: 1, 
-                      borderColor: 'white',
-                      zIndex: 1000,
-                      elevation: 5
-                    }}>
-                      <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>
-                        {compareUserRating[2] ? compareUserRating[2].toFixed(1) : '0.0'}
+                      <Text 
+                        style={{ 
+                          marginTop: 3, 
+                          textAlign: 'center', 
+                          maxWidth: 50,
+                          fontSize: 10,
+                          color: isDarkMode ? darkTheme?.textSecondary : '#666'
+                        }}
+                        numberOfLines={1} 
+                        ellipsizeMode="tail"
+                      >
+                        {item.name}
                       </Text>
                     </View>
+                  );
+                })
+              ) : (
+                // Show grouped display for more than 3
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 4 }}>
+                  {/* First 2 profiles with overlap */}
+                  {profileList.slice(0, 2).map((item, index) => {
+                    const score = compareUserRating[index];
+                    if (!score) return null;
+                    const roundedScore = score.toFixed(1);
+                    const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
+                    
+                    return (
+                      <View key={index} style={{ 
+                        alignItems: 'center', 
+                        marginLeft: index === 0 ? 0 : -8,
+                        zIndex: 2 - index
+                      }}>
+                        <View style={{ position: 'relative' }}>
+                          <Image
+                            source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
+                            style={{ 
+                              height: 28, 
+                              width: 28, 
+                              borderWidth: 1.5, 
+                              borderRadius: 14, 
+                              borderColor: isDarkMode ? darkTheme?.background : 'white'
+                            }}
+                          />
+                          <View style={{ 
+                            position: 'absolute', 
+                            right: -2, 
+                            top: -2, 
+                            backgroundColor, 
+                            borderRadius: 8, 
+                            width: 16, 
+                            height: 16, 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            borderWidth: 1, 
+                            borderColor: 'white',
+                            zIndex: 1000,
+                            elevation: 5
+                          }}>
+                            <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{roundedScore}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                  
+                  {/* Third profile with actual ranking */}
+                  <View style={{ alignItems: 'center', marginLeft: -8, zIndex: 1 }}>
+                    <View style={{ position: 'relative' }}>
+                      <Image
+                        source={profileList[2].profile_pic ? { uri: profileList[2].profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
+                        style={{ 
+                          height: 28, 
+                          width: 28, 
+                          borderWidth: 1.5, 
+                          borderRadius: 14, 
+                          borderColor: isDarkMode ? darkTheme?.background : 'white'
+                        }}
+                      />
+                      <View style={{ 
+                        position: 'absolute', 
+                        right: -2, 
+                        top: -2, 
+                        backgroundColor: getScoreColorHSL(parseFloat(compareUserRating[2]?.toFixed(1) || 0)), 
+                        borderRadius: 8, 
+                        width: 16, 
+                        height: 16, 
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        borderWidth: 1, 
+                        borderColor: 'white',
+                        zIndex: 1000,
+                        elevation: 5
+                      }}>
+                        <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>
+                          {compareUserRating[2] ? compareUserRating[2].toFixed(1) : '0.0'}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
+                  
+                  {/* Text showing simplified format */}
+                  <Text 
+                    style={{ 
+                      marginLeft: 8,
+                      fontSize: 12,
+                      color: isDarkMode ? darkTheme?.textSecondary : '#666',
+                      fontWeight: '500'
+                    }}
+                  >
+                    {profileList[0]?.name || 'Unknown'} and others
+                  </Text>
                 </View>
-                
-                {/* Text showing simplified format */}
-                <Text 
-                  style={{ 
-                    marginLeft: 8,
-                    fontSize: 12,
-                    color: isDarkMode ? darkTheme?.textSecondary : '#666',
-                    fontWeight: '500'
-                  }}
-                >
-                  {profileList[0]?.name || 'Unknown'} and others
-                </Text>
-              </View>
-            )}
+              )}
+            </ScrollView>
           </TouchableOpacity>
         )}
   
