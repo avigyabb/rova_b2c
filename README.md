@@ -1,3 +1,9 @@
+# Prerequisites
+
+For MacOS: Install brew
+
+Install node
+
 # Building From Source
 
 create new file on desktop
@@ -14,7 +20,7 @@ download expo go
 
 make an account on expo
 
-run npx expo start -c or npx expo start --tunnel
+run ```npx expo start -c``` or ```npx expo start --tunnel```
 
 enter email and password into terminal
 
