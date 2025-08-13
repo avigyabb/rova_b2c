@@ -17,6 +17,40 @@ import { search } from './Search';
 import CategoryTile from './CategoryTile';
 import AddCategory from './AddCategory';
 
+// Dark mode theme colors
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
+
 const styles = StyleSheet.create({
   optionsContainer: {
     flexDirection: 'row',
@@ -99,7 +133,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const Add = ({ route }) => {
+const Add = ({ route, isDarkMode=false, darkTheme=null }) => {
   const isFocused = useIsFocused();
   const { userKey } = route.params;
   const [newItem, setNewItem] = useState(''); // this is the item name
@@ -482,7 +516,7 @@ const Add = ({ route }) => {
   }
 
   // update here ***
-  onAddLaterPress = () => {
+  const onAddLaterPress = () => {
     const newLaterItemRef = push(ref(database, 'items'));
     let imageType = 'image';
     // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
@@ -539,7 +573,7 @@ const Add = ({ route }) => {
     setAddView('itemAdded');
   }
 
-  onContinuePress = () => {
+  const onContinuePress = () => {
     setNewItem('');
     setNewItemCategory(null); 
     setNewItemBucket(null);
@@ -700,12 +734,23 @@ const Add = ({ route }) => {
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
+      <View style={{ 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
+        padding: 5, 
+        paddingLeft: 20, 
+        paddingRight: 20, 
+        height: '100%' 
+      }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 5 }}>ambora\social</Text>
+          <Text style={{ 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            fontSize: 24, 
+            fontFamily: 'Poppins Regular', 
+            marginTop: 5 
+          }}>ambora\social</Text>
           <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setAddView('addList')}>
-            <Ionicons name="add-outline" size={22} color="gray" />
-            <Text style={{ fontSize: 16, color: 'gray' }}>Add List</Text>
+            <Ionicons name="add-outline" size={22} color={isDarkMode ? darkTheme?.textSecondary : "gray"} />
+            <Text style={{ fontSize: 16, color: isDarkMode ? darkTheme?.textSecondary : 'gray' }}>Add List</Text>
           </TouchableOpacity>
         </View>
 
@@ -715,17 +760,47 @@ const Add = ({ route }) => {
             <>
             {newItem ? (
               <>
-              <Text style={{ marginTop: 20, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>SELECT A LIST TO ADD:</Text>
-              <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10, fontStyle: 'italic', marginTop: 8, flexShrink: 1 }}>{newItem}</Text>
+              <Text style={{ 
+                marginTop: 20, 
+                fontWeight: 'bold', 
+                fontSize: 14, 
+                color: isDarkMode ? darkTheme?.textSecondary : 'gray' 
+              }}>SELECT A LIST TO ADD:</Text>
+              <Text style={{ 
+                fontWeight: 'bold', 
+                fontSize: 18, 
+                marginBottom: 10, 
+                fontStyle: 'italic', 
+                marginTop: 8, 
+                flexShrink: 1,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
+              }}>{newItem}</Text>
               </>
             ) : (
-              <Text style={{ marginTop: 20, fontWeight: 'bold', fontSize: 14, marginBottom: 10, color: 'gray', fontStyle: 'italic' }}>SELECT A LIST:</Text>
+              <Text style={{ 
+                marginTop: 20, 
+                fontWeight: 'bold', 
+                fontSize: 14, 
+                marginBottom: 10, 
+                color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+                fontStyle: 'italic' 
+              }}>SELECT A LIST:</Text>
             )}
 
             {userCategories.length === 0 && (
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ marginTop: 35, fontWeight: 'bold', fontSize: 16, color: 'black' }}>You have not created any lists!</Text>
-                <Text style={{ marginTop: 15, fontWeight: 'bold', fontSize: 14, color: 'black' }}>To create a list go to: Profile → Add List</Text>
+                <Text style={{ 
+                  marginTop: 35, 
+                  fontWeight: 'bold', 
+                  fontSize: 16, 
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black' 
+                }}>You have not created any lists!</Text>
+                <Text style={{ 
+                  marginTop: 15, 
+                  fontWeight: 'bold', 
+                  fontSize: 14, 
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black' 
+                }}>To create a list go to: Profile → Add List</Text>
               </View>
             )}
 
@@ -764,15 +839,33 @@ const Add = ({ route }) => {
             </>
           ) : (
             <>
-            <Text style={{ marginTop: 15, fontWeight: 'bold', fontSize: 12 }}>List: </Text>
+            <Text style={{ 
+              marginTop: 15, 
+              fontWeight: 'bold', 
+              fontSize: 12,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>List: </Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ marginTop: 5, fontWeight: 'bold', fontSize: 20 }}>{newItemCategoryName}</Text>
+              <Text style={{ 
+                marginTop: 5, 
+                fontWeight: 'bold', 
+                fontSize: 20,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
+              }}>{newItemCategoryName}</Text>
               <TouchableOpacity onPress={() => {
                 setNewItemCategory(null)
                 setSearchResults([])
               }}>
-                <View style={{ backgroundColor: 'lightgrey', padding: 8, fontSize: 13, borderRadius: 10 }}>
-                  <Text style={{ fontWeight: 'bold' }}>Back</Text>
+                <View style={{ 
+                  backgroundColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+                  padding: 8, 
+                  fontSize: 13, 
+                  borderRadius: 10 
+                }}>
+                  <Text style={{ 
+                    fontWeight: 'bold',
+                    color: isDarkMode ? darkTheme?.textPrimary : 'black'
+                  }}>Back</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -791,7 +884,11 @@ const Add = ({ route }) => {
             setBinarySearchM(0)
             setNewItemFinalScore(-1)
           }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'black' }}>Cancel</Text>
+            <Text style={{ 
+              fontSize: 18, 
+              fontWeight: 'bold', 
+              color: isDarkMode ? darkTheme?.textPrimary : 'black' 
+            }}>Cancel</Text>
           </TouchableOpacity>
         )}
 
@@ -799,17 +896,17 @@ const Add = ({ route }) => {
           <View style={{
             flexDirection: 'row',
             marginTop: 15,
-            backgroundColor: 'lightgray',
+            backgroundColor: isDarkMode ? darkTheme?.inputBackground : 'lightgray',
             paddingHorizontal: 15,
             borderRadius: 10,
             alignItems: 'center', // Aligns the TextInput and the icon vertically
             marginBottom: 10
           }}>
-            <Ionicons name="search" size={24} color="black" style={styles.icon} />
+            <Ionicons name="search" size={24} color={isDarkMode ? darkTheme?.textPrimary : "black"} style={styles.icon} />
             <TextInput
               placeholder={`Add to ${userCategories.find(item => item.id === newItemCategory)?.category_name || ''}`}
               value={newItem}
-              placeholderTextColor="gray"
+              placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
               onChangeText={(text) => {
                 handleTextChange(text);
               }}
@@ -820,14 +917,15 @@ const Add = ({ route }) => {
                 paddingLeft: 10, // Optional: Adds some space between the icon and the text input
                 fontWeight: 'bold',
                 fontSize: 16,
-                height: 50
+                height: 50,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
               }}
             />
           </View>
         )}
 
         {loadingItems && newItemCategoryType === 'Locations' && (
-          <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
+          <ActivityIndicator size="large" color={isDarkMode ? darkTheme?.textPrimary : "black"} style={{ marginTop: 20 }} />
         )}
 
         {newItem.length > 0 && newItemCategory && !rankMode && addView === '' && !loadingItems && (
@@ -849,26 +947,40 @@ const Add = ({ route }) => {
                   flexDirection: 'row', 
                   alignItems: 'center',
                   padding: 5,
-                  borderColor: 'lightgray',
+                  borderColor: isDarkMode ? darkTheme?.border : 'lightgray',
                   borderBottomWidth: 0.5,
+                  backgroundColor: isDarkMode ? darkTheme?.background : 'white'
                 }}>
                   {item.image ? (
                     <Image source={{ uri: item.image }} style={{ 
                       width: newItemCategoryType === 'Movies' || newItemCategoryType === 'Shows' ? 40 : 60, height: 60,
                       borderRadius: 5,
                       borderWidth: 0.5,
-                      borderColor: 'lightgray'
+                      borderColor: isDarkMode ? darkTheme?.border : 'lightgray'
                     }}/>
                   ) : (
-                    <View style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', backgroundColor: 'lightgray', borderRadius: 5 }}>
-                      <Ionicons name="location-sharp" size={40} color="black" />
+                    <View style={{ 
+                      width: 60, 
+                      height: 60, 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      backgroundColor: isDarkMode ? darkTheme?.border : 'lightgray', 
+                      borderRadius: 5 
+                    }}>
+                      <Ionicons name="location-sharp" size={40} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
                     </View>
                   )}
                   <View style={{ marginLeft: 10, width: 250 }}>
-                    <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
-                    <Text style={{ color: 'gray', fontSize: 12 }}>{item.description}</Text>
+                    <Text style={{ 
+                      fontWeight: 'bold',
+                      color: isDarkMode ? darkTheme?.textPrimary : 'black'
+                    }}>{item.content}</Text>
+                    <Text style={{ 
+                      color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+                      fontSize: 12 
+                    }}>{item.description}</Text>
                   </View>
-                  { itemsInCategory && itemsInCategory.has(item.content) && <Ionicons name="list" size={25} />}
+                  { itemsInCategory && itemsInCategory.has(item.content) && <Ionicons name="list" size={25} color={isDarkMode ? darkTheme?.textPrimary : "black"} />}
                 </TouchableOpacity>
               )}
               keyExtractor={(item, index) => index.toString()}
@@ -878,32 +990,59 @@ const Add = ({ route }) => {
             
             {(newItemImageUris.length === 0 && newItemDescription.length === 0) ? (
               <>
-              <Text style={{ marginTop: 10, marginLeft: 5, fontSize: 11, color: 'gray', fontStyle: 'italic' }}>Add a custom description or image to appear in the feed!</Text>
+              <Text style={{ 
+                marginTop: 10, 
+                marginLeft: 5, 
+                fontSize: 11, 
+                color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+                fontStyle: 'italic' 
+              }}>Add a custom description or image to appear in the feed!</Text>
               <TouchableOpacity onPress={() => setAddView('AddPost')} style={{ 
                 flexDirection: 'row', 
                 alignItems: 'center', 
                 marginTop: 5, 
                 borderWidth: 2,
+                borderColor: isDarkMode ? darkTheme?.border : 'black',
                 padding: 5,
                 paddingHorizontal: 10,
                 borderRadius: 10
               }}>
-                <Ionicons name="add-circle-outline" size={30} color="black" />
-                <Text style={{ marginLeft: 10, fontWeight: 'bold' }}>Add Image or Description</Text>
+                <Ionicons name="add-circle-outline" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+                <Text style={{ 
+                  marginLeft: 10, 
+                  fontWeight: 'bold',
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black'
+                }}>Add Image or Description</Text>
               </TouchableOpacity>
               </>
             ) : (
               <>
-              <Text style={{ marginTop: 10, fontWeight: 'bold', fontSize: 12 }}>My Post:</Text>
+              <Text style={{ 
+                marginTop: 10, 
+                fontWeight: 'bold', 
+                fontSize: 12,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
+              }}>My Post:</Text>
               <View style={{ flexDirection: 'row', marginTop: 5, alignItems: 'center' }}>
                 {newItemImageUris.length > 0 && (
                   <Image
                     source={{ uri: newItemImageUris[0] }}
-                    style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+                    style={{
+                      height: 50, 
+                      width: 50, 
+                      borderWidth: 0.5, 
+                      marginRight: 10, 
+                      borderRadius: 15, 
+                      borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+                    }}
                   />
                 )}
                 {newItemDescription.length > 0 && (
-                  <Text style={{ color: 'grey', fontSize: 16, width: '68%' }}>
+                  <Text style={{ 
+                    color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+                    fontSize: 16, 
+                    width: '68%' 
+                  }}>
                     {newItemDescription.length > 50 ? newItemDescription.slice(0, 50) + '...' : newItemDescription}
                   </Text>
                 )}
@@ -913,11 +1052,12 @@ const Add = ({ route }) => {
                   justifyContent: 'center', 
                   marginLeft: 'auto',
                   borderWidth: 2,
+                  borderColor: isDarkMode ? darkTheme?.border : 'black',
                   height: 40,
                   width: 40,
                   borderRadius: 10
                 }}>
-                  <Ionicons name="pencil" size={25} color="black" />
+                  <Ionicons name="pencil" size={25} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
                 </TouchableOpacity>
               </View>
               </>
@@ -935,15 +1075,20 @@ const Add = ({ route }) => {
               }} 
               style={{ 
                 borderWidth: 2, 
-                borderColor: 'lightgray', 
+                borderColor: isDarkMode ? darkTheme?.border : 'lightgray', 
                 borderRadius: 15,
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
                 width: 170
               }}>
-                <Ionicons name="bookmark" size={20} color="gray" />
-                <Text style={{ color: 'gray', fontWeight: 'bold', fontSize: 14, marginLeft: 8 }}>Add to 'Later'</Text>
+                <Ionicons name="bookmark" size={20} color={isDarkMode ? darkTheme?.textSecondary : "gray"} />
+                <Text style={{ 
+                  color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+                  fontWeight: 'bold', 
+                  fontSize: 14, 
+                  marginLeft: 8 
+                }}>Add to 'Later'</Text>
               </TouchableOpacity>
               
               <TouchableOpacity onPress={() => {
@@ -956,7 +1101,7 @@ const Add = ({ route }) => {
                 }
               }} 
               style={{
-                backgroundColor: 'black',
+                backgroundColor: isDarkMode ? darkTheme?.textPrimary : 'black',
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 15, // Set borderRadius to 15 to match "Add to 'Later'"
@@ -964,7 +1109,11 @@ const Add = ({ route }) => {
                 height: 50, // Set height explicitly
 
               }}>
-                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Add to List</Text>
+                <Text style={{ 
+                  color: isDarkMode ? darkTheme?.background : 'white', 
+                  fontWeight: 'bold', 
+                  fontSize: 16 
+                }}>Add to List</Text>
               </TouchableOpacity>
               
             </View>
@@ -975,17 +1124,19 @@ const Add = ({ route }) => {
           <>
           <View style={{
             alignItems: 'center',
-            borderColor: 'lightgray',
+            borderColor: isDarkMode ? darkTheme?.border : 'lightgray',
             borderWidth: 2,
             borderRadius: 10,
             padding: 10,
             paddingVertical: 15,
-            marginTop: 20
+            marginTop: 20,
+            backgroundColor: isDarkMode ? darkTheme?.background : 'white'
           }}>
             <Text style={{
               fontSize: 18,
               fontWeight: 'bold',
               marginBottom: 15,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
             }}>
               How was it?
             </Text>
@@ -1045,8 +1196,8 @@ const Add = ({ route }) => {
         {newItem.length > 0 && newItemCategory && itemComparisons.length > 0 && rankMode && (
           <View style={{
             alignItems: 'center',
-            backgroundColor: 'white',
-            borderColor: 'lightgray',
+            backgroundColor: isDarkMode ? darkTheme?.background : 'white',
+            borderColor: isDarkMode ? darkTheme?.border : 'lightgray',
             borderWidth: 2,
             borderRadius: 10,
             marginTop: 20,
@@ -1056,13 +1207,23 @@ const Add = ({ route }) => {
               fontSize: 18,
               fontWeight: 'bold',
               marginBottom: 15,
-              marginTop: 10
+              marginTop: 10,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
             }}>
               Which do you prefer?
             </Text>
             <View style={styles.cardsContainer}>
-              <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(true)}>
-                <Text style={styles.itemContent}>
+              <TouchableOpacity style={[
+                styles.card,
+                {
+                  borderColor: isDarkMode ? darkTheme?.border : 'lightgray',
+                  backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+                }
+              ]} onPress={() => onCardComparisonPress(true)}>
+                <Text style={[
+                  styles.itemContent,
+                  { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+                ]}>
                   {newItem.length > 30 ? newItem.slice(0, 30) + '...' : newItem}
                 </Text>
                 <View style={{
@@ -1072,11 +1233,11 @@ const Add = ({ route }) => {
                   borderRadius: 20,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderColor: 'gray',
+                  borderColor: isDarkMode ? darkTheme?.border : 'gray',
                   marginTop: 10
                 }}>
                   <Text style={{
-                    color: 'gray'
+                    color: isDarkMode ? darkTheme?.textSecondary : 'gray'
                   }}>
                     ?
                   </Text>
@@ -1087,15 +1248,31 @@ const Add = ({ route }) => {
                 <Text style={styles.orText}>OR</Text>
               </View>
               
-              <TouchableOpacity style={styles.card} onPress={() => onCardComparisonPress(false)}>
-                <Text style={styles.itemContent}>
+              <TouchableOpacity style={[
+                styles.card,
+                {
+                  borderColor: isDarkMode ? darkTheme?.border : 'lightgray',
+                  backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+                }
+              ]} onPress={() => onCardComparisonPress(false)}>
+                <Text style={[
+                  styles.itemContent,
+                  { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+                ]}>
                   {itemComparisons[binarySearchM].content.length > 30 ? itemComparisons[binarySearchM].content.slice(0, 30) + '...' : itemComparisons[binarySearchM].content}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
                   {itemComparisons[binarySearchM].image && (
                     <Image
                       source={{ uri: itemComparisons[binarySearchM].image }}
-                      style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                      style={{
+                        height: 40, 
+                        width: 40, 
+                        borderWidth: 0.5, 
+                        marginRight: 10, 
+                        borderRadius: 5, 
+                        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+                      }}
                     />
                   )}
                   <View style={{
@@ -1118,13 +1295,22 @@ const Add = ({ route }) => {
             </View>
             <View style={styles.actionsContainer}>
               <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionText}>      </Text>
+                <Text style={[
+                  styles.actionText,
+                  { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+                ]}>      </Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButton} onPress={() => onTooToughPress()}>
-                <Text style={styles.actionText}>Too Tough</Text>
+                <Text style={[
+                  styles.actionText,
+                  { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+                ]}>Too Tough</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButton} onPress={() => onSkipPress()}>
-                <Text style={styles.actionText}>Skip</Text>
+                <Text style={[
+                  styles.actionText,
+                  { color: isDarkMode ? darkTheme?.textPrimary : 'black' }
+                ]}>Skip</Text>
               </TouchableOpacity>
             </View>
           </View>

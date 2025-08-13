@@ -10,8 +10,42 @@ import RNPickerSelect from 'react-native-picker-select';
 import { emailSchoolMap, schoolIdMap } from '../consts';
 import { largerCategories, notIncludedCategories } from '../consts';
 
+// Dark mode theme colors
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
 
-const Groups = ({ route, navigation }) => {
+
+const Groups = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
   const { userKey } = route.params;
   const [groupType, setGroupType] = useState('Global');
   const [chips, setChips] = useState([]); // &&&
@@ -117,8 +151,19 @@ const Groups = ({ route, navigation }) => {
   const Chip = ({chipInfo}) => {
     const chip = chipInfo[0];
     return (
-      <TouchableOpacity onPress={() => onCategorySwitch(chip)} style={{ backgroundColor:  chip === leaderboardCategory ? 'black' : 'lightgrey', height: 30, paddingHorizontal: 10, borderRadius: 20, marginRight: 8, justifyContent: 'center' }}>
-        <Text style={{ color: chip === leaderboardCategory ? 'white' : 'black', fontWeight: 'bold', fontSize: 14 }}>{chip}</Text>
+      <TouchableOpacity onPress={() => onCategorySwitch(chip)} style={{ 
+        backgroundColor: chip === leaderboardCategory ? (isDarkMode ? darkTheme?.textPrimary : 'black') : (isDarkMode ? darkTheme?.border : 'lightgrey'), 
+        height: 30, 
+        paddingHorizontal: 10, 
+        borderRadius: 20, 
+        marginRight: 8, 
+        justifyContent: 'center' 
+      }}>
+        <Text style={{ 
+          color: chip === leaderboardCategory ? (isDarkMode ? darkTheme?.background : 'white') : (isDarkMode ? darkTheme?.textPrimary : 'black'), 
+          fontWeight: 'bold', 
+          fontSize: 14 
+        }}>{chip}</Text>
       </TouchableOpacity>
     )
   }
@@ -127,20 +172,49 @@ const Groups = ({ route, navigation }) => {
     return (
       // the conditional in the onPress is necessary to not click on your own profile
       <TouchableOpacity onPress={() => userKey === item.key ? {} : setGroupView({userKey: item.key, username: item.username })}>
-        <View style={{ flexDirection: 'row', padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, backgroundColor: 'white', alignItems: 'center' }}>
-          <Text style={{ color: 'black', marginRight: 20, fontWeight: 'bold', fontSize: 16 }}>{index + 1}</Text>
+        <View style={{ 
+          flexDirection: 'row', 
+          padding: 10, 
+          borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          borderBottomWidth: 1, 
+          backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
+          alignItems: 'center' 
+        }}>
+          <Text style={{ 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            marginRight: 20, 
+            fontWeight: 'bold', 
+            fontSize: 16 
+          }}>{index + 1}</Text>
           <Image
             source={item.profile_pic ? { uri: item.profile_pic } : 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-            style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 20, borderColor: 'lightgrey' }}
+            style={{
+              height: 40, 
+              width: 40, 
+              borderWidth: 0.5, 
+              marginRight: 10, 
+              borderRadius: 20, 
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+            }}
           />
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+              <Text style={{ 
+                fontWeight: 'bold', 
+                fontSize: 16,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
+              }}>{item.name}</Text>
               {item.user_type === 'verified' && <MaterialIcons name="verified" size={16} color="#00aced" style={{ marginLeft: 5 }}/>}
             </View>
-            <Text style={{ color: 'grey' }}>@{item.username}</Text>
+            <Text style={{ color: isDarkMode ? darkTheme?.textSecondary : 'grey' }}>@{item.username}</Text>
           </View>
-          <Text style={{ color: 'black', marginLeft: 'auto', marginRight: 10, fontWeight: 'bold', fontSize: 16 }}>{item.map[leaderboardCategory]}</Text>
+          <Text style={{ 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            marginLeft: 'auto', 
+            marginRight: 10, 
+            fontWeight: 'bold', 
+            fontSize: 16 
+          }}>{item.map[leaderboardCategory]}</Text>
         </View>
       </TouchableOpacity>
     )
@@ -160,7 +234,7 @@ const Groups = ({ route, navigation }) => {
     )
   }
 
-  onSchoolPress = (schoolId) => {
+  const onSchoolPress = (schoolId) => {
     const userRef = ref(database, 'users/' + userKey);
     update(userRef, {
       school: schoolId,
@@ -170,15 +244,69 @@ const Groups = ({ route, navigation }) => {
   }
 
   return (
-    <View style={{ backgroundColor: 'white', height: '100%' }}>
-      <View style={{ padding: 20, flexDirection: 'row', alignItems: 'center', width: '100%', paddingBottom: 10, justifyContent: 'space-evenly', borderColor: 'lightgrey', borderBottomWidth: 0.5 }}>
+    <View style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white', height: '100%' }}>
+      <View style={{ 
+        padding: 20, 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        width: '100%', 
+        paddingBottom: 10, 
+        justifyContent: 'space-evenly', 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+        borderBottomWidth: 0.5 
+      }}>
         <TouchableOpacity onPress={() => {setGroupType('Global');}} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="earth" size={24} color="black" style={groupType === 'Global' ? { color: 'black', fontSize: 24, fontWeight: 'bold', marginRight: 5 } : { color: 'gray', fontSize: 20, fontWeight: 'bold', marginRight: 5 }}/>
-          <Text style={groupType === 'Global' ? { color: 'black', fontSize: 18, fontWeight: 'bold' } : { color: 'gray', fontSize: 16, fontWeight: 'bold' }}>Global</Text>
+          <Ionicons 
+            name="earth" 
+            size={24} 
+            color={isDarkMode ? darkTheme?.textPrimary : 'black'} 
+            style={groupType === 'Global' ? { 
+              color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+              fontSize: 24, 
+              fontWeight: 'bold', 
+              marginRight: 5 
+            } : { 
+              color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+              fontSize: 20, 
+              fontWeight: 'bold', 
+              marginRight: 5 
+            }}
+          />
+          <Text style={groupType === 'Global' ? { 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            fontSize: 18, 
+            fontWeight: 'bold' 
+          } : { 
+            color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+            fontSize: 16, 
+            fontWeight: 'bold' 
+          }}>Global</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {setGroupType('School');}} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="school" color="black" style={groupType === 'School' ? { color: 'black', fontSize: 24, fontWeight: 'bold', marginRight: 5 } : { color: 'gray', fontSize: 20, fontWeight: 'bold', marginRight: 5 }}/>
-          <Text style={groupType === 'School' ? { color: 'black', fontSize: 18, fontWeight: 'bold' } : { color: 'gray', fontSize: 16, fontWeight: 'bold' }}>School</Text>
+          <Ionicons 
+            name="school" 
+            color={isDarkMode ? darkTheme?.textPrimary : 'black'} 
+            style={groupType === 'School' ? { 
+              color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+              fontSize: 24, 
+              fontWeight: 'bold', 
+              marginRight: 5 
+            } : { 
+              color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+              fontSize: 20, 
+              fontWeight: 'bold', 
+              marginRight: 5 
+            }}
+          />
+          <Text style={groupType === 'School' ? { 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            fontSize: 18, 
+            fontWeight: 'bold' 
+          } : { 
+            color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+            fontSize: 16, 
+            fontWeight: 'bold' 
+          }}>School</Text>
         </TouchableOpacity>
       </View>
 
@@ -204,9 +332,22 @@ const Groups = ({ route, navigation }) => {
         <>
         {school ? (
           <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, padding: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1 }}>
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              paddingHorizontal: 10, 
+              padding: 10, 
+              borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+              borderBottomWidth: 1,
+              backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+            }}>
               <Image source={{ uri: schoolIdMap[school].image }} style={{ width: 40, height: 40 }}/>
-              <Text style={{ color: 'black', fontSize: 20, marginLeft: 5, fontWeight: 'bold' }}>{schoolIdMap[school].name}</Text>
+              <Text style={{ 
+                color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+                fontSize: 20, 
+                marginLeft: 5, 
+                fontWeight: 'bold' 
+              }}>{schoolIdMap[school].name}</Text>
             </View>
             <FlatList
               data={chips}
@@ -226,43 +367,62 @@ const Groups = ({ route, navigation }) => {
           </View>
         ) : (
           <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-            <View style={{ flex: 1, alignItems: 'center', marginTop: '30%' }}>
+            <View style={{ 
+              flex: 1, 
+              alignItems: 'center', 
+              marginTop: '30%',
+              backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+            }}>
               {/* <Text style={{ color: 'gray', fontSize: 20, marginBottom: 30 }}>Coming Soon! 📚</Text> */}
               <View style={{ width: '80%' }}>
-                <Text style={{ color: 'black', fontSize: 20, marginBottom: 30 }}>Enter Your School Email 📚</Text>
+                <Text style={{ 
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+                  fontSize: 20, 
+                  marginBottom: 30 
+                }}>Enter Your School Email 📚</Text>
               </View>
               <TextInput
                 placeholder="school email"
                 value={schoolEmail}
                 onChangeText={setSchoolEmail}
-                placeholderTextColor={'gray'}
+                placeholderTextColor={isDarkMode ? darkTheme?.textSecondary : 'gray'}
                 style={{ 
                   width: '80%', 
                   fontSize: 16, 
-                  borderColor: 'black', 
+                  borderColor: isDarkMode ? darkTheme?.textPrimary : 'black', 
                   borderBottomWidth: 0.5, 
                   marginTop: 20,
                   padding: 10,
-                  letterSpacing: 1
+                  letterSpacing: 1,
+                  color: isDarkMode ? darkTheme?.textPrimary : 'black'
                 }}
               />
 
               {schoolEmail && emailSchoolMap[schoolEmail.split('@')[1] ? schoolEmail.split('@')[1] : ''] && (
                 <>
-                <Text style={{ color: 'gray', fontSize: 16, marginTop: 50 }}>Select a School</Text>
+                <Text style={{ 
+                  color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+                  fontSize: 16, 
+                  marginTop: 50 
+                }}>Select a School</Text>
                 <FlatList
                   data={emailSchoolMap[schoolEmail.split('@')[1]].schools}
                   renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => onSchoolPress(item.id)} style={{ 
                       flexDirection: 'row', 
                       padding: 10, 
-                      borderBottomColor: 'lightgrey', 
+                      borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
                       borderBottomWidth: 1, 
                       alignItems: 'center',
-                      width: 350 
+                      width: 350,
+                      backgroundColor: isDarkMode ? darkTheme?.background : 'white'
                     }}>
                       <Image source={{ uri: item.image }} style={{ width: 40, height: 40 }}/>
-                      <Text style={{ color: 'black', fontSize: 18, marginLeft: 10 }}>{item.name}</Text>
+                      <Text style={{ 
+                        color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+                        fontSize: 18, 
+                        marginLeft: 10 
+                      }}>{item.name}</Text>
                     </TouchableOpacity>
                   )}
                   keyExtractor={(item, index) => index.toString()}

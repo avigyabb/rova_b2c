@@ -46,7 +46,7 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey }) => {
+const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey, isDarkMode=false, darkTheme=null }) => {
   const [listView, setListView] = useState('now');
   const [listData, setListData] = useState(focusedList);
   const [editMode, setEditMode] = useState(false);
@@ -224,7 +224,13 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
     return (
       <TouchableOpacity onPress={() => onItemPress(item_key)}>
-        <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
+        <View style={{ 
+          paddingVertical: 10, 
+          borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          borderBottomWidth: 1, 
+          alignItems: 'center',
+          backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+        }}>
           <View style={{ flexDirection: 'row', paddingHorizontal: editMode && 10 }}>
             {editMode && (
               <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
@@ -232,12 +238,23 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               </TouchableOpacity>
             )}
             <View style={{ width: '85%' }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 16.5 }}>{index + 1}) {item.content}</Text>
+              <Text style={{ 
+                fontWeight: 'bold', 
+                fontSize: 16.5,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
+              }}>{index + 1}) {item.content}</Text>
               <View style={{ flexDirection: 'row', marginTop: 10, }}>
                 {item.image && (
                   <Image
                     source={{ uri: item.image }}
-                    style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                    style={{
+                      height: 40, 
+                      width: 40, 
+                      borderWidth: 0.5, 
+                      marginRight: 10, 
+                      borderRadius: 5, 
+                      borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+                    }}
                   />
                 )}
                 {item.description && item.description.length > 0 && (
@@ -248,7 +265,10 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                     style={{ flex: 1 }}
                   >
                   <View style={{ width: 250 }}>
-                    <Text style={{ color: 'grey', fontSize: 16 }}>
+                    <Text style={{ 
+                      color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+                      fontSize: 16 
+                    }}>
                       {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
                     </Text>
                   </View>
@@ -258,11 +278,37 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             </View>
             { !editMode && (
               <View>
-                <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-                  <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
+                <View style={[
+                  styles.listTileScore, 
+                  { 
+                    borderColor: scoreColor, 
+                    marginLeft: 'auto',
+                    shadowColor: isDarkMode ? '#000' : scoreColor,
+                    shadowOffset: {
+                      width: 0,
+                      height: 2,
+                    },
+                    shadowOpacity: isDarkMode ? 0.3 : 0.2,
+                    shadowRadius: 4,
+                    elevation: isDarkMode ? 4 : 2,
+                  }
+                ]}>
+                  <Text style={{ 
+                    color: scoreColor, 
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    textShadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
                 </View>
                 { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryInfo.category_type !== "" && (
-                  <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 
+                  <MaterialIcons 
+                    name="playlist-add-check-circle" 
+                    size={20} 
+                    color={isDarkMode ? darkTheme?.textSecondary : "gray"} 
+                    style={{ marginLeft: 'auto', marginTop: 'auto' }} 
+                  /> 
                 )}
               </View>
             )}
@@ -461,11 +507,23 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   if (categoryListView === 'Similarity Score') {
     return (
       <>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        padding: 10, 
+        borderBottomWidth: 1, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+      }}>
         <TouchableOpacity onPress={() => setCategoryListView(null)}> 
-          <Ionicons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Similarity Score</Text>
+        <Text style={{ 
+          fontSize: 15, 
+          fontWeight: 'bold',
+          color: isDarkMode ? darkTheme?.textPrimary : 'black'
+        }}>Similarity Score</Text>
       </View>
       <CategoryComparison onContinuePress={() => setCategoryListView(null)} userCategories={visitingUserCategories} curListData={listData['now']} curListInfo={categoryInfo}/>
       </>
@@ -474,13 +532,23 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
   if (focusedItem) {
     return (
-      <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View style={{ 
+        flex: 1, 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+      }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        padding: 10, 
+        borderBottomWidth: 1, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+        justifyContent: 'space-between', 
+        alignItems: 'center' 
+      }}>
         <TouchableOpacity onPress={() => {
           setFocusedItem(null)
           setEditMode(false)
         }}> 
-          <Ionicons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
         </TouchableOpacity>
         {editMode && (
           <>
@@ -495,15 +563,26 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         
         {editMode ? (
           <TouchableOpacity onPress={() => onEditPress()}>
-            <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Done</Text>
+            <Text style={{ 
+              fontSize: 15, 
+              fontWeight: 'bold',
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>Done</Text>
           </TouchableOpacity>
         ) : isMyProfile ? (
           <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity onPress={() => onRerankItemPress()}>
-            <Text style={{ fontSize: 15, marginRight: 30 }}>Rerank</Text>
+            <Text style={{ 
+              fontSize: 15, 
+              marginRight: 30,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>Rerank</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => onEditPress()}>
-            <Text style={{ fontSize: 15 }}>Edit</Text>
+            <Text style={{ 
+              fontSize: 15,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>Edit</Text>
           </TouchableOpacity>
           </View>
         ) : (
@@ -530,16 +609,29 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', alignItems: 'center' }}>
+    <View style={{ 
+      flex: 1, 
+      backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+    }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        padding: 10, 
+        borderBottomWidth: 1, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+        alignItems: 'center' 
+      }}>
   <TouchableOpacity onPress={onBackPress}> 
-    <Ionicons name="arrow-back" size={30} color="black" />
+    <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
   </TouchableOpacity>
   
   <View style={{ flex: 1, alignItems: 'center', position: 'absolute', left: 0, right: 0 }}>
     {editMode ? (
       <TouchableOpacity onPress={() => onDeleteCategoryPress()}>
-        <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
+        <Text style={{ 
+          fontSize: 15, 
+          fontWeight: 'bold', 
+          color: 'red' 
+        }}>Delete {focusedCategory}</Text>
       </TouchableOpacity>
     ) : (
       <Text style={{ fontSize: 15, fontWeight: 'bold' }}></Text>
@@ -549,15 +641,27 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   <View style={{ flexDirection: 'row', marginLeft: 'auto' }}>
     {!editMode && !isMyProfile && (
       <TouchableOpacity onPress={() => setCategoryListView('Similarity Score')}>
-        <Text style={{ fontSize: 15 }}>Compare</Text>
+        <Text style={{ 
+          fontSize: 15,
+          color: isDarkMode ? darkTheme?.textPrimary : 'black'
+        }}>Compare</Text>
       </TouchableOpacity>
     )}
     
     <TouchableOpacity onPress={() => onEditPress()}>
       {editMode ? (
-        <Text style={{ fontSize: 15, fontWeight: 'bold', marginLeft: 25 }}>Done</Text>
+        <Text style={{ 
+          fontSize: 15, 
+          fontWeight: 'bold', 
+          marginLeft: 25,
+          color: isDarkMode ? darkTheme?.textPrimary : 'black'
+        }}>Done</Text>
       ) : isMyProfile ? ( // change this variable to true to delete other people's comments
-        <Text style={{ fontSize: 15, marginLeft: 25 }}>Edit</Text>
+        <Text style={{ 
+          fontSize: 15, 
+          marginLeft: 25,
+          color: isDarkMode ? darkTheme?.textPrimary : 'black'
+        }}>Edit</Text>
       ) : (
         <></>
       )}
@@ -566,23 +670,46 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 </View>
 
       
-      <ScrollView>
+      <ScrollView style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
       <View style={{ padding: 10 }}>
         {editMode ? (
           <>
           {categoryImage ? (
             <Image
               source={{ uri: categoryImage }}
-              style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
+              style={[
+                styles.addedImages, 
+                {
+                  height: 150, 
+                  width: 150, 
+                  borderWidth: 0.5, 
+                  marginRight: 10,
+                  borderColor: isDarkMode ? darkTheme?.border : 'gray'
+                }
+              ]}
             />
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-                <Ionicons name="image" size={40} color="gray" />
-                <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
+            <TouchableOpacity onPress={pickImage} style={[
+              styles.addedImages,
+              { borderColor: isDarkMode ? darkTheme?.border : 'gray' }
+            ]}>
+                <Ionicons name="image" size={40} color={isDarkMode ? darkTheme?.textSecondary : "gray"} />
+                <Text style={{ 
+                  marginTop: 4, 
+                  fontWeight: 'bold', 
+                  fontSize: 12, 
+                  color: isDarkMode ? darkTheme?.textSecondary : 'gray' 
+                }}>Edit Image</Text>
             </TouchableOpacity>
             {presetImage && (
-              <TouchableOpacity style={{ marginLeft: 20, borderColor: 'red', padding: 5, borderWidth: 1, borderRadius: 5}} onPress={() => removePresetImage(focusedCategoryId)}>
+              <TouchableOpacity style={{ 
+                marginLeft: 20, 
+                borderColor: 'red', 
+                padding: 5, 
+                borderWidth: 1, 
+                borderRadius: 5
+              }} onPress={() => removePresetImage(focusedCategoryId)}>
                 <Text style={{ fontWeight: 'bold', fontSize: 12, color: 'red' }}>Remove Preset Image</Text>
               </TouchableOpacity>
             )}
@@ -600,9 +727,10 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               fontWeight: 'bold', 
               fontSize: 30, 
               fontStyle: 'italic',
-              borderColor: 'lightgrey',
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
               borderBottomWidth: 1,
-              paddingBottom: 5
+              paddingBottom: 5,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
             }}
           />
           <TextInput
@@ -617,9 +745,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             maxHeight={150} // this height seemed okay to me, but feel free to make it bigger / smaller
             scrollEnabled={true}
             style={{ 
-              color: 'gray', 
+              color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
               marginVertical: 10,
-              borderColor: 'lightgrey',
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
               borderBottomWidth: 1,
               paddingBottom: 5
             }}
@@ -627,21 +755,56 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           </>
         ) : (
           <>
-          <Text style={{ fontWeight: 'bold', fontSize: 30, fontStyle: 'italic', padding: 1 }}>{categoryInfo.category_name}</Text>
-          <Text style={{ color: 'gray', marginVertical: 10 }}>{categoryInfo.category_description}</Text>
+          <Text style={{ 
+            fontWeight: 'bold', 
+            fontSize: 30, 
+            fontStyle: 'italic', 
+            padding: 1,
+            color: isDarkMode ? darkTheme?.textPrimary : 'black'
+          }}>{categoryInfo.category_name}</Text>
+          <Text style={{ 
+            color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+            marginVertical: 10 
+          }}>{categoryInfo.category_description}</Text>
           </>
         )}
       </View>
 
-      <View style={{ flexDirection: 'row', borderBottomWidth: 0.5, borderTopWidth: 0.5, borderColor: 'lightgrey' }}>
-        <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'now' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        borderBottomWidth: 0.5, 
+        borderTopWidth: 0.5, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+      }}>
+        <View style={{ 
+          width: '50%', 
+          alignItems: 'center', 
+          padding: 8, 
+          borderBottomColor: listView === 'now' ? (isDarkMode ? darkTheme?.textPrimary : 'black') : 'transparent', 
+          borderBottomWidth: 2 
+        }}>
           <TouchableOpacity onPress={() => onIconViewPress()}>
-            <Ionicons name="podium" size={listView === 'now' ? 32 : 30} color={listView === 'now' ? 'black' : 'gray'} />
+            <Ionicons 
+              name="podium" 
+              size={listView === 'now' ? 32 : 30} 
+              color={listView === 'now' ? (isDarkMode ? darkTheme?.textPrimary : 'black') : (isDarkMode ? darkTheme?.textSecondary : 'gray')} 
+            />
           </TouchableOpacity>
         </View>
-        <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'later' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
+        <View style={{ 
+          width: '50%', 
+          alignItems: 'center', 
+          padding: 8, 
+          borderBottomColor: listView === 'later' ? (isDarkMode ? darkTheme?.textPrimary : 'black') : 'transparent', 
+          borderBottomWidth: 2 
+        }}>
           <TouchableOpacity onPress={() => onIconViewPress()}>
-            <Ionicons name="bookmarks" size={listView === 'later' ? 30 : 28} color={listView === 'later' ? 'black' : 'gray'} />
+            <Ionicons 
+              name="bookmarks" 
+              size={listView === 'later' ? 30 : 28} 
+              color={listView === 'later' ? (isDarkMode ? darkTheme?.textPrimary : 'black') : (isDarkMode ? darkTheme?.textSecondary : 'gray')} 
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -652,23 +815,31 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           placeholder={'Search Items...'}
           value={searchVal} 
           onChangeText={setSearchVal}
-          placeholderTextColor="gray"
+          placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
           style={{ 
             fontSize: 16, 
-            borderColor: 'lightgrey',
+            borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
             borderWidth: 0.5,
             borderRadius: 30,
             padding: 10,
             marginRight: 10,
             marginLeft: 10,
             paddingHorizontal: 20,
-            marginVertical: 15
+            marginVertical: 15,
+            color: isDarkMode ? darkTheme?.textPrimary : 'black',
+            backgroundColor: isDarkMode ? darkTheme?.inputBackground : 'white'
           }}
         />          
         {memoizedList}
         </>
       ) : (
-        <Text style={{ textAlign: 'center', fontWeight: 'bold', color: 'gray', fontSize: 16, marginTop: '50%' }}>Add items to see your rankings... 😶‍🌫️</Text>
+        <Text style={{ 
+          textAlign: 'center', 
+          fontWeight: 'bold', 
+          color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+          fontSize: 16, 
+          marginTop: '50%' 
+        }}>Add items to see your rankings... 😶‍🌫️</Text>
       )}
       </ScrollView>
     </View>

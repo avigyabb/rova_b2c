@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, TextInput, SafeAreaView, Alert, ImageBackground } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 
 const styles = StyleSheet.create({
   tile: {
@@ -24,8 +25,18 @@ const styles = StyleSheet.create({
   }
 })
 
-const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fromPage }) => {
+const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fromPage, isDarkMode=false, darkTheme=null }) => {
   console.log(imageUri)
+  
+  // Check if imageUri is valid (not null, undefined, empty, or just whitespace)
+  // Also check if it's not a Google API URL since we're no longer using Google API
+  const hasValidImage = imageUri && 
+    imageUri.trim() !== '' && 
+    imageUri !== 'null' && 
+    imageUri !== 'undefined' &&
+    !imageUri.includes('googleapis.com') &&
+    !imageUri.includes('google.com');
+  
   return (
     <TouchableOpacity style={fromPage === 'Add' ? styles.tile2 : fromPage === 'PickCategory' ? styles.tile3 : styles.tile } onPress={() => onCategoryPress()}>
       <View style={{
@@ -33,23 +44,42 @@ const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fro
         height: '100%', // Adjust these values as needed
         position: 'relative', // This allows the overlay to be absolutely positioned within
       }}>
-        <Image
-          source={{ uri: imageUri }}
-          style={{
-            width: '100%',
-            height: '100%',
-            position: 'absolute', // Positions the image to fill the parent
-          }}
-          resizeMode="cover"
-        />
+        {hasValidImage ? (
+          <Image
+            source={{ uri: imageUri }}
+            style={{
+              width: '100%',
+              height: '100%',
+              position: 'absolute', // Positions the image to fill the parent
+            }}
+            resizeMode="cover"
+          />
+        ) : (
+          // Default image when no image is available
+          <Image
+            source={require('../../assets/images/amboraicon.png')}
+            style={{
+              width: '100%',
+              height: '100%',
+              position: 'absolute',
+            }}
+            resizeMode="cover"
+          />
+        )}
         <View style={{
           ...StyleSheet.absoluteFillObject,
-          backgroundColor: 'rgba(0,0,0,0.4)',
+          backgroundColor: hasValidImage ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.2)',
           justifyContent: 'flex-end', // Aligns child content to the bottom
           padding: 10, // Adjust or remove padding as needed
         }}>
           { num_items >= 0 && (
-            <Text style={{ marginLeft: 'auto', color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 'auto' }}>{num_items}</Text>
+            <Text style={{ 
+              marginLeft: 'auto', 
+              color: 'white', 
+              fontWeight: 'bold', 
+              fontSize: 18, 
+              marginBottom: 'auto' 
+            }}>{num_items}</Text>
           )}
           <Text style={{
             color: 'white', // Ensures the text is visible against a dark background

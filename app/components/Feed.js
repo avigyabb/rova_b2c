@@ -16,7 +16,40 @@ import qs from 'qs';
 import { Buffer } from 'buffer';
 import * as AuthSession from 'expo-auth-session';
 import moment from 'moment';
-import { useTheme } from '../context/ThemeContext';
+
+// Dark mode theme colors
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
 
 const styles = StyleSheet.create({
   timesText: {
@@ -52,8 +85,8 @@ const useSpotifyAuth = (clientId, redirectUri) => {
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const Feed = ({ route, navigation }) => {
-  const { colors } = useTheme();
+const Feed = ({ route, navigation, isDarkMode=false, darkTheme=null }) => {
+
   const [profileInfo, setProfileInfo] = useState({});
   const [listData, setListData] = useState([]);
   const [feedView, setFeedView] = useState(null);
@@ -93,7 +126,7 @@ const Feed = ({ route, navigation }) => {
             return snapshot0.val().feedType === 'customDescription' ? value?.custom ?? true : true;
           })
           .map(([key, value]) => ({ key, ...value }));
-          setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp));
+          setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
         }
         setRefreshed(false);
       }).catch((error) => {
@@ -126,7 +159,7 @@ const Feed = ({ route, navigation }) => {
           if (inner_snapshot.exists()) {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
             const filteredData = tempListData.filter(item => followingList.includes(item.user_id));
-            setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
+            setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
           }
           setRefreshed(false);
         }).catch((error) => {
@@ -164,10 +197,10 @@ const Feed = ({ route, navigation }) => {
           .map(([key, value]) => ({ key, ...value }))
           .sort((a, b) => ((b.likes ? Object.keys(b.likes).length : 0) + (b.dislikes ? Object.keys(b.dislikes).length : 0)) - ((a.likes ? Object.keys(a.likes).length : 0) + (a.dislikes ? Object.keys(a.dislikes).length : 0)));
 
-        tempListData['Past Hour'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo)
-        tempListData['Past Day'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo)
-        tempListData['Past Week'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo)
-        tempListData['All Time'] = tempListDataSorted
+        tempListData['Past Hour'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo).slice(0, 30)
+        tempListData['Past Day'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo).slice(0, 30)
+        tempListData['Past Week'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo).slice(0, 30)
+        tempListData['All Time'] = tempListDataSorted.slice(0, 30)
         // console.log(tempListData)
         setListData(tempListData);
       }
@@ -260,7 +293,7 @@ const Feed = ({ route, navigation }) => {
     }
   }, [response]);
 
-  const NotificationsTile = ({ item, visitingUserId }) => {
+  const NotificationsTile = ({ item, visitingUserId, isDarkMode=false, darkTheme=null }) => {
     const [userInfo, setUserInfo] = useState({});
     const [isFollowingBack, setIsFollowingBack] = useState(false);
     const [isLoadingFollowBack, setIsLoadingFollowBack] = useState(true);
@@ -326,28 +359,59 @@ const Feed = ({ route, navigation }) => {
     }
 
     return (
-      <View style={{ width: '95%', flexDirection: 'row', padding: 10 }}>
+      <View style={{ 
+        width: '95%', 
+        flexDirection: 'row', 
+        padding: 10,
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+      }}>
         <TouchableOpacity onPress={() => {
           setFeedView({ userKey: item.evokerId, username: userInfo.username });
           setNotifications(null);
         }}>
           <Image
             source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-            style={{ height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            style={{ 
+              height: 30, 
+              width: 30, 
+              borderWidth: 0.5, 
+              marginRight: 10, 
+              borderRadius: 15, 
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+            }}
           />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row' }}>
-            <Text style={{ fontSize: 15, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
+            <Text style={{ 
+              fontSize: 15, 
+              fontWeight: 'bold', 
+              marginRight: 20,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>{userInfo.name}</Text>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 15, marginTop: 5, flexShrink: 1 }}>{item.content} <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text></Text>
+            <Text style={{ 
+              fontSize: 15, 
+              marginTop: 5, 
+              flexShrink: 1,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>{item.content} <Text style={{ 
+              color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+              fontSize: 10 
+            }}>{realDateStr}</Text></Text>
             {item.content.includes('follow') ? (
               <>
               {isLoadingFollowBack ? (
-                <ActivityIndicator size="medium" color="black" style={{ marginTop: 20 }} />
+                <ActivityIndicator size="medium" color={isDarkMode ? darkTheme?.textPrimary : "black"} style={{ marginTop: 20 }} />
               ) : (
-                <TouchableOpacity style={{ backgroundColor: isFollowingBack ? 'gray' : '#00aced', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 5, alignSelf: 'flex-end' }} onPress={handleFollowBack} disabled={isFollowingBack}>
+                <TouchableOpacity style={{ 
+                  backgroundColor: isFollowingBack ? 'gray' : '#00aced', 
+                  paddingVertical: 5, 
+                  paddingHorizontal: 10, 
+                  borderRadius: 5, 
+                  alignSelf: 'flex-end' 
+                }} onPress={handleFollowBack} disabled={isFollowingBack}>
                   <Text style={{ color: 'white', fontWeight: 'bold' }}>
                     {isFollowingBack ? 'Friends' : 'Follow Back'}
                   </Text>
@@ -372,20 +436,40 @@ const Feed = ({ route, navigation }) => {
 
   if (notifications) {
     return (
-      <View style={{ backgroundColor: 'white', height: '100%' }}>
-        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+      <View style={{ 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
+        height: '100%' 
+      }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          padding: 10, 
+          borderBottomWidth: 1, 
+          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+        }}>
           <TouchableOpacity onPress={() => {
             setNotifications(null)
             setFeedType('For You')
             getListData();
           }}> 
-            <Ionicons name="arrow-back" size={30} color="black" />
+            <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Notifications</Text>
+          <Text style={{ 
+            fontSize: 20, 
+            fontWeight: 'bold',
+            color: isDarkMode ? darkTheme?.textPrimary : 'black'
+          }}>Notifications</Text>
         </View>
         <FlatList
           data={notifications}
-          renderItem={({ item}) => <NotificationsTile item={item} visitingUserId={userKey}/>}
+          renderItem={({ item}) => <NotificationsTile 
+            item={item} 
+            visitingUserId={userKey}
+            isDarkMode={isDarkMode}
+            darkTheme={darkTheme}
+          />}
         />
       </View>
     )
@@ -393,16 +477,33 @@ const Feed = ({ route, navigation }) => {
 
   if (focusedItem) {
     return (
-      <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View style={{ 
+        flex: 1, 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+      }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        padding: 10, 
+        borderBottomWidth: 1, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+        justifyContent: 'space-between', 
+        alignItems: 'center' 
+      }}>
         <TouchableOpacity onPress={() => {
           setFocusedItem(null)
         }}> 
-          <Ionicons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
         </TouchableOpacity>
   
       </View>
-      <NormalItemTile item={focusedItem} visitingUserId={userKey} navigation={navigation} showComments={true}/>
+      <NormalItemTile 
+        item={focusedItem} 
+        visitingUserId={userKey} 
+        navigation={navigation} 
+        showComments={true}
+        isDarkMode={isDarkMode}
+        darkTheme={darkTheme}
+      />
       </View>
     );
   }
@@ -414,17 +515,39 @@ const Feed = ({ route, navigation }) => {
     }
 
     return (
-      <View style={{ backgroundColor: 'black', height: '100%' }}>
-        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+      <View style={{ 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'black', 
+        height: '100%' 
+      }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          padding: 10, 
+          borderBottomWidth: 1, 
+          borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+        }}>
           <TouchableOpacity onPress={() => {
             setItemInfo(null) 
             setFeedType('For You')
             getListData();
           }}> 
-            <Ionicons name="arrow-back" size={30} color="black" />
+            <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
           </TouchableOpacity>
         </View>
-        <NormalItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync}/>
+        <NormalItemTile 
+          item={itemInfo} 
+          visitingUserId={userKey} 
+          navigation={navigation} 
+          editMode={false} 
+          showComments={true} 
+          setFeedView={onBackPress} 
+          individualSpotifyAccessToken={individualSpotifyAccessToken} 
+          promptAsync={promptAsync}
+          isDarkMode={isDarkMode}
+          darkTheme={darkTheme}
+        />
       </View>
     );
   }
@@ -444,65 +567,179 @@ const Feed = ({ route, navigation }) => {
   }
 
   return (
-    <View style={{ backgroundColor: colors.background, height: '100%' }}>
-      <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20, justifyContent: 'space-between', }}>
+          <View style={{ 
+            backgroundColor: isDarkMode ? darkTheme?.background : 'white', 
+            height: '100%' 
+          }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        marginTop: 10, 
+        alignItems: 'center', 
+        width: '100%', 
+        paddingHorizontal: 20, 
+        justifyContent: 'space-between' 
+      }}>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
           {profileInfo && profileInfo.profile_pic ? (
             <Image
               source={{ uri: profileInfo.profile_pic }}
-              style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: colors.border }}
+              style={{
+                height: 30, 
+                width: 30, 
+                borderWidth: 0.5, 
+                borderRadius: 15, 
+                borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+              }}
             />
           ) : (
             <Image
               source={'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-              style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: colors.border }}
+              style={{
+                height: 30, 
+                width: 30, 
+                borderWidth: 0.5, 
+                borderRadius: 15, 
+                borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+              }}
             />
           )}
         </TouchableOpacity>
-        <Text style={{ color: colors.text, fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+        <Text style={{ 
+          color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+          fontSize: 24, 
+          fontFamily: 'Poppins Regular' 
+        }}>ambora\social</Text>
         <TouchableOpacity onPress={() => getNotifications()}>
           {profileInfo.unreadNotifications ? (
-            <Ionicons name="notifications-sharp" size={28} color={colors.error}/>
+            <Ionicons name="notifications-sharp" size={28} color="red"/>
           ) : (
-            <Ionicons name="notifications-outline" size={28} color={colors.textSecondary}/>
+            <Ionicons name="notifications-outline" size={28} color={isDarkMode ? darkTheme?.textSecondary : "grey"}/>
           )}
         </TouchableOpacity>
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', padding: 20, justifyContent: 'space-evenly', borderColor: colors.border, borderBottomWidth: 0.5 }}>
+              <View style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                width: '100%', 
+                padding: 20, 
+                justifyContent: 'space-evenly', 
+                borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+                borderBottomWidth: 0.5 
+              }}>
         <TouchableOpacity onPress={() => {
           setFeedType('Top Posts')
           getTopPostsListData();
         }}>
-          <Text style={feedType === 'Top Posts' ? { color: colors.text, fontSize: 16, fontWeight: 'bold' } : { color: colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>Top Posts</Text>
+          <Text style={feedType === 'Top Posts' ? { 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            fontSize: 16, 
+            fontWeight: 'bold' 
+          } : { 
+            color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+            fontSize: 14, 
+            fontWeight: 'bold' 
+          }}>Top Posts</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {
           setFeedType('For You')
           getListData();
         }}>
-          <Text style={feedType === 'For You' ? { color: colors.text, fontSize: 16, fontWeight: 'bold' } : { color: colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>For You</Text>
+          <Text style={feedType === 'For You' ? { 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            fontSize: 16, 
+            fontWeight: 'bold' 
+          } : { 
+            color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+            fontSize: 14, 
+            fontWeight: 'bold' 
+          }}>For You</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {
           setFeedType('Following')
           getFollowingListData();
         }}>
-          <Text style={feedType === 'Following' ? { color: colors.text, fontSize: 16, fontWeight: 'bold' } : { color: colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>Following</Text>
+          <Text style={feedType === 'Following' ? { 
+            color: isDarkMode ? darkTheme?.textPrimary : 'black', 
+            fontSize: 16, 
+            fontWeight: 'bold' 
+          } : { 
+            color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+            fontSize: 14, 
+            fontWeight: 'bold' 
+          }}>Following</Text>
         </TouchableOpacity>
       </View>
       
       {feedType === 'Top Posts' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', paddingVertical: 10, justifyContent: 'space-evenly' }}>
-          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Hour' && {backgroundColor: 'black'}]} onPress={() => {setTopPostsTime('Past Hour') }}>
-            <Text style={[styles.timesText, topPostsTime === 'Past Hour' && {color: 'white'}]}>Past Hour</Text>
+          <TouchableOpacity style={[
+            styles.timesButton, 
+            { 
+              backgroundColor: topPostsTime === 'Past Hour' ? 
+                (isDarkMode ? darkTheme?.textPrimary : 'black') : 
+                (isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey')
+            }
+          ]} onPress={() => {setTopPostsTime('Past Hour') }}>
+            <Text style={[
+              styles.timesText, 
+              { 
+                color: topPostsTime === 'Past Hour' ? 
+                  (isDarkMode ? darkTheme?.background : 'white') : 
+                  (isDarkMode ? darkTheme?.textPrimary : 'black')
+              }
+            ]}>Past Hour</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Day' && {backgroundColor: 'black'}]} onPress={() => {setTopPostsTime('Past Day')}}>
-            <Text style={[styles.timesText, topPostsTime === 'Past Day' && {color: 'white'}]}>Past Day</Text>
+          <TouchableOpacity style={[
+            styles.timesButton, 
+            { 
+              backgroundColor: topPostsTime === 'Past Day' ? 
+                (isDarkMode ? darkTheme?.textPrimary : 'black') : 
+                (isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey')
+            }
+          ]} onPress={() => {setTopPostsTime('Past Day')}}>
+            <Text style={[
+              styles.timesText, 
+              { 
+                color: topPostsTime === 'Past Day' ? 
+                  (isDarkMode ? darkTheme?.background : 'white') : 
+                  (isDarkMode ? darkTheme?.textPrimary : 'black')
+              }
+            ]}>Past Day</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Week' && {backgroundColor: 'black'}]} onPress={() => setTopPostsTime('Past Week')}>
-            <Text style={[styles.timesText, topPostsTime === 'Past Week' && {color: 'white'}]}>Past Week</Text>
+          <TouchableOpacity style={[
+            styles.timesButton, 
+            { 
+              backgroundColor: topPostsTime === 'Past Week' ? 
+                (isDarkMode ? darkTheme?.textPrimary : 'black') : 
+                (isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey')
+            }
+          ]} onPress={() => setTopPostsTime('Past Week')}>
+            <Text style={[
+              styles.timesText, 
+              { 
+                color: topPostsTime === 'Past Week' ? 
+                  (isDarkMode ? darkTheme?.background : 'white') : 
+                  (isDarkMode ? darkTheme?.textPrimary : 'black')
+              }
+            ]}>Past Week</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'All Time' && {backgroundColor: 'black'}]} onPress={() => setTopPostsTime('All Time')}>
-            <Text style={[styles.timesText, topPostsTime === 'All Time' && {color: 'white'}]}>All Time</Text>
+          <TouchableOpacity style={[
+            styles.timesButton, 
+            { 
+              backgroundColor: topPostsTime === 'All Time' ? 
+                (isDarkMode ? darkTheme?.textPrimary : 'black') : 
+                (isDarkMode ? darkTheme?.buttonSecondary : 'lightgrey')
+            }
+          ]} onPress={() => setTopPostsTime('All Time')}>
+            <Text style={[
+              styles.timesText, 
+              { 
+                color: topPostsTime === 'All Time' ? 
+                  (isDarkMode ? darkTheme?.background : 'white') : 
+                  (isDarkMode ? darkTheme?.textPrimary : 'black')
+              }
+            ]}>All Time</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -511,11 +748,15 @@ const Feed = ({ route, navigation }) => {
         <>
         {numFollowers === 0 && feedType === 'Following' ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ fontSize: 20, fontStyle: 'italic' }}>Follow Your Friends to See Posts</Text>
+            <Text style={{ 
+              fontSize: 20, 
+              fontStyle: 'italic',
+              color: isDarkMode ? darkTheme?.textSecondary : 'black'
+            }}>Follow Your Friends to See Posts</Text>
           </View>
         ) : (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="black" style={{ marginTop: 20 }} />
+            <ActivityIndicator size="large" color={isDarkMode ? darkTheme?.textPrimary : "black"} style={{ marginTop: 20 }} />
           </View>
         )}
         </>
@@ -526,7 +767,19 @@ const Feed = ({ route, navigation }) => {
         )} uncomment this for swiping*/}
         <FlatList
           data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
-          renderItem={({ item }) => <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} />}
+          renderItem={({ item }) => <NormalItemTile 
+            item={item} 
+            userKey={userKey} 
+            setFeedView={setFeedView} 
+            navigation={navigation} 
+            visitingUserId={userKey} 
+            topPostsTime={topPostsTime} 
+            setItemInfo={setItemInfo} 
+            individualSpotifyAccessToken={individualSpotifyAccessToken} 
+            promptAsync={promptAsync}
+            isDarkMode={isDarkMode}
+            darkTheme={darkTheme}
+          />}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}
@@ -548,7 +801,7 @@ const Feed = ({ route, navigation }) => {
           showsVerticalScrollIndicator={false}
         />
         <View style={{ position: 'absolute', width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 170 }}>
-          <Ionicons name='reload' size={40} color='lightgray' />
+          <Ionicons name='reload' size={40} color={isDarkMode ? darkTheme?.textTertiary : 'lightgray'} />
         </View>
         </>
       )}

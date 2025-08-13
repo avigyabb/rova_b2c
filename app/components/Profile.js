@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { Image as ReactImage } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -21,7 +22,42 @@ import Hyperlink from 'react-native-hyperlink';
 import FollowUsers from './FollowUsers';
 import CategoryTile from './CategoryTile';
 import Settings from './Settings';
-import { useTheme } from '../context/ThemeContext';
+import NormalItemTile from './NormalItemTile';
+
+// Dark mode theme colors
+const darkTheme = {
+  background: '#121212',
+  surface: '#121212',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  border: '#333333',
+  borderLight: '#1e1e1e',
+  accent: '#00aced',
+  cardBackground: '#121212',
+  tabBarBackground: '#121212',
+  tabBarBorder: '#333333',
+  tabBarActive: '#FFFFFF',
+  tabBarInactive: '#999999',
+  buttonPrimary: '#FFFFFF',
+  buttonPrimaryText: '#121212',
+  buttonSecondary: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  inputBackground: '#333333',
+  inputBorder: '#444444',
+  placeholder: '#999999',
+  profileCardBackground: '#121212',
+  profileBorder: '#333333',
+  feedItemBackground: '#121212',
+  feedItemBorder: '#1e1e1e',
+  exploreCardBackground: '#121212',
+  exploreCardBorder: '#333333',
+  moviePosterBorder: '#333333',
+  ratingCircleBorder: '#333333',
+  shadow: '#121212',
+  overlay: 'rgba(18, 18, 18, 0.7)',
+};
+
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -32,8 +68,8 @@ const styles = StyleSheet.create({
     borderColor: 'lightgrey'
   },
   grid: {
-    // alignItems: 'center',
-    justifyContent: 'space-around'
+    width: '100%',
+    paddingHorizontal: 0,
   },
   tileText: {
     // existing text styles...
@@ -63,9 +99,228 @@ const styles = StyleSheet.create({
   },
 });
 
+// Memoized header component to prevent flickering
+const ProfileHeader = React.memo(({ 
+  profileInfo, 
+  isDarkMode, 
+  darkTheme, 
+  visitingUserId, 
+  setShowSettings, 
+  setFeedView, 
+  setFocusedCategory, 
+  setActiveTab, 
+  activeTab, 
+  shareLink, 
+  followUser,
+  unfollowUser,
+  isFollowing,
+  styles 
+}) => (
+  <>
+    {!visitingUserId ? (
+      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', paddingHorizontal: 20, paddingTop: 10 }}>
+        <Text style={{ color: isDarkMode ? darkTheme.textPrimary : 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+        <TouchableOpacity onPress={() => setShowSettings(true)} style={{ marginLeft: 'auto' }}>
+          <Ionicons name="settings-outline" size={25} color={isDarkMode ? darkTheme.textPrimary : 'black'} />
+        </TouchableOpacity>
+      </View>
+    ) : (
+      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: isDarkMode ? darkTheme.border : 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => setFeedView(null)}>
+          <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme.textPrimary : 'black'} />
+        </TouchableOpacity>
+      </View>
+    )}
+
+    <View style={{ flexDirection: 'row', padding: 15 }}>
+      {profileInfo.profile_pic ? (
+        <Image source={{ uri: profileInfo.profile_pic }} style={[styles.profilePic, { borderColor: isDarkMode ? darkTheme.border : 'lightgrey' }]} />
+      ) : (
+        <Image source={"https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png"} style={[styles.profilePic, { borderColor: isDarkMode ? darkTheme.border : 'lightgrey' }]} />
+      )}
+      <View>
+        <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
+          <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10, color: isDarkMode ? darkTheme.textPrimary : 'black' }}>
+            {profileInfo.name}
+          </Text>
+          {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color={darkTheme.accent} />}
+        </View>
+        <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: isDarkMode ? darkTheme.textSecondary : 'grey' }}>@{profileInfo.username}</Text>
+
+        <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
+          <TouchableOpacity onPress={() => profileInfo.followers && setFocusedCategory('Followers')}>
+            <Text style={{ marginRight: 30, fontWeight: 'bold', color: isDarkMode ? darkTheme.textPrimary : 'black' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => profileInfo.following && setFocusedCategory('Following')}>
+            <Text style={{ fontWeight: 'bold', color: isDarkMode ? darkTheme.textPrimary : 'black' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+
+    <Hyperlink linkDefault={true} linkStyle={{ color: darkTheme.accent, textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
+      <Text style={{ paddingHorizontal: 15, marginBottom: 20, color: isDarkMode ? darkTheme.textPrimary : 'black' }}>{profileInfo.bio}</Text>
+    </Hyperlink>
+
+    {!visitingUserId ? (
+      <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: isDarkMode ? darkTheme.border : 'lightgrey', borderBottomWidth: 1 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <TouchableOpacity style={[styles.editContainer, { backgroundColor: isDarkMode ? darkTheme.buttonSecondary : 'lightgrey' }]} onPress={() => setFocusedCategory('editProfile')}>
+            <Text style={[styles.editButtons, { color: isDarkMode ? darkTheme.buttonSecondaryText : 'black' }]}>Edit Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.editContainer, { backgroundColor: isDarkMode ? darkTheme.buttonSecondary : 'lightgrey' }]} onPress={() => setFocusedCategory('Add List Page')}>
+            <Text style={[styles.editButtons, { color: isDarkMode ? darkTheme.buttonSecondaryText : 'black' }]}>Add List</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={shareLink} style={[styles.shareContainer, { backgroundColor: darkTheme.accent }]}>
+              <Ionicons name="person-add-sharp" size={17} color="white" style={{ marginTop: 3 }} />
+          </TouchableOpacity>
+        </View>
+        
+        {/* Tab Buttons */}
+        <View style={{ flexDirection: 'row', marginTop: 10, paddingHorizontal: 15 }}>
+          <TouchableOpacity 
+            style={{ 
+              flex: 1, 
+              paddingVertical: 8, 
+              backgroundColor: 'transparent',
+              marginRight: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderBottomWidth: 2,
+              borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+            }} 
+            onPress={() => setActiveTab('recent')}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ 
+                fontSize: 14, 
+                marginRight: 6,
+                color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+              }}>
+                Recent
+              </Text>
+              <Ionicons 
+                name="time-outline" 
+                size={18} 
+                color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+              />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ 
+              flex: 1, 
+              paddingVertical: 8, 
+              backgroundColor: 'transparent',
+              marginLeft: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderBottomWidth: 2,
+              borderBottomColor: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+            }} 
+            onPress={() => setActiveTab('lists')}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ 
+                fontSize: 14, 
+                marginRight: 6,
+                color: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                fontWeight: activeTab === 'lists' ? 'bold' : 'normal'
+              }}>
+                Lists
+              </Text>
+              <Ionicons 
+                name="grid-outline" 
+                size={18} 
+                color={activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+              />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+    ) : (
+      <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: isDarkMode ? darkTheme.border : 'lightgrey', borderBottomWidth: 1 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+          {isFollowing ? (
+            <TouchableOpacity style={[styles.editContainer, { backgroundColor: isDarkMode ? darkTheme.buttonSecondary : 'lightgrey' }]} onPress={() => unfollowUser()}>
+              <Text style={[styles.editButtons, { color: isDarkMode ? darkTheme.buttonSecondaryText : 'black' }]}>Unfollow</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.editContainer, { backgroundColor: isDarkMode ? darkTheme.buttonSecondary : 'lightgrey' }]} onPress={() => followUser()}>
+              <Text style={[styles.editButtons, { color: isDarkMode ? darkTheme.buttonSecondaryText : 'black' }]}>Follow</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      
+        {/* Tab Buttons */}
+        <View style={{ flexDirection: 'row', marginTop: 15, paddingHorizontal: 15 }}>
+          <TouchableOpacity 
+            style={{ 
+              flex: 1, 
+              paddingVertical: 8, 
+              backgroundColor: 'transparent',
+              marginRight: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderBottomWidth: 2,
+              borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+            }} 
+            onPress={() => setActiveTab('recent')}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ 
+                fontSize: 14, 
+                marginRight: 6,
+                color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+              }}>
+                Recent
+              </Text>
+              <Ionicons 
+                name="time-outline" 
+                size={18} 
+                color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+              />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ 
+              flex: 1, 
+              paddingVertical: 8, 
+              backgroundColor: 'transparent',
+              marginLeft: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderBottomWidth: 2,
+              borderBottomColor: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+            }} 
+            onPress={() => setActiveTab('lists')}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ 
+                fontSize: 14, 
+                marginRight: 6,
+                color: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                fontWeight: activeTab === 'lists' ? 'bold' : 'normal'
+              }}>
+                Lists
+              </Text>
+              <Ionicons 
+                name="grid-outline" 
+                size={18} 
+                color={activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+              />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )}
+  </>
+));
+
 const Profile = ({ route, navigation }) => {
-  const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
-  const { colors } = useTheme();
+  const { userKey, setView, fetchUserData, visitingUserId, setFeedView, onDarkModeChange } = route.params;
+
   const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
   const [focusedCategory, setFocusedCategory] = useState(null);
@@ -86,6 +341,58 @@ const Profile = ({ route, navigation }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [numItems, setNumItems] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState('recent');
+  const [userPosts, setUserPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [layoutReady, setLayoutReady] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false); // Start with light mode
+  const [itemInfo, setItemInfo] = useState(null);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    if (onDarkModeChange) {
+      onDarkModeChange(newDarkMode);
+    }
+  };
+
+  // Sync dark mode state with parent
+  useEffect(() => {
+    if (onDarkModeChange) {
+      onDarkModeChange(isDarkMode);
+    }
+  }, [isDarkMode]);
+
+  // Load dark mode preference from storage
+  useEffect(() => {
+    const loadDarkModePreference = async () => {
+      try {
+        const savedDarkMode = await AsyncStorage.getItem('darkMode');
+        if (savedDarkMode !== null) {
+          const isDark = JSON.parse(savedDarkMode);
+          setIsDarkMode(isDark);
+          if (onDarkModeChange) {
+            onDarkModeChange(isDark);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading dark mode preference:', error);
+      }
+    };
+    loadDarkModePreference();
+  }, []);
+
+  // Save dark mode preference to storage
+  useEffect(() => {
+    const saveDarkModePreference = async () => {
+      try {
+        await AsyncStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+      } catch (error) {
+        console.error('Error saving dark mode preference:', error);
+      }
+    };
+    saveDarkModePreference();
+  }, [isDarkMode]);
 
   const getUserInfo = () => {
     const userRef = ref(database, 'users/' + userKey);
@@ -120,7 +427,23 @@ const Profile = ({ route, navigation }) => {
     });
 
     getUserInfo();
+    
+    // Force layout refresh on iOS to handle system UI initialization
+    if (Platform.OS === 'ios') {
+      const timer = setTimeout(() => {
+        setLayoutReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setLayoutReady(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'recent' && userPosts.length === 0 && !loadingPosts) {
+      getUserPosts();
+    }
+  }, [activeTab]);
 
   const onCategoryPress = (category_name, category_id, num_items) => {
     const categoryItemsRef = ref(database, 'items');
@@ -238,7 +561,69 @@ const Profile = ({ route, navigation }) => {
   const refreshProfile = () => {
     setRefreshed(true);
     getUserInfo();
+    if (activeTab === 'recent') {
+      getUserPosts();
+    }
     setRefreshed(false);
+  }
+
+  // Create memoized header component
+  const memoizedHeader = useMemo(() => (
+    <ProfileHeader
+      profileInfo={profileInfo}
+      isDarkMode={isDarkMode}
+      darkTheme={darkTheme}
+      visitingUserId={visitingUserId}
+      setShowSettings={setShowSettings}
+      setFeedView={setFeedView}
+      setFocusedCategory={setFocusedCategory}
+      setActiveTab={setActiveTab}
+      activeTab={activeTab}
+      shareLink={shareLink}
+      followUser={followUser}
+      unfollowUser={unfollowUser}
+      isFollowing={isFollowing}
+      styles={styles}
+    />
+  ), [profileInfo, isDarkMode, visitingUserId, activeTab, isFollowing]);
+
+  const getUserPosts = () => {
+    try {
+      setLoadingPosts(true);
+      const itemsRef = ref(database, 'items');
+      
+      get(itemsRef).then((snapshot) => {
+        try {
+          if (snapshot.exists()) {
+            const posts = [];
+            snapshot.forEach((childSnapshot) => {
+              const postKey = childSnapshot.key;
+              const postData = childSnapshot.val();
+              // Only include posts from the current user
+              if (postData.user_id === userKey) {
+                posts.push({ key: postKey, ...postData });
+              }
+            });
+            setUserPosts(posts.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
+          } else {
+            setUserPosts([]);
+          }
+        } catch (error) {
+          console.error('Error processing posts:', error);
+          setUserPosts([]);
+        } finally {
+          setLoadingPosts(false);
+        }
+      }).catch((error) => {
+        console.error('Error fetching posts:', error);
+        setUserPosts([]);
+        setLoadingPosts(false);
+      });
+    } catch (error) {
+      console.error('Error setting up posts query:', error);
+      setUserPosts([]);
+      setLoadingPosts(false);
+    }
   };
 
   if (focusedCategory === 'Followers') {
@@ -262,16 +647,65 @@ const Profile = ({ route, navigation }) => {
       userKey={userKey}
       visitingUserId={visitingUserId}
       navigation={navigation}
-    />
-  }
+          />
+    }
 
-  return (
+      if (itemInfo) {
+    const onBackPress = (params) => {
+      if (setFeedView) {
+        setFeedView(params)
+      }
+      setItemInfo(null)
+    }
+
+      return (
+        <View style={{ 
+          backgroundColor: isDarkMode ? darkTheme?.background : 'black', 
+          height: '100%' 
+        }}>
+          <View style={{ 
+            flexDirection: 'row', 
+            padding: 10, 
+            borderBottomWidth: 1, 
+            borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+          }}>
+            <TouchableOpacity onPress={() => {
+              setItemInfo(null) 
+              if (setFeedView) {
+                setFeedView(null)
+              }
+            }}> 
+              <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
+            </TouchableOpacity>
+          </View>
+          <NormalItemTile 
+            item={itemInfo} 
+            visitingUserId={userKey} 
+            navigation={navigation} 
+            editMode={false} 
+            showComments={true} 
+            setFeedView={onBackPress} 
+            individualSpotifyAccessToken={null} 
+            promptAsync={() => {}}
+            isDarkMode={isDarkMode}
+            darkTheme={darkTheme}
+          />
+        </View>
+      );
+    }
+  
+    return (
     <>
       {showSettings ? (
         <Settings 
           onBackPress={() => setShowSettings(false)} 
           fetchUserData={fetchUserData} 
-          setView={setView} 
+          setView={setView}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
         />
       ) : focusedCategory === 'editProfile' ? (
         <EditProfile userKey={userKey} onBackPress={() => onBackPress()} getUserInfo={() => getUserInfo()} />
@@ -284,7 +718,12 @@ const Profile = ({ route, navigation }) => {
             <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> </Text>
           </View>
 
-          <AddCategory onBackPress={() => onBackPress()} userKey={userKey} />
+          <AddCategory 
+            onBackPress={() => onBackPress()} 
+            userKey={userKey} 
+            isDarkMode={isDarkMode}
+            darkTheme={darkTheme}
+          />
         </>
       ) : focusedCategoryId ? (
         <CategoryList
@@ -297,119 +736,316 @@ const Profile = ({ route, navigation }) => {
           visitingUserId={visitingUserId || userKey}
           userKey={userKey}
           navigation={navigation}
+          isDarkMode={isDarkMode}
+          darkTheme={darkTheme}
         />
       ) : (
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-          {scrollY < -110 && (
-            <View style={{position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1000,}}>
-              <ActivityIndicator size="large" color={colors.text} />
+        <View style={{ 
+          flex: 1, 
+          backgroundColor: isDarkMode ? darkTheme.background : 'white'
+        }}>
+          {!layoutReady ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? darkTheme.background : 'white' }}>
+              <ActivityIndicator size="large" color={isDarkMode ? darkTheme.textPrimary : 'black'} />
             </View>
-          )}
-          <ScrollView
-            style={{ backgroundColor: colors.background, height: '100%' }}
-            onScroll={(event) => {
-              const y = event.nativeEvent.contentOffset.y;
-              setScrollY(y);
-              if (y < -110 && !refreshed) {
-                refreshProfile();
-              }
-            }}
-            scrollEventThrottle={1} // This ensures the scroll position is updated frequently
-          >
+          ) : (
+            <>
+              {scrollY < -110 && (
+                <View style={{position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1000,}}>
+                  <ActivityIndicator size="large" color={isDarkMode ? darkTheme.textPrimary : 'black'} />
+                </View>
+              )}
+              
+              {activeTab === 'recent' ? (
+            <FlatList
+              style={{ backgroundColor: isDarkMode ? darkTheme.background : 'white' }}
+              data={userPosts}
+              renderItem={({ item }) => (
+                <NormalItemTile 
+                  item={item} 
+                  userKey={userKey} 
+                  setFeedView={setFeedView || (() => {})} 
+                  navigation={navigation} 
+                  visitingUserId={userKey} 
+                  setItemInfo={setItemInfo} 
+                  topPostsTime={null}
+                  individualSpotifyAccessToken={null} 
+                  promptAsync={() => {}}
+                  setIndex={() => {}}
+                  setFocusedItemDescription={() => {}}
+                  isDarkMode={isDarkMode}
+                  darkTheme={darkTheme}
+                />
+              )}
+              keyExtractor={(item) => item.key || item.id}
+              ListHeaderComponent={memoizedHeader}
+              ListEmptyComponent={() => (
+                loadingPosts ? (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
+                    <ActivityIndicator size="large" color={isDarkMode ? darkTheme.textPrimary : 'black'} />
+                  </View>
+                ) : (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
+                    <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 16, color: isDarkMode ? darkTheme.textSecondary : 'lightgray' }}>
+                      No posts yet
+                    </Text>
+                  </View>
+                )
+              )}
+              onScroll={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                setScrollY(y);
+                if (y < -110 && !refreshed) {
+                  refreshProfile();
+                }
+              }}
+              scrollEventThrottle={1}
+              showsVerticalScrollIndicator={true}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={5}
+              windowSize={10}
+              initialNumToRender={3}
+            />
+          ) : (
+            <ScrollView
+              style={{ backgroundColor: isDarkMode ? darkTheme.background : 'white' }}
+              onScroll={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                setScrollY(y);
+                if (y < -110 && !refreshed) {
+                  refreshProfile();
+                }
+              }}
+              scrollEventThrottle={1}
+            >
             {!visitingUserId ? (
-              <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', paddingHorizontal: 20, paddingTop: 10 }}>
+                <Text style={{ color: isDarkMode ? darkTheme.textPrimary : 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
                 <TouchableOpacity onPress={() => setShowSettings(true)} style={{ marginLeft: 'auto' }}>
-                  <Ionicons name="settings-outline" size={25} color={colors.text} />
+                  <Ionicons name="settings-outline" size={25} color={isDarkMode ? darkTheme.textPrimary : 'black'} />
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: colors.border, justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: isDarkMode ? darkTheme.border : 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => setFeedView(null)}>
-                  <Ionicons name="arrow-back" size={30} color={colors.text} />
+                  <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme.textPrimary : 'black'} />
                 </TouchableOpacity>
               </View>
             )}
 
             <View style={{ flexDirection: 'row', padding: 15 }}>
               {profileInfo.profile_pic ? (
-                <Image source={{ uri: profileInfo.profile_pic }} style={styles.profilePic} />
+                <Image source={{ uri: profileInfo.profile_pic }} style={[styles.profilePic, { borderColor: isDarkMode ? darkTheme.border : 'lightgrey' }]} />
               ) : (
-                <Image source={"https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png"} style={styles.profilePic} />
+                <Image source={"https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png"} style={[styles.profilePic, { borderColor: isDarkMode ? darkTheme.border : 'lightgrey' }]} />
               )}
               <View>
                 <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
-                  <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10, color: colors.text }}>
+                  <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10, color: isDarkMode ? darkTheme.textPrimary : 'black' }}>
                     {profileInfo.name}
                   </Text>
-                  {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color={colors.accent} />}
+                  {profileInfo.user_type === 'verified' && <MaterialIcons name="verified" size={20} color={darkTheme.accent} />}
                 </View>
-                <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: colors.textSecondary }}>@{profileInfo.username}</Text>
+                <Text style={{ marginLeft: 10, fontSize: 16, marginTop: 0, fontWeight: 'bold', color: isDarkMode ? darkTheme.textSecondary : 'grey' }}>@{profileInfo.username}</Text>
 
                 <View style={{ flexDirection: 'row', marginLeft: 10, marginTop: 15 }}>
                   <TouchableOpacity onPress={() => profileInfo.followers && setFocusedCategory('Followers')}>
-                    <Text style={{ marginRight: 30, fontWeight: 'bold', color: colors.text }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
+                    <Text style={{ marginRight: 30, fontWeight: 'bold', color: isDarkMode ? darkTheme.textPrimary : 'black' }}>{profileInfo.followers ? Object.keys(profileInfo.followers).length : 0} Followers</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => profileInfo.following && setFocusedCategory('Following')}>
-                    <Text style={{ fontWeight: 'bold', color: colors.text }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
+                    <Text style={{ fontWeight: 'bold', color: isDarkMode ? darkTheme.textPrimary : 'black' }}>{profileInfo.following ? Object.keys(profileInfo.following).length : 0} Following</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
 
-            <Hyperlink linkDefault={true} linkStyle={{ color: colors.accent, textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
-              <Text style={{ paddingHorizontal: 15, marginBottom: 20, color: colors.text }}>{profileInfo.bio}</Text>
+            <Hyperlink linkDefault={true} linkStyle={{ color: darkTheme.accent, textDecorationLine: 'underline' }} onPress={(url, text) => Linking.openURL(url)}>
+              <Text style={{ paddingHorizontal: 15, marginBottom: 20, color: isDarkMode ? darkTheme.textPrimary : 'black' }}>{profileInfo.bio}</Text>
             </Hyperlink>
 
             {!visitingUserId ? (
-              <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: colors.border, borderBottomWidth: 1 }}>
+              <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: isDarkMode ? darkTheme.border : 'lightgrey', borderBottomWidth: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setFocusedCategory('editProfile')}>
-                    <Text style={[styles.editButtons, { color: colors.text }]}>Edit Profile</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: isDarkMode ? darkTheme.buttonSecondary : 'lightgrey' }]} onPress={() => setFocusedCategory('editProfile')}>
+                    <Text style={[styles.editButtons, { color: isDarkMode ? darkTheme.buttonSecondaryText : 'black' }]}>Edit Profile</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setFocusedCategory('Add List Page')}>
-                    <Text style={[styles.editButtons, { color: colors.text }]}>Add List</Text>
+                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: isDarkMode ? darkTheme.buttonSecondary : 'lightgrey' }]} onPress={() => setFocusedCategory('Add List Page')}>
+                    <Text style={[styles.editButtons, { color: isDarkMode ? darkTheme.buttonSecondaryText : 'black' }]}>Add List</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={shareLink} style={[styles.shareContainer, { backgroundColor: colors.accent }]}>
-                      <Ionicons name="person-add-sharp" size={17} color={colors.background} style={{ marginTop: 3 }} />
+                  <TouchableOpacity onPress={shareLink} style={[styles.shareContainer, { backgroundColor: darkTheme.accent }]}>
+                      <Ionicons name="person-add-sharp" size={17} color="white" style={{ marginTop: 3 }} />
                   </TouchableOpacity>
                 </View>
+                
+                                  {/* Tab Buttons */}
+                  <View style={{ flexDirection: 'row', marginTop: 10, paddingHorizontal: 15 }}>
+                    <TouchableOpacity 
+                      style={{ 
+                        flex: 1, 
+                        paddingVertical: 8, 
+                        backgroundColor: 'transparent',
+                        marginRight: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderBottomWidth: 2,
+                        borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+                      }} 
+                      onPress={() => setActiveTab('recent')}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ 
+                          fontSize: 14, 
+                          marginRight: 6,
+                          color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                          fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+                        }}>
+                          Recent
+                        </Text>
+                        <Ionicons 
+                          name="time-outline" 
+                          size={18} 
+                          color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+                        />
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={{ 
+                        flex: 1, 
+                        paddingVertical: 8, 
+                        backgroundColor: 'transparent',
+                        marginLeft: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderBottomWidth: 2,
+                        borderBottomColor: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+                      }} 
+                      onPress={() => setActiveTab('lists')}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ 
+                          fontSize: 14, 
+                          marginRight: 6,
+                          color: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                          fontWeight: activeTab === 'lists' ? 'bold' : 'normal'
+                        }}>
+                          Lists
+                        </Text>
+                        <Ionicons 
+                          name="grid-outline" 
+                          size={18} 
+                          color={activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  </View>
               </View>
-            ) : (
-              <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: 15, paddingBottom: 20, borderColor: colors.border, borderBottomWidth: 1 }}>
-                {isFollowing ? (
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => unfollowUser()}>
-                    <Text style={[styles.editButtons, { color: colors.text }]}>Unfollow</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity style={[styles.editContainer, { backgroundColor: colors.surfaceSecondary }]} onPress={() => followUser()}>
-                    <Text style={[styles.editButtons, { color: colors.text }]}>Follow</Text>
-                  </TouchableOpacity>
-                )}
+                          ) : (
+                <View style={{ paddingHorizontal: 15, paddingBottom: 20, borderColor: isDarkMode ? darkTheme.border : 'lightgrey', borderBottomWidth: 1 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                    {isFollowing ? (
+                      <TouchableOpacity style={[styles.editContainer, { backgroundColor: isDarkMode ? darkTheme.buttonSecondary : 'lightgrey' }]} onPress={() => unfollowUser()}>
+                        <Text style={[styles.editButtons, { color: isDarkMode ? darkTheme.buttonSecondaryText : 'black' }]}>Unfollow</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity style={[styles.editContainer, { backgroundColor: isDarkMode ? darkTheme.buttonSecondary : 'lightgrey' }]} onPress={() => followUser()}>
+                        <Text style={[styles.editButtons, { color: isDarkMode ? darkTheme.buttonSecondaryText : 'black' }]}>Follow</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                
+                                  {/* Tab Buttons */}
+                  <View style={{ flexDirection: 'row', marginTop: 15, paddingHorizontal: 15 }}>
+                    <TouchableOpacity 
+                      style={{ 
+                        flex: 1, 
+                        paddingVertical: 8, 
+                        backgroundColor: 'transparent',
+                        marginRight: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderBottomWidth: 2,
+                        borderBottomColor: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+                      }} 
+                      onPress={() => setActiveTab('recent')}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ 
+                          fontSize: 14, 
+                          marginRight: 6,
+                          color: activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                          fontWeight: activeTab === 'recent' ? 'bold' : 'normal'
+                        }}>
+                          Recent
+                        </Text>
+                        <Ionicons 
+                          name="time-outline" 
+                          size={18} 
+                          color={activeTab === 'recent' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+                        />
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={{ 
+                        flex: 1, 
+                        paddingVertical: 8, 
+                        backgroundColor: 'transparent',
+                        marginLeft: 8,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderBottomWidth: 2,
+                        borderBottomColor: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : 'transparent'
+                      }} 
+                      onPress={() => setActiveTab('lists')}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ 
+                          fontSize: 14, 
+                          marginRight: 6,
+                          color: activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666'),
+                          fontWeight: activeTab === 'lists' ? 'bold' : 'normal'
+                        }}>
+                          Lists
+                        </Text>
+                        <Ionicons 
+                          name="grid-outline" 
+                          size={18} 
+                          color={activeTab === 'lists' ? (isDarkMode ? darkTheme.textPrimary : 'black') : (isDarkMode ? darkTheme.textSecondary : '#666')} 
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  </View>
               </View>
             )}
 
-            {categories.length > 0 ? (
-              <FlatList
-                data={categories}
-                renderItem={({ item }) => (
-                  <CategoryTile
-                    category_name={item.category_name}
-                    imageUri={item.imageUri}
-                    num_items={item.num_items}
-                    onCategoryPress={() => onCategoryPress(item.category_name, item.id, item.num_items)}
+              {/* Lists Tab Content */}
+              <View style={{ paddingTop: 5 }}>
+                {categories.length > 0 ? (
+                  <FlatList
+                    data={categories}
+                    renderItem={({ item }) => (
+                      <CategoryTile
+                        category_name={item.category_name}
+                        imageUri={item.imageUri}
+                        num_items={item.num_items}
+                        onCategoryPress={() => onCategoryPress(item.category_name, item.id, item.num_items)}
+                      />
+                    )}
+                    scrollEnabled={false}
+                    numColumns={3}
+                    contentContainerStyle={styles.grid}
+                    columnWrapperStyle={{ width: '100%' }}
+                    showsVerticalScrollIndicator={false}
                   />
+                ) : (
+                  <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: isDarkMode ? darkTheme.textSecondary : 'lightgray' }}>
+                    {visitingUserId ? 'No lists yet' : 'add a list to get started...'}
+                  </Text>
                 )}
-                scrollEnabled={false}
-                numColumns={3}
-                contentContainerStyle={styles.grid}
-              />
-            ) : (
-              <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
-                add a list to get started...
-              </Text>
-            )}
-          </ScrollView>
+              </View>
+            </ScrollView>
+          )}
+            </>
+          )}
         </View>
       )}
     </>
