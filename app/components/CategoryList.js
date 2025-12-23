@@ -11,6 +11,7 @@ import FeedItemTile from "./FeedItemTile";
 import NormalItemTile from "./NormalItemTile";
 import Profile from './Profile';
 import CategoryComparison from "./CategoryListComponents/CategoryComparison";
+import { useFocusEffect } from '@react-navigation/native';
 
 const styles = StyleSheet.create({
   listTileScore: {
@@ -46,7 +47,7 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey }) => {
+const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey, isDarkMode=false, darkTheme=null }) => {
   const [listView, setListView] = useState('now');
   const [listData, setListData] = useState(focusedList);
   const [editMode, setEditMode] = useState(false);
@@ -60,6 +61,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
   const [visitingUserCategories, setVisitingUserCategories] = useState([]);
   const [categoryListView, setCategoryListView] = useState(null);
+  const [itemRankingCounts, setItemRankingCounts] = useState({});
+
+
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
@@ -110,6 +114,180 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       console.error(error);
     });
   }, [focusedCategoryId, database, visitingUserId]);
+
+  // Calculate ranking counts for initial focusedList
+  useEffect(() => {
+    console.log('Initial focusedList useEffect triggered:', focusedList);
+    if (focusedList && (focusedList.now || focusedList.later)) {
+      const allItems = [...(focusedList.now || []), ...(focusedList.later || [])].map(([key, value]) => ({ 
+        key, 
+        ...value,
+        item_key: key // Add item_key for consistency
+      }));
+      console.log('Mapped allItems:', allItems.length, 'items');
+      
+      // Calculate ranking counts from database efficiently
+      const uniqueImages = [...new Set(allItems.filter(item => item.image).map(item => item.image))];
+      
+      if (uniqueImages.length > 0) {
+        // Fetch ranking counts efficiently
+        const fetchRankingCounts = async () => {
+          try {
+            const itemsRef = ref(database, 'items');
+            const snapshot = await get(itemsRef);
+            
+            if (snapshot.exists()) {
+              const allDbItems = Object.values(snapshot.val());
+              const counts = {};
+              
+              // Process each item in our list
+              for (const item of allItems) {
+                if (item.image) {
+                  // Find items with same image and content, excluding current user
+                  const sameContentItems = allDbItems.filter(dbItem => 
+                    dbItem.image === item.image &&
+                    dbItem.content === item.content && 
+                    dbItem.score !== -1 && 
+                    dbItem.user_id !== userKey
+                  );
+                  
+                  const itemKey = item.item_key || item.key || item.image;
+                  counts[itemKey] = sameContentItems.length;
+                }
+              }
+              
+              console.log('Setting ranking counts for focusedList:', counts);
+              setItemRankingCounts(counts);
+            }
+          } catch (error) {
+            console.error('Error fetching ranking counts:', error);
+            setItemRankingCounts({});
+          }
+        };
+        
+        fetchRankingCounts();
+      } else {
+        setItemRankingCounts({});
+      }
+    }
+  }, [focusedList]);
+
+  // Calculate ranking counts when component mounts and listData is available
+  useEffect(() => {
+    console.log('Component mount useEffect triggered, listData:', listData);
+    if (listData && (listData.now || listData.later)) {
+      const allItems = [...(listData.now || []), ...(listData.later || [])].map(([key, value]) => ({ 
+        key, 
+        ...value,
+        item_key: key
+      }));
+      console.log('Mapped allItems from listData:', allItems.length, 'items');
+      
+      // Calculate ranking counts from database efficiently
+      const uniqueImages = [...new Set(allItems.filter(item => item.image).map(item => item.image))];
+      
+      if (uniqueImages.length > 0) {
+        // Fetch ranking counts efficiently
+        const fetchRankingCounts = async () => {
+          try {
+            const itemsRef = ref(database, 'items');
+            const snapshot = await get(itemsRef);
+            
+            if (snapshot.exists()) {
+              const allDbItems = Object.values(snapshot.val());
+              const counts = {};
+              
+              // Process each item in our list
+              for (const item of allItems) {
+                if (item.image) {
+                  // Find items with same image and content, excluding current user
+                  const sameContentItems = allDbItems.filter(dbItem => 
+                    dbItem.image === item.image &&
+                    dbItem.content === item.content && 
+                    dbItem.score !== -1 && 
+                    dbItem.user_id !== userKey
+                  );
+                  
+                  const itemKey = item.item_key || item.key || item.image;
+                  counts[itemKey] = sameContentItems.length;
+                }
+              }
+              
+              console.log('Setting ranking counts for listData:', counts);
+              setItemRankingCounts(counts);
+            }
+          } catch (error) {
+            console.error('Error fetching ranking counts:', error);
+            setItemRankingCounts({});
+          }
+        };
+        
+        fetchRankingCounts();
+      } else {
+        setItemRankingCounts({});
+      }
+    }
+  }, [listData]);
+
+  // Calculate ranking counts whenever the component becomes visible or data changes
+  useEffect(() => {
+    console.log('Visibility/data change useEffect triggered');
+    const currentData = focusedList || listData;
+    if (currentData && (currentData.now || currentData.later)) {
+      const allItems = [...(currentData.now || []), ...(currentData.later || [])].map(([key, value]) => ({ 
+        key, 
+        ...value,
+        item_key: key
+      }));
+      console.log('Mapped allItems from currentData:', allItems.length, 'items');
+      
+      // Calculate ranking counts from database efficiently
+      const uniqueImages = [...new Set(allItems.filter(item => item.image).map(item => item.image))];
+      
+      if (uniqueImages.length > 0) {
+        // Fetch ranking counts efficiently
+        const fetchRankingCounts = async () => {
+          try {
+            const itemsRef = ref(database, 'items');
+            const snapshot = await get(itemsRef);
+            
+            if (snapshot.exists()) {
+              const allDbItems = Object.values(snapshot.val());
+              const counts = {};
+              
+              // Process each item in our list
+              for (const item of allItems) {
+                if (item.image) {
+                  // Find items with same image and content, excluding current user
+                  const sameContentItems = allDbItems.filter(dbItem => 
+                    dbItem.image === item.image &&
+                    dbItem.content === item.content && 
+                    dbItem.score !== -1 && 
+                    dbItem.user_id !== userKey
+                  );
+                  
+                  const itemKey = item.item_key || item.key || item.image;
+                  counts[itemKey] = sameContentItems.length;
+                }
+              }
+              
+              console.log('Setting ranking counts for visibility/data change:', counts);
+              setItemRankingCounts(counts);
+            }
+          } catch (error) {
+            console.error('Error fetching ranking counts:', error);
+            setItemRankingCounts({});
+          }
+        };
+        
+        fetchRankingCounts();
+      } else {
+        setItemRankingCounts({});
+      }
+    }
+  }, [focusedList, listData]);
+
+
 
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
@@ -199,6 +377,57 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
       }
       setListData(tempFocusedList);
+      
+      // Calculate ranking counts from database efficiently
+      const allItems = [...tempFocusedList.now, ...tempFocusedList.later].map(([key, value]) => ({ 
+        key, 
+        ...value,
+        item_key: key // Add item_key for consistency
+      }));
+      
+      // Get unique images to query efficiently
+      const uniqueImages = [...new Set(allItems.filter(item => item.image).map(item => item.image))];
+      
+      if (uniqueImages.length > 0) {
+        // Fetch ranking counts efficiently
+        const fetchRankingCounts = async () => {
+          try {
+            const itemsRef = ref(database, 'items');
+            const snapshot = await get(itemsRef);
+            
+            if (snapshot.exists()) {
+              const allDbItems = Object.values(snapshot.val());
+              const counts = {};
+              
+              // Process each item in our list
+              for (const item of allItems) {
+                if (item.image) {
+                  // Find items with same image and content, excluding current user
+                  const sameContentItems = allDbItems.filter(dbItem => 
+                    dbItem.image === item.image &&
+                    dbItem.content === item.content && 
+                    dbItem.score !== -1 && 
+                    dbItem.user_id !== userKey
+                  );
+                  
+                  const itemKey = item.item_key || item.key || item.image;
+                  counts[itemKey] = sameContentItems.length;
+                }
+              }
+              
+              console.log('Setting ranking counts:', counts);
+              setItemRankingCounts(counts);
+            }
+          } catch (error) {
+            console.error('Error fetching ranking counts:', error);
+            setItemRankingCounts({});
+          }
+        };
+        
+        fetchRankingCounts();
+      } else {
+        setItemRankingCounts({});
+      }
     }).catch((error) => {
       console.error("Error fetching categories:", error);
     });
@@ -219,12 +448,24 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     });
   }
 
+
+
   const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
+    const rankingCount = itemRankingCounts[item_key || item.image] || 0;
+    
+    console.log(`ListItemTile for ${item.content}: rankingCount = ${rankingCount}, item_key = ${item_key}, item.image = ${item.image}`);
+    console.log('Current itemRankingCounts state:', itemRankingCounts);
 
     return (
       <TouchableOpacity onPress={() => onItemPress(item_key)}>
-        <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
+        <View style={{ 
+          paddingVertical: 10, 
+          borderBottomColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+          borderBottomWidth: 1, 
+          alignItems: 'center',
+          backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+        }}>
           <View style={{ flexDirection: 'row', paddingHorizontal: editMode && 10 }}>
             {editMode && (
               <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
@@ -232,12 +473,23 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               </TouchableOpacity>
             )}
             <View style={{ width: '85%' }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 16.5 }}>{index + 1}) {item.content}</Text>
+              <Text style={{ 
+                fontWeight: 'bold', 
+                fontSize: 16.5,
+                color: isDarkMode ? darkTheme?.textPrimary : 'black'
+              }}>{index + 1}) {item.content}</Text>
               <View style={{ flexDirection: 'row', marginTop: 10, }}>
                 {item.image && (
                   <Image
                     source={{ uri: item.image }}
-                    style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                    style={{
+                      height: 40, 
+                      width: 40, 
+                      borderWidth: 0.5, 
+                      marginRight: 10, 
+                      borderRadius: 5, 
+                      borderColor: isDarkMode ? darkTheme?.border : 'lightgrey' 
+                    }}
                   />
                 )}
                 {item.description && item.description.length > 0 && (
@@ -248,7 +500,10 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                     style={{ flex: 1 }}
                   >
                   <View style={{ width: 250 }}>
-                    <Text style={{ color: 'grey', fontSize: 16 }}>
+                    <Text style={{ 
+                      color: isDarkMode ? darkTheme?.textSecondary : 'grey', 
+                      fontSize: 16 
+                    }}>
                       {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
                     </Text>
                   </View>
@@ -258,11 +513,66 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             </View>
             { !editMode && (
               <View>
-                <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-                  <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
+                <View style={[
+                  styles.listTileScore, 
+                  { 
+                    borderColor: scoreColor, 
+                    marginLeft: 'auto',
+                    shadowColor: isDarkMode ? '#000' : scoreColor,
+                    shadowOffset: {
+                      width: 0,
+                      height: 2,
+                    },
+                    shadowOpacity: isDarkMode ? 0.3 : 0.2,
+                    shadowRadius: 4,
+                    elevation: isDarkMode ? 4 : 2,
+                  }
+                ]}>
+                  <Text style={{ 
+                    color: scoreColor, 
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    textShadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
                 </View>
+                
+                {/* Ranking count display */}
+                {rankingCount > 0 && (
+                  <View style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    marginTop: 4,
+                    marginLeft: 'auto',
+                    backgroundColor: isDarkMode ? darkTheme?.buttonSecondary : '#f0f0f0',
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 10
+                  }}>
+                    <Ionicons 
+                      name="people" 
+                      size={14} 
+                      color={isDarkMode ? darkTheme?.textSecondary : "gray"} 
+                    />
+                    <Text style={{ 
+                      color: isDarkMode ? darkTheme?.textSecondary : "gray",
+                      fontSize: 11,
+                      marginLeft: 3,
+                      fontWeight: '600'
+                    }}>
+                      {rankingCount}
+                    </Text>
+                  </View>
+                )}
+                
                 { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryInfo.category_type !== "" && (
-                  <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 
+                  <MaterialIcons 
+                    name="playlist-add-check-circle" 
+                    size={20} 
+                    color={isDarkMode ? darkTheme?.textSecondary : "gray"} 
+                    style={{ marginLeft: 'auto', marginTop: 'auto' }} 
+                  /> 
                 )}
               </View>
             )}
@@ -456,16 +766,28 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     return filteredList.map(({ 1: item, 0: key, originalIndex }) => (
       <ListItemTile item={item} item_key={key} index={originalIndex} key={key} />
     ));
-  }, [listData, listView, searchVal, editMode, itemsInCategory]);  
+  }, [listData, listView, searchVal, editMode, itemsInCategory, itemRankingCounts]);  
 
   if (categoryListView === 'Similarity Score') {
     return (
       <>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        padding: 10, 
+        borderBottomWidth: 1, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+      }}>
         <TouchableOpacity onPress={() => setCategoryListView(null)}> 
-          <Ionicons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Similarity Score</Text>
+        <Text style={{ 
+          fontSize: 15, 
+          fontWeight: 'bold',
+          color: isDarkMode ? darkTheme?.textPrimary : 'black'
+        }}>Similarity Score</Text>
       </View>
       <CategoryComparison onContinuePress={() => setCategoryListView(null)} userCategories={visitingUserCategories} curListData={listData['now']} curListInfo={categoryInfo}/>
       </>
@@ -474,13 +796,23 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 
   if (focusedItem) {
     return (
-      <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View style={{ 
+        flex: 1, 
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+      }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        padding: 10, 
+        borderBottomWidth: 1, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+        justifyContent: 'space-between', 
+        alignItems: 'center' 
+      }}>
         <TouchableOpacity onPress={() => {
           setFocusedItem(null)
           setEditMode(false)
         }}> 
-          <Ionicons name="arrow-back" size={30} color="black" />
+          <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
         </TouchableOpacity>
         {editMode && (
           <>
@@ -495,15 +827,26 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         
         {editMode ? (
           <TouchableOpacity onPress={() => onEditPress()}>
-            <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Done</Text>
+            <Text style={{ 
+              fontSize: 15, 
+              fontWeight: 'bold',
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>Done</Text>
           </TouchableOpacity>
         ) : isMyProfile ? (
           <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity onPress={() => onRerankItemPress()}>
-            <Text style={{ fontSize: 15, marginRight: 30 }}>Rerank</Text>
+            <Text style={{ 
+              fontSize: 15, 
+              marginRight: 30,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>Rerank</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => onEditPress()}>
-            <Text style={{ fontSize: 15 }}>Edit</Text>
+            <Text style={{ 
+              fontSize: 15,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
+            }}>Edit</Text>
           </TouchableOpacity>
           </View>
         ) : (
@@ -530,16 +873,29 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', alignItems: 'center' }}>
+    <View style={{ 
+      flex: 1, 
+      backgroundColor: isDarkMode ? darkTheme?.background : 'white' 
+    }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        padding: 10, 
+        borderBottomWidth: 1, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey', 
+        alignItems: 'center' 
+      }}>
   <TouchableOpacity onPress={onBackPress}> 
-    <Ionicons name="arrow-back" size={30} color="black" />
+    <Ionicons name="arrow-back" size={30} color={isDarkMode ? darkTheme?.textPrimary : "black"} />
   </TouchableOpacity>
   
   <View style={{ flex: 1, alignItems: 'center', position: 'absolute', left: 0, right: 0 }}>
     {editMode ? (
       <TouchableOpacity onPress={() => onDeleteCategoryPress()}>
-        <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
+        <Text style={{ 
+          fontSize: 15, 
+          fontWeight: 'bold', 
+          color: 'red' 
+        }}>Delete {focusedCategory}</Text>
       </TouchableOpacity>
     ) : (
       <Text style={{ fontSize: 15, fontWeight: 'bold' }}></Text>
@@ -549,15 +905,28 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   <View style={{ flexDirection: 'row', marginLeft: 'auto' }}>
     {!editMode && !isMyProfile && (
       <TouchableOpacity onPress={() => setCategoryListView('Similarity Score')}>
-        <Text style={{ fontSize: 15 }}>Compare</Text>
+        <Text style={{ 
+          fontSize: 15,
+          color: isDarkMode ? darkTheme?.textPrimary : 'black'
+        }}>Compare</Text>
       </TouchableOpacity>
     )}
     
+
     <TouchableOpacity onPress={() => onEditPress()}>
       {editMode ? (
-        <Text style={{ fontSize: 15, fontWeight: 'bold', marginLeft: 25 }}>Done</Text>
+        <Text style={{ 
+          fontSize: 15, 
+          fontWeight: 'bold',
+          marginLeft: 25,
+          color: isDarkMode ? darkTheme?.textPrimary : 'black'
+        }}>Done</Text>
       ) : isMyProfile ? ( // change this variable to true to delete other people's comments
-        <Text style={{ fontSize: 15, marginLeft: 25 }}>Edit</Text>
+        <Text style={{ 
+          fontSize: 15, 
+          marginLeft: 25,
+          color: isDarkMode ? darkTheme?.textPrimary : 'black'
+        }}>Edit</Text>
       ) : (
         <></>
       )}
@@ -566,23 +935,46 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
 </View>
 
       
-      <ScrollView>
+      <ScrollView style={{ backgroundColor: isDarkMode ? darkTheme?.background : 'white' }}>
       <View style={{ padding: 10 }}>
         {editMode ? (
           <>
           {categoryImage ? (
             <Image
               source={{ uri: categoryImage }}
-              style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
+              style={[
+                styles.addedImages, 
+                {
+                  height: 150, 
+                  width: 150, 
+                  borderWidth: 0.5, 
+                  marginRight: 10,
+                  borderColor: isDarkMode ? darkTheme?.border : 'gray'
+                }
+              ]}
             />
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-                <Ionicons name="image" size={40} color="gray" />
-                <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
+            <TouchableOpacity onPress={pickImage} style={[
+              styles.addedImages,
+              { borderColor: isDarkMode ? darkTheme?.border : 'gray' }
+            ]}>
+                <Ionicons name="image" size={40} color={isDarkMode ? darkTheme?.textSecondary : "gray"} />
+                <Text style={{ 
+                  marginTop: 4, 
+                  fontWeight: 'bold', 
+                  fontSize: 12, 
+                  color: isDarkMode ? darkTheme?.textSecondary : 'gray' 
+                }}>Edit Image</Text>
             </TouchableOpacity>
             {presetImage && (
-              <TouchableOpacity style={{ marginLeft: 20, borderColor: 'red', padding: 5, borderWidth: 1, borderRadius: 5}} onPress={() => removePresetImage(focusedCategoryId)}>
+              <TouchableOpacity style={{ 
+                marginLeft: 20, 
+                borderColor: 'red', 
+                padding: 5, 
+                borderWidth: 1, 
+                borderRadius: 5
+              }} onPress={() => removePresetImage(focusedCategoryId)}>
                 <Text style={{ fontWeight: 'bold', fontSize: 12, color: 'red' }}>Remove Preset Image</Text>
               </TouchableOpacity>
             )}
@@ -600,9 +992,10 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               fontWeight: 'bold', 
               fontSize: 30, 
               fontStyle: 'italic',
-              borderColor: 'lightgrey',
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
               borderBottomWidth: 1,
-              paddingBottom: 5
+              paddingBottom: 5,
+              color: isDarkMode ? darkTheme?.textPrimary : 'black'
             }}
           />
           <TextInput
@@ -617,9 +1010,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             maxHeight={150} // this height seemed okay to me, but feel free to make it bigger / smaller
             scrollEnabled={true}
             style={{ 
-              color: 'gray', 
+              color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
               marginVertical: 10,
-              borderColor: 'lightgrey',
+              borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
               borderBottomWidth: 1,
               paddingBottom: 5
             }}
@@ -627,21 +1020,56 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           </>
         ) : (
           <>
-          <Text style={{ fontWeight: 'bold', fontSize: 30, fontStyle: 'italic', padding: 1 }}>{categoryInfo.category_name}</Text>
-          <Text style={{ color: 'gray', marginVertical: 10 }}>{categoryInfo.category_description}</Text>
+          <Text style={{ 
+            fontWeight: 'bold', 
+            fontSize: 30, 
+            fontStyle: 'italic', 
+            padding: 1,
+            color: isDarkMode ? darkTheme?.textPrimary : 'black'
+          }}>{categoryInfo.category_name}</Text>
+          <Text style={{ 
+            color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+            marginVertical: 10 
+          }}>{categoryInfo.category_description}</Text>
           </>
         )}
       </View>
 
-      <View style={{ flexDirection: 'row', borderBottomWidth: 0.5, borderTopWidth: 0.5, borderColor: 'lightgrey' }}>
-        <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'now' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        borderBottomWidth: 0.5, 
+        borderTopWidth: 0.5, 
+        borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
+        backgroundColor: isDarkMode ? darkTheme?.background : 'white'
+      }}>
+        <View style={{ 
+          width: '50%', 
+          alignItems: 'center', 
+          padding: 8, 
+          borderBottomColor: listView === 'now' ? (isDarkMode ? darkTheme?.textPrimary : 'black') : 'transparent', 
+          borderBottomWidth: 2 
+        }}>
           <TouchableOpacity onPress={() => onIconViewPress()}>
-            <Ionicons name="podium" size={listView === 'now' ? 32 : 30} color={listView === 'now' ? 'black' : 'gray'} />
+            <Ionicons 
+              name="podium" 
+              size={listView === 'now' ? 32 : 30} 
+              color={listView === 'now' ? (isDarkMode ? darkTheme?.textPrimary : 'black') : (isDarkMode ? darkTheme?.textSecondary : 'gray')} 
+            />
           </TouchableOpacity>
         </View>
-        <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'later' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
+        <View style={{ 
+          width: '50%', 
+          alignItems: 'center', 
+          padding: 8, 
+          borderBottomColor: listView === 'later' ? (isDarkMode ? darkTheme?.textPrimary : 'black') : 'transparent', 
+          borderBottomWidth: 2 
+        }}>
           <TouchableOpacity onPress={() => onIconViewPress()}>
-            <Ionicons name="bookmarks" size={listView === 'later' ? 30 : 28} color={listView === 'later' ? 'black' : 'gray'} />
+            <Ionicons 
+              name="bookmarks" 
+              size={listView === 'later' ? 30 : 28} 
+              color={listView === 'later' ? (isDarkMode ? darkTheme?.textPrimary : 'black') : (isDarkMode ? darkTheme?.textSecondary : 'gray')} 
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -652,23 +1080,31 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           placeholder={'Search Items...'}
           value={searchVal} 
           onChangeText={setSearchVal}
-          placeholderTextColor="gray"
+          placeholderTextColor={isDarkMode ? darkTheme?.placeholder : "gray"}
           style={{ 
             fontSize: 16, 
-            borderColor: 'lightgrey',
+            borderColor: isDarkMode ? darkTheme?.border : 'lightgrey',
             borderWidth: 0.5,
             borderRadius: 30,
             padding: 10,
             marginRight: 10,
             marginLeft: 10,
             paddingHorizontal: 20,
-            marginVertical: 15
+            marginVertical: 15,
+            color: isDarkMode ? darkTheme?.textPrimary : 'black',
+            backgroundColor: isDarkMode ? darkTheme?.inputBackground : 'white'
           }}
         />          
         {memoizedList}
         </>
       ) : (
-        <Text style={{ textAlign: 'center', fontWeight: 'bold', color: 'gray', fontSize: 16, marginTop: '50%' }}>Add items to see your rankings... 😶‍🌫️</Text>
+        <Text style={{ 
+          textAlign: 'center', 
+          fontWeight: 'bold', 
+          color: isDarkMode ? darkTheme?.textSecondary : 'gray', 
+          fontSize: 16, 
+          marginTop: '50%' 
+        }}>Add items to see your rankings... 😶‍🌫️</Text>
       )}
       </ScrollView>
     </View>
