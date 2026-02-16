@@ -160,7 +160,7 @@ const Groups = ({ route, navigation }) => {
     )
   }
 
-  onSchoolPress = (schoolId) => {
+  const onSchoolPress = (schoolId) => {
     const userRef = ref(database, 'users/' + userKey);
     update(userRef, {
       school: schoolId,

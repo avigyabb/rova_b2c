@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Add from './components/Add';
 import Profile from './components/Profile';
 import SignIn from './components/SignIn.js';
@@ -10,7 +10,6 @@ import Login from './components/Login.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Feed from './components/Feed';
 import Explore from './components/Explore.js';
-import { useNavigation } from '@react-navigation/native';
 import Groups from './components/Groups.js';
 import PickCategory from './components/LoginFlow/PickCategory.js';
 // import * as Analytics from 'expo-firebase-analytics';
@@ -26,47 +25,40 @@ const ComingSoon = () => (
 const Tab = createBottomTabNavigator();
 
 function MyTabs({ userKey, setView, fetchUserData }) {
-  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
       initialRouteName="Profile"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+          const iconMap = {
+            Feed: focused ? 'newspaper' : 'newspaper-outline',
+            Explore: focused ? 'search' : 'search-outline',
+            Add: focused ? 'add-circle' : 'add-circle-outline',
+            Groups: focused ? 'people' : 'people-outline',
+            Profile: focused ? 'person' : 'person-outline',
+          };
 
-          if (route.name === 'Feed') {
-            iconName = 'newspaper';
-          } else if (route.name === 'Explore') {
-            iconName = 'search';
-          } else if (route.name === 'Add') {
-            iconName = 'add-circle';
-          } else if (route.name === 'Groups') {
-            iconName = 'people';
-          } else if (route.name === 'Profile') {
-            iconName = 'person';
-          }
-          size = focused ? 33 : 30;
-
-          return (
-            <TouchableOpacity onPress={() => navigation.navigate(route.name)}>
-              <Ionicons name={iconName} size={size} color={color} />
-            </TouchableOpacity>
-          );
+          return <Ionicons name={iconMap[route.name] || 'ellipse'} size={focused ? 28 : 24} color={color} />;
         },
-        tabBarStyle: { paddingBottom: 0, height: '8%' },
+        headerShown: false,
+        sceneStyle: { backgroundColor: 'white', paddingTop: insets.top },
+        tabBarStyle: {
+          paddingBottom: 0,
+          paddingTop: 4,
+          height: 50 + insets.bottom,
+          backgroundColor: 'white',
+          borderTopColor: 'lightgrey',
+        },
+        tabBarActiveTintColor: 'black',
+        tabBarInactiveTintColor: 'gray',
       })}
-
-      tabBarOptions={{
-        activeTintColor: 'black',
-        inactiveTintColor: 'gray',
-      }}
     >
       {/* this is wrong  */}
       <Tab.Screen 
         name="Feed" 
         component={Feed} 
-        options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 
         }}
@@ -74,7 +66,6 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       <Tab.Screen 
         name="Explore" 
         component={Explore} 
-        options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 
         }}
@@ -82,7 +73,6 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       <Tab.Screen 
         name="Add" 
         component={Add} 
-        options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey,
           itemName: '',
@@ -94,7 +84,6 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       <Tab.Screen 
         name="Groups" 
         component={Groups} 
-        options={{headerStyle: { height: 0 }}}
         initialParams={{ 
           userKey: userKey, 
         }}
@@ -102,7 +91,6 @@ function MyTabs({ userKey, setView, fetchUserData }) {
       <Tab.Screen 
         name="Profile" 
         component={Profile} 
-        options={{headerStyle: { height: 0 }}} 
         initialParams={{ 
           userKey: userKey, 
           setView: setView, 
@@ -143,21 +131,25 @@ const App = () => {
   }, []);
   
   return (
-    <NavigationContainer independent={true}>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       {userKey ? (
         <>
-        {view === 'pickCategory' ? (
-          <PickCategory userKey={userKey} setView={() => setView(null)}/>
-        ) : (
-          <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData}/>
-        )}
+          {view === 'pickCategory' ? (
+            <PickCategory userKey={userKey} setView={() => setView(null)} />
+          ) : (
+            <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData} />
+          )}
         </>
-      ) : view === 'signin' ? (
-        <SignIn setView={setView} setUserKeyIndex={setUserKey} />
       ) : (
-        <Login setView={setView} setUserKeyIndex={setUserKey} />
+        <>
+          {view === 'signin' ? (
+            <SignIn setView={setView} setUserKeyIndex={setUserKey} />
+          ) : (
+            <Login setView={setView} setUserKeyIndex={setUserKey} />
+          )}
+        </>
       )}
-    </NavigationContainer>
+    </View>
   );
 };
 

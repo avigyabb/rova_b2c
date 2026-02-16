@@ -482,7 +482,7 @@ const Add = ({ route }) => {
   }
 
   // update here ***
-  onAddLaterPress = () => {
+  const onAddLaterPress = () => {
     const newLaterItemRef = push(ref(database, 'items'));
     let imageType = 'image';
     // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
@@ -539,7 +539,7 @@ const Add = ({ route }) => {
     setAddView('itemAdded');
   }
 
-  onContinuePress = () => {
+  const onContinuePress = () => {
     setNewItem('');
     setNewItemCategory(null); 
     setNewItemBucket(null);
