@@ -1,10 +1,3 @@
 {
-  "hostType": "lan",
-  "lanType": "ip",
-  "dev": true,
-  "minify": false,
-  "urlRandomness": "sXF_35Q",
-  "https": false,
-  "scheme": null,
-  "devClient": false
+  "urlRandomness": "xrsWgco"
 }

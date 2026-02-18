@@ -69,7 +69,8 @@ const Feed = ({ route, navigation }) => {
   const [itemInfo, setItemInfo] = useState(null);
   const [notifications, setNotifications] = useState(null);
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
-  const [request, response, promptAsync] = useSpotifyAuth('3895cb48f70545b898a65747b63b430d', 'exp://10.0.0.187:8081'); // how do I do this on my actual app
+  const spotifyRedirectUri = AuthSession.makeRedirectUri({ scheme: 'amborasocial' });
+  const [request, response, promptAsync] = useSpotifyAuth('3895cb48f70545b898a65747b63b430d', spotifyRedirectUri);
   const [individualSpotifyAccessToken, setIndividualSpotifyAccessToken] = useState(null);
   const [numFollowers, setNumFollowers] = useState(1);
   const [index, setIndex] = useState(0);
@@ -157,7 +158,7 @@ const Feed = ({ route, navigation }) => {
 
     get(categoryItemsRef).then((snapshot) => {
       if (snapshot.exists()) {
-        tempListDataSorted = Object.entries(snapshot.val())
+        const tempListDataSorted = Object.entries(snapshot.val())
           .filter(([key, value]) => key !== 'undefined')
           .map(([key, value]) => ({ key, ...value }))
           .sort((a, b) => ((b.likes ? Object.keys(b.likes).length : 0) + (b.dislikes ? Object.keys(b.dislikes).length : 0)) - ((a.likes ? Object.keys(a.likes).length : 0) + (a.dislikes ? Object.keys(a.dislikes).length : 0)));
@@ -233,7 +234,7 @@ const Feed = ({ route, navigation }) => {
     if (response?.type === 'success') {
       AuthSession.exchangeCodeAsync({
         clientId: '3895cb48f70545b898a65747b63b430d',
-        redirectUri: 'exp://10.0.0.187:8081',
+        redirectUri: spotifyRedirectUri,
         code: response.params.code,
         extraParams: {
           code_verifier: request.codeVerifier,  // Ensure this is correctly captured

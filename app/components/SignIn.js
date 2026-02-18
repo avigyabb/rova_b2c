@@ -108,13 +108,13 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
   }
 
   return (
-    code === 'test' && loaded ? (
+    code === 'test' ? (
       <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-        <View style={{ flex: 1, alignItems: 'center', marginTop: '25%' }}>
+        <View style={{ flex: 1, alignItems: 'center', marginTop: '25%', backgroundColor: 'white' }}>
 
           <View style={{ width: '80%' }}>
             <Text style={{ color: 'black', fontSize: 20, marginBottom: 10 }}>Welcome to</Text>
-            <Text style={{ color: 'black', fontSize: 28, fontFamily: 'Poppins Bold', marginBottom: 10, fontWeight: 'bold' }}>ambora\social  🌍</Text>
+            <Text style={{ color: 'black', fontSize: 28, fontFamily: loaded ? 'Poppins Bold' : undefined, marginBottom: 10, fontWeight: 'bold' }}>ambora\social  🌍</Text>
             <Text style={{ color: 'gray', fontSize: 14, marginBottom: 30 }}>new gen social platform based on rankings</Text>
           </View>
           
@@ -176,10 +176,10 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
           <Text style={{ color: 'gray', fontSize: 12, fontWeight: 'bold', marginBottom: 20 }}>ambora labs</Text>
         </View>
       </TouchableWithoutFeedback>
-    ) : loaded ? (
+    ) : (
       <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-        <View style={{ flex: 1, alignItems: 'center', marginTop: '50%' }}>
-          <Text style={{ color: 'black', fontSize: 28, fontWeight: 'bold', fontFamily: 'Poppins Regular' }}>ambora\social</Text>
+        <View style={{ flex: 1, alignItems: 'center', marginTop: '50%', backgroundColor: 'white' }}>
+          <Text style={{ color: 'black', fontSize: 28, fontWeight: 'bold', fontFamily: loaded ? 'Poppins Regular' : undefined }}>ambora\social</Text>
           <TextInput
             placeholder="code"
             value={code}
@@ -200,8 +200,6 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
           <Text style={{ color: 'gray', fontSize: 12, fontWeight: 'bold', marginBottom: 20 }}>ambora labs</Text>
         </View>
       </TouchableWithoutFeedback>
-    ) : (
-      <Text>Loading...</Text>
     )
   );
 };

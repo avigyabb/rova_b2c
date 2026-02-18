@@ -9,8 +9,6 @@ import { useFonts } from 'expo-font';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Profile from './Profile';
 import axios from 'axios';
-import qs from 'qs';
-import { Buffer } from 'buffer';
 import { generateRandom, deriveChallenge } from 'expo-auth-session';
 import { Video } from 'expo-av';
 import moment from 'moment';
@@ -94,7 +92,6 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [newComment, setNewComment] = useState('');
   const [commentTypingMode, setCommentTypingMode] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-  const [spotifyAccessToken, setSpotifyAccessToken] = useState('')
   const [accessToken, setAccessToken] = useState(null);
   const [devices, setDevices] = useState([]);
   const [trackUri, setTrackUri] = useState('')
@@ -145,7 +142,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     const itemsRef = ref(database, 'items');
     
     // Create a query to fetch items with the specified image
-    itemsQuery = query(itemsRef, orderByChild('image'), equalTo(item.image));
+    const itemsQuery = query(itemsRef, orderByChild('image'), equalTo(item.image));
     
     // Use the `get` function to fetch the data once
     get(itemsQuery).then((snapshot) => {
@@ -215,7 +212,6 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     });
   }
 
-    getSpotifyAccessToken();
     const userRef = ref(database, `users/${item.user_id}`);
     get(userRef).then((snapshot) => {
       if (snapshot.exists()) {
@@ -249,25 +245,6 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     hour: '2-digit',
     minute: '2-digit',
   });
-
-  const getSpotifyAccessToken = async () => {
-    const client_id = '3895cb48f70545b898a65747b63b430d';
-    const client_secret = '8d70ee092b614f58b488ce149e827ab1';
-    const url = 'https://accounts.spotify.com/api/token';
-    const headers = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
-    };
-    const data = qs.stringify({'grant_type': 'client_credentials'});
-
-    try {
-      const response = await axios.post(url, data, {headers});
-      console.log(response)
-      setSpotifyAccessToken(response.data.access_token);
-    } catch (error) {
-      console.error('Error obtaining token:', error);
-    }
-  }
 
   const onLikePress = (item) => {
     console.log(item.key)

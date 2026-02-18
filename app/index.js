@@ -24,6 +24,35 @@ const ComingSoon = () => (
 
 const Tab = createBottomTabNavigator();
 
+class RootErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Root render crash:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <View style={{ flex: 1, backgroundColor: 'white', justifyContent: 'center', padding: 24 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Startup error</Text>
+          <Text style={{ color: 'black' }}>
+            {this.state.error?.message || 'Unknown startup error'}
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function MyTabs({ userKey, setView, fetchUserData }) {
   const insets = useSafeAreaInsets();
 
@@ -131,25 +160,27 @@ const App = () => {
   }, []);
   
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
-      {userKey ? (
-        <>
-          {view === 'pickCategory' ? (
-            <PickCategory userKey={userKey} setView={() => setView(null)} />
-          ) : (
-            <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData} />
-          )}
-        </>
-      ) : (
-        <>
-          {view === 'signin' ? (
-            <SignIn setView={setView} setUserKeyIndex={setUserKey} />
-          ) : (
-            <Login setView={setView} setUserKeyIndex={setUserKey} />
-          )}
-        </>
-      )}
-    </View>
+    <RootErrorBoundary>
+      <View style={{ flex: 1, backgroundColor: 'white' }}>
+        {userKey ? (
+          <>
+            {view === 'pickCategory' ? (
+              <PickCategory userKey={userKey} setView={() => setView(null)} />
+            ) : (
+              <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData} />
+            )}
+          </>
+        ) : (
+          <>
+            {view === 'signin' ? (
+              <SignIn setView={setView} setUserKeyIndex={setUserKey} />
+            ) : (
+              <Login setView={setView} setUserKeyIndex={setUserKey} />
+            )}
+          </>
+        )}
+      </View>
+    </RootErrorBoundary>
   );
 };
 

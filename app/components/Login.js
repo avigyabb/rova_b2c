@@ -66,7 +66,7 @@ const Login = ({ setView, setUserKeyIndex }) => {
 
   if (page === 'forgotPassword') {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
         <Text style={{ color: 'black', fontSize: 24, marginBottom: 20, textAlign: 'left', width: '80%' }}>Forgot Your Password? 🤔</Text>
         
         <TextInput
@@ -109,9 +109,9 @@ const Login = ({ setView, setUserKeyIndex }) => {
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View style={{ flex: 1, alignItems: 'center', marginTop: '30%' }}>
+      <View style={{ flex: 1, alignItems: 'center', marginTop: '30%', backgroundColor: 'white' }}>
         <View style={{ width: '80%' }}>
-          <Text style={{ color: 'black', fontSize: 28, fontFamily: 'Poppins Bold', marginBottom: 10, fontWeight: 'bold' }}>ambora\social</Text>
+          <Text style={{ color: 'black', fontSize: 28, fontFamily: loaded ? 'Poppins Bold' : undefined, marginBottom: 10, fontWeight: 'bold' }}>ambora\social</Text>
           <Text style={{ color: 'gray', fontSize: 14, marginBottom: 50 }}>new gen social platform based on rankings</Text>
           <Text style={{ color: 'black', fontSize: 20, marginBottom: 30 }}>Welcome Back! 🎉</Text>
         </View>
