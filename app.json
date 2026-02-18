@@ -1,6 +1,6 @@
 {
   "expo": {
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "amborasocial",
     "web": {
       "bundler": "metro"
