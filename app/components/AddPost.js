@@ -194,7 +194,6 @@ const openaiApi = axios.create({
               }
               setAddView('');
             } catch (error) {
-              console.error('Error moderating text:', error);
               // Fail-open so users can still continue if moderation service is unavailable.
               setAddView('');
             }

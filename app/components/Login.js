@@ -54,7 +54,7 @@ const Login = ({ setView, setUserKeyIndex }) => {
     const database = getDatabase();
     const emailVal = resetEmail;
     sendPasswordResetEmail(auth, emailVal).then(() => {
-      alert("Check your email for password reset");
+      alert("Check your email for password reset. NOTE: Please check your spam email!");
       console.log("Password reset email sent");
     }).catch(err => {
       alert("Error sending password reset email: " + err.message);

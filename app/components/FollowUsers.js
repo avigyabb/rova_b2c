@@ -152,7 +152,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <>
+      <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
         <TouchableOpacity onPress={() => setFocusedCategory(null)}> 
           <Ionicons name="arrow-back" size={30} color="black" />
@@ -160,7 +160,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
         <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}>{username}'s {focusedCategory}</Text>
       </View>
 
-      <View style={{ backgroundColor: 'white', paddingHOrizontal: 20, height: '94.5%' }}>
+      <View style={{ backgroundColor: 'white', paddingHorizontal: 20, flex: 1 }}>
         <FlatList
           data={userListData}
           renderItem={({ item }) => <UserTile item={item} />}
@@ -169,7 +169,7 @@ const FollowUsers = ({ userIds, setFocusedCategory, focusedCategory, username, u
           key={"single-column"}
         />
       </View>
-      </>
+      </View>
     </TouchableWithoutFeedback>
   )
 };
