@@ -38,81 +38,66 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
 
 
   const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alert("Please allow photo access to add an image.");
+      return;
+    }
+
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All, // ~ may need to change to just pictures
+      mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [4,3], // search up
+      aspect: [4,3],
       quality: 1,
     });
-    
-  
 
-  try {
-    const apiKey = "AIzaSyDxK3oZA5yBjSC0Lvrs_wyT53Jputlx-IA";
-    const apiURL = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
-    const base64ImageData = await FileSystem.readAsStringAsync(result.assets[0].uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    const requestData ={
-      requests:[
-        {
-          image: {
-            content: base64ImageData
-          },
-          features: [{type: "SAFE_SEARCH_DETECTION"}]
-        }
-      ]
-    };
-
-    const apiResponse = await axios.post(apiURL, requestData) 
-
-    if (!((apiResponse.data.responses[0].safeSearchAnnotation.adult === "UNLIKELY") 
-    || (apiResponse.data.responses[0].safeSearchAnnotation.adult === "VERY_UNLIKELY") || (apiResponse.data.responses[0].safeSearchAnnotation.adult === "POSSIBLE") || (apiResponse.data.responses[0].safeSearchAnnotation.adult === "LIKELY"))){
-  console.log(1);
-
-  safety = true;
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
     }
-    else if (!((apiResponse.data.responses[0].safeSearchAnnotation.medical === "UNLIKELY") 
-    || (apiResponse.data.responses[0].safeSearchAnnotation.medical === "VERY_UNLIKELY") || (apiResponse.data.responses[0].safeSearchAnnotation.medical === "POSSIBLE") || (apiResponse.data.responses[0].safeSearchAnnotation.medical === "LIKELY"))){
-  console.log(3);
 
-      safety = true;
+    const selectedUri = result.assets[0].uri;
 
-    }
-    
-    else if (!((apiResponse.data.responses[0].safeSearchAnnotation.violence === "UNLIKELY") 
-    || (apiResponse.data.responses[0].safeSearchAnnotation.violence === "VERY_UNLIKELY") || (apiResponse.data.responses[0].safeSearchAnnotation.violence === "POSSIBLE") || (apiResponse.data.responses[0].safeSearchAnnotation.violence === "LIKELY"))){
-  console.log(4);
+    try {
+      const apiKey = "AIzaSyDxK3oZA5yBjSC0Lvrs_wyT53Jputlx-IA";
+      const apiURL = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+      const base64ImageData = await FileSystem.readAsStringAsync(selectedUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const requestData ={
+        requests:[
+          {
+            image: { content: base64ImageData },
+            features: [{type: "SAFE_SEARCH_DETECTION"}]
+          }
+        ]
+      };
 
-      safety = true;
+      const apiResponse = await axios.post(apiURL, requestData);
+      const safeSearch = apiResponse?.data?.responses?.[0]?.safeSearchAnnotation;
 
-    }
-    else{
-      console.log(10);
+      if (safeSearch) {
+        const unsafeValues = ['LIKELY', 'VERY_LIKELY'];
+        safety =
+          unsafeValues.includes(safeSearch.adult) ||
+          unsafeValues.includes(safeSearch.medical) ||
+          unsafeValues.includes(safeSearch.violence);
+      } else {
+        safety = false;
+      }
+    } catch(error){
+      // Fail-open so image upload still works if moderation API is unavailable.
+      console.log('Error analyzing image', error);
       safety = false;
     }
 
-    // console.log(apiResponse.data.responses[0].safeSearchAnnotation.racy === "UNLIKELY" ||
-    //  apiResponse.data.responses[0].safeSearchAnnotation.racy === "VERY_UNLIKELY")
-    console.log(safety)
-    // setUnsafeResult(apiResponse) set to true if flaggable
-    console.log(apiResponse.data.responses[0].safeSearchAnnotation)
+    if (safety){
+      alert("This image does not follow our guidelines");
+      return;
+    }
 
-
-  } catch(error){
-    console.log('Error analyzing image', error);
-    setUnsafeResult(false)
-  }
-
-
-if (safety){
-  alert("This image does not follow our guidelines")
-}else{
-  setNewItemImageUris([result.assets[0].uri]);
-  setAddedCustomImage(true);
-}
-    
-}; 
+    setNewItemImageUris([selectedUri]);
+    setAddedCustomImage(true);
+  }; 
   // const getLocation = async () => {
   //   try {
   //     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -205,12 +190,13 @@ const openaiApi = axios.create({
               const moderation_response = await openaiApi.post('', { input: newItemDescription });
               if (moderation_response.data.results[0].flagged){
                 alert("This description does not follow our guidelines")
-                } else{
-                  setAddView('');
-                }
-              //moderation_response.data.results[0].flagged
+                return;
+              }
+              setAddView('');
             } catch (error) {
               console.error('Error moderating text:', error);
+              // Fail-open so users can still continue if moderation service is unavailable.
+              setAddView('');
             }
             
           }

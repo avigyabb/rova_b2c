@@ -80,7 +80,49 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     get(categoryRef).then((snapshot) => {
       if (isCancelled) return;
       if (snapshot.exists()) {
-        setCategoryInfo(snapshot.val());
+        const category = snapshot.val();
+        setCategoryInfo(category);
+
+        // If this list has no cover image, pick the first available image from its items.
+        if (!category.imageUri) {
+          const categoryItemsRef = ref(database, 'items');
+          const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(focusedCategoryId));
+          get(categoryItemsQuery).then((itemsSnapshot) => {
+            if (isCancelled || !itemsSnapshot.exists()) return;
+
+            const items = [];
+            itemsSnapshot.forEach((child) => {
+              const val = child.val();
+              if (val?.image) {
+                items.push(val);
+              }
+            });
+
+            if (items.length === 0) return;
+
+            // Prefer ranked "now" items first, then by score desc.
+            items.sort((a, b) => {
+              const aNow = a.bucket === 'later' ? 1 : 0;
+              const bNow = b.bucket === 'later' ? 1 : 0;
+              if (aNow !== bNow) return aNow - bNow;
+              return (b.score ?? -1) - (a.score ?? -1);
+            });
+
+            const fallbackImage = items[0].image;
+            if (!fallbackImage) return;
+
+            update(categoryRef, { imageUri: fallbackImage }).then(() => {
+              if (!isCancelled) {
+                setCategoryInfo((prev) => ({ ...prev, imageUri: fallbackImage }));
+              }
+            }).catch((error) => {
+              console.error("Error setting fallback category image:", error);
+            });
+          }).catch((error) => {
+            console.error("Error fetching category items for fallback image:", error);
+          });
+        }
+
         // Defer heavy comparison data fetch to keep interactions responsive.
         InteractionManager.runAfterInteractions(() => {
           if (isCancelled) return;
