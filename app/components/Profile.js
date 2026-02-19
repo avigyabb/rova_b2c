@@ -60,6 +60,7 @@ const Profile = ({ route, navigation }) => {
   const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
   const [profileInfo, setProfileInfo] = useState({});
   const [categories, setCategories] = useState({});
+  const [archivedCategories, setArchivedCategories] = useState([]);
   const [focusedCategory, setFocusedCategory] = useState(null);
   const [focusedCategoryId, setFocusedCategoryId] = useState(null);
   const [focusedList, setFocusedList] = useState({'now': [], 'later': []});
@@ -95,17 +96,23 @@ const Profile = ({ route, navigation }) => {
     const userCategoriesQuery = query(categoriesRef, orderByChild('user_id'), equalTo(userKey));
     // Execute the query and listen for updates
     onValue(userCategoriesQuery, (snapshot) => {
-      const categories = [];
+      const activeCategories = [];
+      const archived = [];
 
       snapshot.forEach((childSnapshot) => {
         // childSnapshot.key will contain the unique key of each category
         const categoryKey = childSnapshot.key;
         const categoryData = childSnapshot.val();
 
-        categories.push({ id: categoryKey, ...categoryData });
+        if (!categoryData?.archived) {
+          activeCategories.push({ id: categoryKey, ...categoryData });
+        } else {
+          archived.push({ id: categoryKey, ...categoryData });
+        }
       });
 
-      setCategories(categories.sort((a, b) => b.latest_add - a.latest_add));
+      setCategories(activeCategories.sort((a, b) => b.latest_add - a.latest_add));
+      setArchivedCategories(archived.sort((a, b) => (b.archived_at || 0) - (a.archived_at || 0)));
     });
 
     getUserInfo();
@@ -200,6 +207,18 @@ const Profile = ({ route, navigation }) => {
             setView('signin');
           }
         }
+      ]
+    );
+  }
+
+  const onProfileMenuPress = () => {
+    Alert.alert(
+      "Profile menu",
+      "",
+      [
+        { text: "View Archived Lists", onPress: () => setFocusedCategory('Archived Lists') },
+        { text: "Log out", style: "destructive", onPress: () => onLogOutPress() },
+        { text: "Cancel", style: "cancel" },
       ]
     );
   }
@@ -300,6 +319,36 @@ const Profile = ({ route, navigation }) => {
 
           <AddCategory onBackPress={() => onBackPress()} userKey={userKey} />
         </>
+      ) : focusedCategory === 'Archived Lists' ? (
+        <>
+          <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
+            <TouchableOpacity onPress={() => onBackPress()}>
+              <Ionicons name="arrow-back" size={30} color="black" />
+            </TouchableOpacity>
+            <Text style={{ marginLeft: 'auto', marginRight: 'auto', fontSize: 15, fontWeight: 'bold' }}>Archived Lists</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: 'white', paddingTop: 10 }}>
+            {archivedCategories.length > 0 ? (
+              <FlatList
+                data={archivedCategories}
+                renderItem={({ item }) => (
+                  <CategoryTile
+                    category_name={item.category_name}
+                    imageUri={item.imageUri}
+                    num_items={item.num_items}
+                    onCategoryPress={() => onCategoryPress(item.category_name, item.id, item.num_items)}
+                  />
+                )}
+                numColumns={3}
+                contentContainerStyle={styles.grid}
+              />
+            ) : (
+              <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
+                No archived lists yet.
+              </Text>
+            )}
+          </View>
+        </>
       ) : (
         <>
         <View style={{ flex: 1 }}>
@@ -322,8 +371,8 @@ const Profile = ({ route, navigation }) => {
             {!visitingUserId ? (
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
                 <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
-                <TouchableOpacity onPress={() => onLogOutPress()} style={{ marginLeft: 'auto' }}>
-                  <Ionicons name="exit-outline" size={25} color="black" />
+                <TouchableOpacity onPress={onProfileMenuPress} style={{ marginLeft: 'auto' }}>
+                  <Ionicons name="menu" size={27} color="black" />
                 </TouchableOpacity>
               </View>
             ) : (

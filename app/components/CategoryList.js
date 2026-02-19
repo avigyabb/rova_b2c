@@ -481,6 +481,44 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     );
   };
 
+  const onArchiveCategoryPress = () => {
+    Alert.alert(
+      "Archive this list?",
+      "Archived lists are hidden from your profile.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Archive",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const categoryRef = ref(database, 'categories/' + focusedCategoryId);
+              await update(categoryRef, {
+                archived: true,
+                archived_at: Date.now(),
+              });
+              onBackPress();
+            } catch (error) {
+              console.error("Error archiving category:", error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const onListMenuPress = () => {
+    Alert.alert(
+      "List options",
+      "",
+      [
+        { text: "Edit list", onPress: () => onEditPress() },
+        { text: "Archive list", style: "destructive", onPress: () => onArchiveCategoryPress() },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -569,7 +607,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             <Text style={{ fontSize: 15, marginRight: 30 }}>Rerank</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => onEditPress()}>
-            <Text style={{ fontSize: 15 }}>Edit</Text>
+            <Ionicons name="ellipsis-horizontal" size={22} color="black" />
           </TouchableOpacity>
           </View>
         ) : (
@@ -620,16 +658,18 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         <Text style={{ fontSize: 15 }}>Compare</Text>
       </TouchableOpacity>
     )}
-    
-    <TouchableOpacity onPress={() => onEditPress()}>
-      {editMode ? (
-        <Text style={{ fontSize: 15, fontWeight: 'bold', marginLeft: 25 }}>Done</Text>
-      ) : isMyProfile ? ( // change this variable to true to delete other people's comments
-        <Text style={{ fontSize: 15, marginLeft: 25 }}>Edit</Text>
+
+    {isMyProfile && (
+      editMode ? (
+        <TouchableOpacity onPress={() => onEditPress()}>
+          <Text style={{ fontSize: 15, fontWeight: 'bold', marginLeft: 25 }}>Done</Text>
+        </TouchableOpacity>
       ) : (
-        <></>
-      )}
-    </TouchableOpacity>
+        <TouchableOpacity onPress={onListMenuPress} style={{ marginLeft: 8, marginRight: 6 }}>
+          <Ionicons name="ellipsis-horizontal" size={24} color="black" />
+        </TouchableOpacity>
+      )
+    )}
   </View>
 </View>
 
