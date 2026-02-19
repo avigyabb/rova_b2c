@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 // import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import { database } from '../../firebaseConfig';
 import { ref, set, onValue, push, query, equalTo, orderByChild, get, remove, update } from "firebase/database";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
 import EditProfile from './EditProfile';
@@ -74,6 +74,7 @@ const Profile = ({ route, navigation }) => {
   const [numItems, setNumItems] = useState(0);
   const [isCategoryLoading, setIsCategoryLoading] = useState(false);
   const [stableProfilePicUri, setStableProfilePicUri] = useState(null);
+  const categoryRequestRef = useRef(0);
 
   const getUserInfo = () => {
     const userRef = ref(database, 'users/' + userKey);
@@ -118,6 +119,8 @@ const Profile = ({ route, navigation }) => {
   }, [profileInfo?.profile_pic]);
 
   const onCategoryPress = (category_name, category_id, num_items) => {
+    const requestId = ++categoryRequestRef.current;
+
     // Navigate immediately, then fetch items in the background.
     setFocusedCategory(category_name);
     setFocusedCategoryId(category_id);
@@ -129,6 +132,7 @@ const Profile = ({ route, navigation }) => {
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(category_id));
 
     get(categoryItemsQuery).then((snapshot) => {
+      if (requestId !== categoryRequestRef.current) return;
       let tempFocusedList = {'now': [], 'later': []};
       if (snapshot.exists()) {
         for (const [key, value] of Object.entries(snapshot.val())) {
@@ -143,6 +147,7 @@ const Profile = ({ route, navigation }) => {
       setFocusedList(tempFocusedList);
       setIsCategoryLoading(false);
     }).catch((error) => {
+      if (requestId !== categoryRequestRef.current) return;
       console.error("Error fetching categories:", error);
       setIsCategoryLoading(false);
     });
@@ -168,6 +173,8 @@ const Profile = ({ route, navigation }) => {
   };
 
   const onBackPress = () => {
+    // Invalidate any in-flight category fetch so stale responses are ignored.
+    categoryRequestRef.current += 1;
     setFocusedList(null);
     setFocusedCategory(null);
     setFocusedCategoryId(null);

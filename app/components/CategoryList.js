@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useMemo, useLayoutEffect} from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, TextInput, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, TextInput, ScrollView, ActivityIndicator, InteractionManager } from "react-native";
 import { Image } from 'expo-image';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ref, set, remove, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
@@ -70,56 +70,68 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const localNowLen = listData?.now?.length ?? 0;
   const localLaterLen = listData?.later?.length ?? 0;
   const isSyncingFromParent = parentNowLen !== localNowLen || parentLaterLen !== localLaterLen;
+  const shouldRenderList = !isLoading && !isSyncingFromParent;
 
   useEffect(() => {
+    if (isLoading || !focusedCategoryId) return;
+    let isCancelled = false;
+
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
     get(categoryRef).then((snapshot) => {
+      if (isCancelled) return;
       if (snapshot.exists()) {
         setCategoryInfo(snapshot.val());
-        // check item matches with user
-        const sameUserCategoriesRef = ref(database, 'categories');
-        const sameUserCategoriesQuery = query(sameUserCategoriesRef, orderByChild('user_id'), equalTo(visitingUserId));
-        get(sameUserCategoriesQuery).then((sameUserCategoriesSnapshot) => {
-          if (sameUserCategoriesSnapshot.exists()) {
-            let promises = [];
-            let visitingUserCategoriesTemp = [];
-            sameUserCategoriesSnapshot.forEach((childSnapshot) => {
-              if (childSnapshot.val().category_type === snapshot.val().category_type) {
-                visitingUserCategoriesTemp.push({id: childSnapshot.key, ...childSnapshot.val()});
-                const categoryItemsRef = ref(database, 'items');
-                const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(childSnapshot.key));
-                promises.push(get(categoryItemsQuery));
-              }
-            });
-
-            setVisitingUserCategories(visitingUserCategoriesTemp);
-            Promise.all(promises).then((results) => {
-              let items = new Set();
-              results.forEach((categoryItemsSnapshot) => {
-                if (categoryItemsSnapshot.exists()) {
-                  categoryItemsSnapshot.forEach((childCategoryItemsSnapshot) => {
-                    let item = childCategoryItemsSnapshot.val();
-                    items.add(item.image);
-                  });
+        // Defer heavy comparison data fetch to keep interactions responsive.
+        InteractionManager.runAfterInteractions(() => {
+          if (isCancelled) return;
+          const sameUserCategoriesRef = ref(database, 'categories');
+          const sameUserCategoriesQuery = query(sameUserCategoriesRef, orderByChild('user_id'), equalTo(visitingUserId));
+          get(sameUserCategoriesQuery).then((sameUserCategoriesSnapshot) => {
+            if (isCancelled) return;
+            if (sameUserCategoriesSnapshot.exists()) {
+              let promises = [];
+              let visitingUserCategoriesTemp = [];
+              sameUserCategoriesSnapshot.forEach((childSnapshot) => {
+                if (childSnapshot.val().category_type === snapshot.val().category_type) {
+                  visitingUserCategoriesTemp.push({id: childSnapshot.key, ...childSnapshot.val()});
+                  const categoryItemsRef = ref(database, 'items');
+                  const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(childSnapshot.key));
+                  promises.push(get(categoryItemsQuery));
                 }
               });
-              setItemsInCategory(items)
-              // Now you can use 'items' or set it in your state
-            }).catch((error) => {
-              console.error(error);
-            });
 
-          } else {
-            console.log("No categories found for the user.");
-          }
-        })
+              setVisitingUserCategories(visitingUserCategoriesTemp);
+              Promise.all(promises).then((results) => {
+                if (isCancelled) return;
+                let items = new Set();
+                results.forEach((categoryItemsSnapshot) => {
+                  if (categoryItemsSnapshot.exists()) {
+                    categoryItemsSnapshot.forEach((childCategoryItemsSnapshot) => {
+                      let item = childCategoryItemsSnapshot.val();
+                      items.add(item.image);
+                    });
+                  }
+                });
+                setItemsInCategory(items)
+              }).catch((error) => {
+                console.error(error);
+              });
+
+            } else {
+              console.log("No categories found for the user.");
+            }
+          })
+        });
       } else {
         console.log("No user data.");
       }
     }).catch((error) => {
       console.error(error);
     });
-  }, [focusedCategoryId, database, visitingUserId]);
+    return () => {
+      isCancelled = true;
+    };
+  }, [focusedCategoryId, database, visitingUserId, isLoading]);
 
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
@@ -455,6 +467,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   const memoizedList = useMemo(() => {
+    if (!shouldRenderList) return [];
+
     // Filter the items based on the search value, keeping the original index
     const filteredList = listData[listView]
       .map((item, index) => ({ ...item, originalIndex: index })) // Add the original index to each item
@@ -466,7 +480,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     return filteredList.map(({ 1: item, 0: key, originalIndex }) => (
       <ListItemTile item={item} item_key={key} index={originalIndex} key={key} />
     ));
-  }, [listData, listView, searchVal, editMode, itemsInCategory]);  
+  }, [shouldRenderList, listData, listView, searchVal, editMode, itemsInCategory]);  
 
   if (categoryListView === 'Similarity Score') {
     return (
@@ -542,11 +556,13 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', alignItems: 'center' }}>
-  <TouchableOpacity onPress={onBackPress}> 
-    <Ionicons name="arrow-back" size={30} color="black" />
+  <TouchableOpacity onPress={onBackPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+    <View style={{ padding: 4 }}>
+      <Ionicons name="arrow-back" size={30} color="black" />
+    </View>
   </TouchableOpacity>
   
-  <View style={{ flex: 1, alignItems: 'center', position: 'absolute', left: 0, right: 0 }}>
+  <View pointerEvents="none" style={{ flex: 1, alignItems: 'center', position: 'absolute', left: 0, right: 0 }}>
     {editMode ? (
       <TouchableOpacity onPress={() => onDeleteCategoryPress()}>
         <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
@@ -657,7 +673,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       </View>
 
       {isLoading || isSyncingFromParent ? (
-        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+        <View pointerEvents="none" style={{ paddingVertical: 40, alignItems: 'center' }}>
           <ActivityIndicator size="large" color="black" />
           <Text style={{ marginTop: 10, color: 'gray' }}>Loading items...</Text>
         </View>
