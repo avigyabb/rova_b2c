@@ -604,7 +604,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     </View>
   </TouchableOpacity>
   
-  <View pointerEvents="none" style={{ flex: 1, alignItems: 'center', position: 'absolute', left: 0, right: 0 }}>
+  <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center', position: 'absolute', left: 0, right: 0 }}>
     {editMode ? (
       <TouchableOpacity onPress={() => onDeleteCategoryPress()}>
         <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete {focusedCategory}</Text>
