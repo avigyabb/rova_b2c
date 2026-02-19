@@ -1,13 +1,12 @@
-import React, {useEffect, useState, useMemo} from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Linking, TextInput, ScrollView } from "react-native";
+import React, {useEffect, useState, useMemo, useLayoutEffect} from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, TextInput, ScrollView, ActivityIndicator } from "react-native";
 import { Image } from 'expo-image';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { ref, set, remove, onValue, off, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
+import { ref, set, remove, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
 import { database, storage } from '../../firebaseConfig';
-import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
+import { getStorage, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import Hyperlink from 'react-native-hyperlink';
 import * as ImagePicker from 'expo-image-picker';
-import FeedItemTile from "./FeedItemTile";
 import NormalItemTile from "./NormalItemTile";
 import Profile from './Profile';
 import CategoryComparison from "./CategoryListComponents/CategoryComparison";
@@ -46,9 +45,9 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
-const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey }) => {
+const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey, isLoading = false }) => {
   const [listView, setListView] = useState('now');
-  const [listData, setListData] = useState(focusedList);
+  const [listData, setListData] = useState(focusedList || { now: [], later: [] });
   const [editMode, setEditMode] = useState(false);
   const [categoryInfo, setCategoryInfo] = useState({});
   const [categoryImage, setCategoryImage] = useState(null);
@@ -60,6 +59,17 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
   const [visitingUserCategories, setVisitingUserCategories] = useState([]);
   const [categoryListView, setCategoryListView] = useState(null);
+
+  // Keep local editable list data in sync with parent updates before paint to avoid empty-state flicker.
+  useLayoutEffect(() => {
+    setListData(focusedList || { now: [], later: [] });
+  }, [focusedList]);
+
+  const parentNowLen = focusedList?.now?.length ?? 0;
+  const parentLaterLen = focusedList?.later?.length ?? 0;
+  const localNowLen = listData?.now?.length ?? 0;
+  const localLaterLen = listData?.later?.length ?? 0;
+  const isSyncingFromParent = parentNowLen !== localNowLen || parentLaterLen !== localLaterLen;
 
   useEffect(() => {
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
@@ -646,7 +656,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         </View>
       </View>
 
-      {listData[listView].length > 0 ? (  
+      {isLoading || isSyncingFromParent ? (
+        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="black" />
+          <Text style={{ marginTop: 10, color: 'gray' }}>Loading items...</Text>
+        </View>
+      ) : listData[listView].length > 0 ? (  
         <>
         <TextInput
           placeholder={'Search Items...'}

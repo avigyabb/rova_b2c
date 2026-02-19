@@ -1,15 +1,10 @@
 import React from 'react';
 import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share } from 'react-native';
-import { Image } from 'expo-image';
 import { Image as ReactImage } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
-import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
 import { useFonts } from 'expo-font';
 // import profilePic from '../../assets/images/lebron_profile_pic.webp';
-import { sendPasswordResetEmail, getAuth } from "firebase/auth";
-import { database, storage } from '../../firebaseConfig';
-import { ref, set, onValue, off, push, query, equalTo, orderByChild, get, remove, update, getDatabase } from "firebase/database"; // Import 'ref' and 'set' from the database package
+import { database } from '../../firebaseConfig';
+import { ref, set, onValue, push, query, equalTo, orderByChild, get, remove, update } from "firebase/database";
 import { useEffect, useState } from 'react';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
@@ -68,11 +63,6 @@ const Profile = ({ route, navigation }) => {
   const [focusedCategory, setFocusedCategory] = useState(null);
   const [focusedCategoryId, setFocusedCategoryId] = useState(null);
   const [focusedList, setFocusedList] = useState({'now': [], 'later': []});
-  const [addCategoryName, setAddCategoryName] = useState('');
-  const [categoryEditMode, setCategoryEditMode] = useState(false);
-  const [imageUri, setImageUri] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [downloadImage, setDownloadImage] = useState(null);
   const [refreshed, setRefreshed] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [loaded] = useFonts({
@@ -82,6 +72,8 @@ const Profile = ({ route, navigation }) => {
   });
   const [isFollowing, setIsFollowing] = useState(false);
   const [numItems, setNumItems] = useState(0);
+  const [isCategoryLoading, setIsCategoryLoading] = useState(false);
+  const [stableProfilePicUri, setStableProfilePicUri] = useState(null);
 
   const getUserInfo = () => {
     const userRef = ref(database, 'users/' + userKey);
@@ -118,7 +110,21 @@ const Profile = ({ route, navigation }) => {
     getUserInfo();
   }, []);
 
+  useEffect(() => {
+    if (profileInfo?.profile_pic) {
+      setStableProfilePicUri(profileInfo.profile_pic);
+      ReactImage.prefetch(profileInfo.profile_pic);
+    }
+  }, [profileInfo?.profile_pic]);
+
   const onCategoryPress = (category_name, category_id, num_items) => {
+    // Navigate immediately, then fetch items in the background.
+    setFocusedCategory(category_name);
+    setFocusedCategoryId(category_id);
+    setNumItems(num_items);
+    setFocusedList({ now: [], later: [] });
+    setIsCategoryLoading(true);
+
     const categoryItemsRef = ref(database, 'items');
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(category_id));
 
@@ -135,11 +141,10 @@ const Profile = ({ route, navigation }) => {
         tempFocusedList['now'].sort((a, b) => b[1].score - a[1].score);
       }
       setFocusedList(tempFocusedList);
-      setFocusedCategory(category_name);
-      setFocusedCategoryId(category_id);
-      setNumItems(num_items);
+      setIsCategoryLoading(false);
     }).catch((error) => {
       console.error("Error fetching categories:", error);
+      setIsCategoryLoading(false);
     });
   }
 
@@ -166,17 +171,8 @@ const Profile = ({ route, navigation }) => {
     setFocusedList(null);
     setFocusedCategory(null);
     setFocusedCategoryId(null);
+    setIsCategoryLoading(false);
   }
-
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All, // ~ may need to change to just pictures
-      allowsEditing: true,
-      aspect: [4,3], // search up
-      quality: 1,
-    });
-    setImageUri(result.assets[0].uri);
-  }; 
 
   const onLogOutPress = () => {
     Alert.alert(
@@ -297,19 +293,8 @@ const Profile = ({ route, navigation }) => {
 
           <AddCategory onBackPress={() => onBackPress()} userKey={userKey} />
         </>
-      ) : focusedCategoryId ? (
-        <CategoryList
-          focusedCategory={focusedCategory}
-          focusedList={focusedList}
-          focusedCategoryId={focusedCategoryId}
-          numItems={numItems}
-          onBackPress={() => onBackPress()}
-          isMyProfile={visitingUserId ? visitingUserId === userKey : true}
-          visitingUserId={visitingUserId || userKey}
-          userKey={userKey}
-          navigation={navigation}
-        />
       ) : (
+        <>
         <View style={{ flex: 1 }}>
           {scrollY < -110 && (
             <View style={{position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1000,}}>
@@ -343,11 +328,11 @@ const Profile = ({ route, navigation }) => {
             )}
 
             <View style={{ flexDirection: 'row', padding: 15 }}>
-              {profileInfo.profile_pic ? (
-                <Image source={{ uri: profileInfo.profile_pic }} style={styles.profilePic} />
-              ) : (
-                <Image source={"https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png"} style={styles.profilePic} />
-              )}
+              <ReactImage
+                source={stableProfilePicUri ? { uri: stableProfilePicUri } : profilePic}
+                defaultSource={profilePic}
+                style={styles.profilePic}
+              />
               <View>
                 <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
                   <Text style={{ marginLeft: 10, fontSize: 20, fontWeight: 'bold', fontFamily: 'Poppins Bold', marginRight: 10 }}>
@@ -422,6 +407,23 @@ const Profile = ({ route, navigation }) => {
             )}
           </ScrollView>
         </View>
+        {focusedCategoryId && (
+          <View style={[StyleSheet.absoluteFillObject, { zIndex: 2000, backgroundColor: 'white' }]}>
+            <CategoryList
+              focusedCategory={focusedCategory}
+              focusedList={focusedList}
+              focusedCategoryId={focusedCategoryId}
+              numItems={numItems}
+              isLoading={isCategoryLoading}
+              onBackPress={() => onBackPress()}
+              isMyProfile={visitingUserId ? visitingUserId === userKey : true}
+              visitingUserId={visitingUserId || userKey}
+              userKey={userKey}
+              navigation={navigation}
+            />
+          </View>
+        )}
+        </>
       )}
     </>
   );
