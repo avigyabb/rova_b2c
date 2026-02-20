@@ -3,7 +3,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFe
 import { Image } from 'expo-image';
 import RNPickerSelect from 'react-native-picker-select';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { ref, set, onValue, off, query, orderByChild, push, equalTo, get, update, runTransaction } from "firebase/database";
+import { ref, set, onValue, off, query, orderByChild, push, equalTo, get, update, runTransaction, remove } from "firebase/database";
 import { database, storage } from '../../firebaseConfig';
 import { useFonts } from 'expo-font';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const Add = ({ route }) => {
+const Add = ({ route, navigation }) => {
   const isFocused = useIsFocused();
   const { userKey } = route.params;
   const [newItem, setNewItem] = useState(''); // this is the item name
@@ -133,9 +133,20 @@ const Add = ({ route }) => {
   const [numItems, setNumItems] = useState(0);
   const [presetDescription, setPresetDescription] = useState('');
   const [trackUri, setTrackUri] = useState(null);
+  const [rerankItemKey, setRerankItemKey] = useState(null);
   const [itemsInCategory, setItemsInCategory] = useState(null);
   const [loadingItems, setLoadingItems] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
+
+  const resetRankingState = () => {
+    setRankMode(false);
+    setNewItemBucket(null);
+    setItemComparisons([]);
+    setBinarySearchL(0);
+    setBinarySearchR(0);
+    setBinarySearchM(0);
+    setNewItemFinalScore(-1);
+  };
 
   const getUserCategories = () => {
     const categoriesRef = ref(database, 'categories');
@@ -175,30 +186,86 @@ const Add = ({ route }) => {
     }
   }
 
-  // ***
   useEffect(() => {
     getUserCategories();
-    getSpotifyAccessToken(); 
-    setNewItem(route.params.itemName);
-    setNewItemCategory(route.params.itemCategory);
-    setNewItemCategoryName(route.params.itemCategoryName);
+    getSpotifyAccessToken();
+  }, []);
+
+  // Hydrate one-time payloads when Add is opened from another screen (rerank/add-from-post).
+  useEffect(() => {
+    const params = route.params || {};
+
+    const hasTransientParams =
+      params.itemName !== undefined ||
+      params.itemDescription !== undefined ||
+      params.itemImage !== undefined ||
+      params.itemCategory !== undefined ||
+      params.itemCategoryName !== undefined ||
+      params.trackUri !== undefined ||
+      params.itemId !== undefined ||
+      params.itemContentDescription !== undefined ||
+      params.numItems !== undefined ||
+      params.rerankItemKey !== undefined ||
+      params.taggedUser !== undefined ||
+      params.taggedUserId !== undefined ||
+      params.presetImage !== undefined;
+
+    if (!hasTransientParams) return;
+
+    setNewItem(params.itemName || '');
+    setNewItemCategory(params.itemCategory || null);
+    setNewItemCategoryName(params.itemCategoryName || '');
     setNewItemDescription(
-      route.params.taggedUser ?
-        'Added from ' + route.params.taggedUser + '\'s item: \n\n' + route.params.itemDescription
-      : route.params.itemDescription
+      params.taggedUser ?
+        'Added from ' + params.taggedUser + '\'s item: \n\n' + params.itemDescription
+      : (params.itemDescription || '')
     );
     setPresetDescription(
-      route.params.taggedUser ?
-        'Added from ' + route.params.taggedUser + '\'s item: \n\n' + route.params.itemDescription
-      : route.params.itemDescription
+      params.taggedUser ?
+        'Added from ' + params.taggedUser + '\'s item: \n\n' + params.itemDescription
+      : (params.itemDescription || '')
     );
-    setNewItemImageUris(route.params.itemImage);
-    setTrackUri(route.params.trackUri);
-    setNewItemId(route.params.itemId);
-    setNewItemContentDescription(route.params.itemContentDescription);
-    setNumItems(route.params.numItems);
+    setNewItemImageUris(Array.isArray(params.itemImage) ? params.itemImage : []);
+    setTrackUri(params.trackUri || null);
+    setNewItemId(params.itemId || null);
+    setNewItemContentDescription(params.itemContentDescription || '');
+    setNumItems(params.numItems || 0);
+    setRerankItemKey(params.rerankItemKey || null);
     setSearchResults([]);
-  }, [route]);
+
+    // Consume one-time payload params so revisiting Add does not restore stale rerank/post state.
+    navigation.setParams({
+      itemName: undefined,
+      itemDescription: undefined,
+      itemImage: undefined,
+      itemCategory: undefined,
+      itemCategoryName: undefined,
+      trackUri: undefined,
+      itemId: undefined,
+      itemContentDescription: undefined,
+      numItems: undefined,
+      rerankItemKey: undefined,
+      taggedUser: undefined,
+      taggedUserId: undefined,
+      presetImage: undefined,
+    });
+  }, [route.params]);
+
+  useEffect(() => {
+    if (!isFocused) {
+      resetRankingState();
+      setRerankItemKey(null);
+    }
+  }, [isFocused]);
+
+  const finalizeRerankCleanup = async () => {
+    if (!rerankItemKey) return;
+    try {
+      await remove(ref(database, `items/${rerankItemKey}`));
+    } catch (error) {
+      console.error("Error removing old reranked item:", error);
+    }
+  };
 
   function addElementAndRecalculate(array, newItemObj, newBinarySearchM, isNewCard) {
     const minMaxMap = {'like': [10.0, 6.7], 'neutral': [6.6, 3.3], 'dislike': [3.2, 0.0]}
@@ -244,7 +311,7 @@ const Add = ({ route }) => {
           console.error('Upload failed', error);
         }, 
         () => {
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
             console.log('File available at', downloadURL);
 
             const newItemObj = {
@@ -304,6 +371,7 @@ const Add = ({ route }) => {
                 })
               }
             }
+            await finalizeRerankCleanup();
             setAddView('itemAdded'); // ~ do we need this?
           });
         }
@@ -366,6 +434,7 @@ const Add = ({ route }) => {
           })
         }
       }
+      await finalizeRerankCleanup();
       setAddView('itemAdded');
     }
 
@@ -373,7 +442,7 @@ const Add = ({ route }) => {
     const categoryRef = ref(database, 'categories/' + newItemCategory);
     update(categoryRef, {
       latest_add: Date.now(),
-      num_items: numItems + 1
+      num_items: rerankItemKey ? numItems : numItems + 1
     })
 
     // notify user if item was added from another post
@@ -400,7 +469,7 @@ const Add = ({ route }) => {
       const itemComparisons = [];
       if (snapshot.exists()) { // didn't affect anything
         snapshot.forEach((childSnapshot) => {
-          if (childSnapshot.val().bucket === bucket) {
+          if (childSnapshot.key !== rerankItemKey && childSnapshot.val().bucket === bucket) {
             itemComparisons.push({ // this is used as a parameter in the recalc function
               'key': childSnapshot.key,
               'content':childSnapshot.val().content, 
@@ -482,7 +551,7 @@ const Add = ({ route }) => {
   }
 
   // update here ***
-  const onAddLaterPress = () => {
+  const onAddLaterPress = async () => {
     const newLaterItemRef = push(ref(database, 'items'));
     let imageType = 'image';
     // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
@@ -511,15 +580,20 @@ const Add = ({ route }) => {
       updateObject.trackUri = trackUri;
     }
 
-    update(newLaterItemRef, updateObject)
-      .then(() => console.log(`New later item added`))
-      .catch((error) => console.error(`Failed to add later item: ${error}`));
+    try {
+      await update(newLaterItemRef, updateObject);
+      console.log('New later item added');
+      await finalizeRerankCleanup();
+    } catch (error) {
+      console.error(`Failed to add later item: ${error}`);
+      return;
+    }
 
     // increment counters
     const categoryRef = ref(database, 'categories/' + newItemCategory);
     update(categoryRef, {
       latest_add: Date.now(),
-      num_items: numItems + 1
+      num_items: rerankItemKey ? numItems : numItems + 1
     })
 
     // notify user if item was added from another post
@@ -539,9 +613,15 @@ const Add = ({ route }) => {
     setAddView('itemAdded');
   }
 
-  const onContinuePress = () => {
+  const resetToDefaultAddState = () => {
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      setTypingTimeout(null);
+    }
     setNewItem('');
-    setNewItemCategory(null); 
+    setNewItemCategory(null);
+    setNewItemCategoryName('');
+    setNewItemCategoryType('');
     setNewItemBucket(null);
     setItemComparisons([]);
     setAddView('');
@@ -550,7 +630,21 @@ const Add = ({ route }) => {
     setBinarySearchM(0);
     setNewItemFinalScore(-1);
     setNewItemDescription('');
+    setPresetDescription('');
     setNewItemImageUris([]);
+    setNewItemId(null);
+    setNewItemArtist('');
+    setNewItemContentDescription('');
+    setTrackUri(null);
+    setRerankItemKey(null);
+    setItemsInCategory(null);
+    setSearchResults([]);
+    setAddedCustomImage(false);
+    setRankMode(false);
+  }
+
+  const onContinuePress = () => {
+    resetToDefaultAddState();
     getUserCategories();
   }
 
@@ -768,8 +862,7 @@ const Add = ({ route }) => {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ marginTop: 5, fontWeight: 'bold', fontSize: 20 }}>{newItemCategoryName}</Text>
               <TouchableOpacity onPress={() => {
-                setNewItemCategory(null)
-                setSearchResults([])
+                resetToDefaultAddState()
               }}>
                 <View style={{ backgroundColor: 'lightgrey', padding: 8, fontSize: 13, borderRadius: 10 }}>
                   <Text style={{ fontWeight: 'bold' }}>Back</Text>
@@ -783,13 +876,8 @@ const Add = ({ route }) => {
 
         {newItem.length > 0 && newItemCategory && rankMode && (
           <TouchableOpacity style={{ marginTop: 25 }} onPress={() => {
-            setRankMode(false)
-            setNewItemBucket(null)
-            setItemComparisons([])
-            setBinarySearchL(0)
-            setBinarySearchR(0)
-            setBinarySearchM(0)
-            setNewItemFinalScore(-1)
+            resetRankingState();
+            setRerankItemKey(null);
           }}>
             <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'black' }}>Cancel</Text>
           </TouchableOpacity>

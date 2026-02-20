@@ -530,7 +530,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }; 
 
   const onRerankItemPress = () => {
-    onDeleteItemPress(focusedItem.bucket, focusedItem.key);
     navigation.navigate('Add', {
       itemName: focusedItem.content,
       itemDescription: focusedItem.description,
@@ -540,7 +539,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       trackUri: focusedItem.trackUri,
       itemId: focusedItem.id,
       itemContentDescription: focusedItem.contentDescription,
-      numItems: numItems - 1,
+      numItems: numItems,
+      rerankItemKey: focusedItem.key,
       taggedUser: null,
       presetImage: categoryInfo.presetImage
     })
