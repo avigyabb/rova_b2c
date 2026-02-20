@@ -59,6 +59,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
   const [visitingUserCategories, setVisitingUserCategories] = useState([]);
   const [categoryListView, setCategoryListView] = useState(null);
+  const [listBackButtonKey, setListBackButtonKey] = useState(0);
+  const [isListBackPressing, setIsListBackPressing] = useState(false);
 
   // Keep local editable list data in sync with parent updates before paint to avoid empty-state flicker.
   useLayoutEffect(() => {
@@ -174,6 +176,13 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       isCancelled = true;
     };
   }, [focusedCategoryId, database, visitingUserId, isLoading]);
+
+  useEffect(() => {
+    // Prevent stuck dimmed state after returning from nested views.
+    if (focusedItem || categoryListView || profileView) {
+      setIsListBackPressing(false);
+    }
+  }, [focusedItem, categoryListView, profileView]);
 
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
@@ -582,7 +591,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => {
           setFocusedItem(null)
+          setFocusedItemDescription(null)
           setEditMode(false)
+          setListBackButtonKey((prev) => prev + 1)
         }}> 
           <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
@@ -591,6 +602,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           <TouchableOpacity onPress={() => {
             onDeleteItemPress(focusedItem.bucket, focusedItem.key)
             setFocusedItem(null)
+            setFocusedItemDescription(null)
+            setListBackButtonKey((prev) => prev + 1)
           }}>
             <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Delete Item</Text>
           </TouchableOpacity>
@@ -636,8 +649,15 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', alignItems: 'center' }}>
-  <TouchableOpacity onPress={onBackPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-    <View style={{ padding: 4 }}>
+  <TouchableOpacity
+    key={listBackButtonKey}
+    activeOpacity={1}
+    onPressIn={() => setIsListBackPressing(true)}
+    onPressOut={() => setIsListBackPressing(false)}
+    onPress={onBackPress}
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
+    <View style={{ padding: 4, opacity: isListBackPressing ? 0.35 : 1 }}>
       <Ionicons name="arrow-back" size={30} color="black" />
     </View>
   </TouchableOpacity>
