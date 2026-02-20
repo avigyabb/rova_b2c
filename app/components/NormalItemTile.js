@@ -770,6 +770,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
               <FlatList
                 data={profileList}
                 horizontal
+                nestedScrollEnabled
                 keyExtractor={(item, index) => item.key ? item.key.toString() : index.toString()}
                 renderItem={({ item, index }) => {
                   const roundedScore = compareUserRating[index].toFixed(1);
