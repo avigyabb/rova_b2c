@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update, child } from "firebase/database";
 import { Image } from 'expo-image';
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
 });
 
 
-const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex }) => {
+const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex, onBlockUser, onReportItem }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState('https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
@@ -384,6 +384,85 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     console.log(item.key)
     console.log('item Image' + item.image)
   }  
+
+  const writeModerationReport = async (type) => {
+    const moderationRef = push(ref(database, 'moderation_reports'));
+    await set(moderationRef, {
+      type,
+      reporterUserId: visitingUserId || null,
+      reportedUserId: item.user_id || null,
+      itemId: item.key || null,
+      itemContent: item.content || '',
+      itemDescription: item.description || '',
+      itemImage: item.image || '',
+      timestamp: Date.now(),
+      source: 'item_tile_menu',
+    });
+  };
+
+  const openDeveloperEmailDraft = async (actionType) => {
+    const subject = encodeURIComponent(`[ambora] ${actionType} - user moderation`);
+    const body = encodeURIComponent(
+      `Reporter: ${visitingUserId || 'unknown'}\n` +
+      `Reported user: ${item.user_id || 'unknown'}\n` +
+      `Item key: ${item.key || 'unknown'}\n` +
+      `Item content: ${item.content || ''}\n` +
+      `Item description: ${item.description || ''}\n` +
+      `Item image: ${item.image || ''}\n` +
+      `Time: ${new Date().toISOString()}`
+    );
+    const mailtoUrl = `mailto:avigyabb@gmail.com?subject=${subject}&body=${body}`;
+    const supported = await Linking.canOpenURL(mailtoUrl);
+    if (supported) {
+      await Linking.openURL(mailtoUrl);
+    }
+  };
+
+  const onReportItemPress = async () => {
+    try {
+      await writeModerationReport('report_item');
+      if (onReportItem) {
+        onReportItem(item);
+      }
+      Alert.alert('Report submitted', 'Thanks. We will review this item.');
+    } catch (error) {
+      console.error('Error reporting item:', error);
+      Alert.alert('Unable to report', 'Please try again.');
+    }
+  };
+
+  const onBlockUserPress = async () => {
+    if (!visitingUserId || !item.user_id || visitingUserId === item.user_id) return;
+    try {
+      const blockRef = ref(database, `users/${visitingUserId}/blocked_users/${item.user_id}`);
+      await set(blockRef, {
+        userId: item.user_id,
+        timestamp: Date.now(),
+        reason: 'blocked_from_item_menu',
+      });
+      await writeModerationReport('block_user');
+      if (onBlockUser) {
+        onBlockUser(item.user_id, item);
+      }
+      await openDeveloperEmailDraft('block_user');
+      Alert.alert('User blocked', 'You will no longer see posts from this user.');
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      Alert.alert('Unable to block user', 'Please try again.');
+    }
+  };
+
+  const onSafetyMenuPress = () => {
+    Alert.alert(
+      'Post options',
+      '',
+      [
+        { text: 'Report item', onPress: onReportItemPress },
+        { text: 'Block user', style: 'destructive', onPress: onBlockUserPress },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
 
   const CommentTile = ({ item }) => {
     const [userInfo, setUserInfo] = useState({});
@@ -727,20 +806,28 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
 
         </TouchableOpacity>)} */}
 
-        <TouchableOpacity 
-          style={{ marginLeft: 'auto', marginRight: 10 }} 
-          onPress={() => navigation.navigate('Add', {
-            itemName: item.content,
-            itemDescription: item.description,
-            itemImage: [item.image],
-            itemCategory: null,
-            itemCategoryName: '',
-            taggedUser: username,
-            taggedUserId: item.user_id,
-            itemId: item.id 
-          })}>
-          <Ionicons name="add-circle" size={30} color="grey" />
-        </TouchableOpacity>
+        <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
+            style={{ marginRight: 10 }}
+            onPress={() => navigation.navigate('Add', {
+              itemName: item.content,
+              itemDescription: item.description,
+              itemImage: [item.image],
+              itemCategory: null,
+              itemCategoryName: '',
+              taggedUser: username,
+              taggedUserId: item.user_id,
+              itemId: item.id 
+            })}
+          >
+            <Ionicons name="add-circle" size={30} color="grey" />
+          </TouchableOpacity>
+          {visitingUserId !== item.user_id && (
+            <TouchableOpacity onPress={onSafetyMenuPress}>
+              <Ionicons name="ellipsis-horizontal" size={24} color="grey" />
+            </TouchableOpacity>
+          )}
+        </View>
         {/*<TouchableOpacity
           onPress={() => navigation.navigate('Add', {
             itemName: item.content,

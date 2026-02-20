@@ -77,6 +77,20 @@ const Feed = ({ route, navigation }) => {
   const [focusedItem, setFocusedItem] = useState(null);
   const [focusedItemDescription, setFocusedItemDescription] = useState(null);
   const [profileView, setProfileView] = useState(null);
+  const [blockedUserIds, setBlockedUserIds] = useState(new Set());
+
+  const isBlockedUser = (userId) => blockedUserIds.has(userId);
+
+  const filterBlockedPosts = (items = []) => {
+    return items.filter((feedItem) => !isBlockedUser(feedItem.user_id));
+  };
+
+  const filterBlockedTopPosts = (groupedData = {}) => {
+    return Object.keys(groupedData).reduce((acc, key) => {
+      acc[key] = filterBlockedPosts(groupedData[key] || []);
+      return acc;
+    }, {});
+  };
 
   const getListData = () => {
     setRefreshed(true);
@@ -92,7 +106,8 @@ const Feed = ({ route, navigation }) => {
             return snapshot0.val().feedType === 'customDescription' ? value?.custom ?? true : true;
           })
           .map(([key, value]) => ({ key, ...value }));
-          setListData(tempListData.sort((a, b) => b.timestamp - a.timestamp));
+          const filteredData = filterBlockedPosts(tempListData);
+          setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
         }
         setRefreshed(false);
       }).catch((error) => {
@@ -124,7 +139,7 @@ const Feed = ({ route, navigation }) => {
         get(categoryItemsRef).then((inner_snapshot) => {
           if (inner_snapshot.exists()) {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
-            const filteredData = tempListData.filter(item => followingList.includes(item.user_id));
+            const filteredData = tempListData.filter(item => followingList.includes(item.user_id) && !isBlockedUser(item.user_id));
             setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
           }
           setRefreshed(false);
@@ -168,7 +183,7 @@ const Feed = ({ route, navigation }) => {
         tempListData['Past Week'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo)
         tempListData['All Time'] = tempListDataSorted
         // console.log(tempListData)
-        setListData(tempListData);
+        setListData(filterBlockedTopPosts(tempListData));
       }
       setRefreshed(false);
     }).catch((error) => {
@@ -230,6 +245,18 @@ const Feed = ({ route, navigation }) => {
   }
 
   useEffect(() => {
+    const blockedUsersRef = ref(database, `users/${userKey}/blocked_users`);
+    const unsubscribeBlockedUsers = onValue(blockedUsersRef, (snapshot) => {
+      const blockedMap = snapshot.val() || {};
+      setBlockedUserIds(new Set(Object.keys(blockedMap)));
+    });
+
+    return () => {
+      unsubscribeBlockedUsers();
+    };
+  }, [userKey]);
+
+  useEffect(() => {
     getSpotifyAccessToken()
     if (response?.type === 'success') {
       AuthSession.exchangeCodeAsync({
@@ -257,7 +284,35 @@ const Feed = ({ route, navigation }) => {
     } else if (feedType === 'Top Posts') {
       getTopPostsListData();
     }
-  }, [response]);
+  }, [response, blockedUserIds]);
+
+  const onBlockUserLocal = (blockedUserId) => {
+    setBlockedUserIds((prev) => {
+      const next = new Set(prev);
+      next.add(blockedUserId);
+      return next;
+    });
+
+    setListData((prev) => {
+      if (Array.isArray(prev)) {
+        return prev.filter((feedItem) => feedItem.user_id !== blockedUserId);
+      }
+      if (prev && typeof prev === 'object') {
+        return Object.keys(prev).reduce((acc, key) => {
+          acc[key] = (prev[key] || []).filter((feedItem) => feedItem.user_id !== blockedUserId);
+          return acc;
+        }, {});
+      }
+      return prev;
+    });
+
+    if (focusedItem && focusedItem.user_id === blockedUserId) {
+      setFocusedItem(null);
+    }
+    if (itemInfo && itemInfo.user_id === blockedUserId) {
+      setItemInfo(null);
+    }
+  };
 
   const NotificationsTile = ({ item, visitingUserId }) => {
     const [userInfo, setUserInfo] = useState({});
@@ -401,7 +456,7 @@ const Feed = ({ route, navigation }) => {
         </TouchableOpacity>
   
       </View>
-      <NormalItemTile item={focusedItem} visitingUserId={userKey} navigation={navigation} showComments={true}/>
+      <NormalItemTile item={focusedItem} visitingUserId={userKey} navigation={navigation} showComments={true} onBlockUser={onBlockUserLocal}/>
       </View>
     );
   }
@@ -423,7 +478,7 @@ const Feed = ({ route, navigation }) => {
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
         </View>
-        <NormalItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync}/>
+        <NormalItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal}/>
       </View>
     );
   }
@@ -525,7 +580,7 @@ const Feed = ({ route, navigation }) => {
         )} uncomment this for swiping*/}
         <FlatList
           data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
-          renderItem={({ item }) => <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} />}
+          renderItem={({ item }) => <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />}
           keyExtractor={(item, index) => index.toString()}
           numColumns={1}
           key={"single-column"}
