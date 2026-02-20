@@ -253,6 +253,19 @@ const Profile = ({ route, navigation }) => {
                   });
                 }
 
+                // Delete all items created by this user
+                const userItemsQuery = query(
+                  ref(database, 'items'),
+                  orderByChild('user_id'),
+                  equalTo(userKey)
+                );
+                const itemsSnapshot = await get(userItemsQuery);
+                if (itemsSnapshot.exists()) {
+                  itemsSnapshot.forEach((item) => {
+                    remove(ref(database, 'items/' + item.key));
+                  });
+                }
+
                 // Delete all events for this user
                 const eventsRef = ref(database, 'events/' + userKey);
                 await remove(eventsRef);
