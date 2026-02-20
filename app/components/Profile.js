@@ -247,6 +247,11 @@ const Profile = ({ route, navigation }) => {
               await AsyncStorage.removeItem('username');
               await AsyncStorage.removeItem('key');
 
+              // Force re-fetch to clear any cached user data
+              if (fetchUserData) {
+                fetchUserData();
+              }
+
               Alert.alert("Account Deleted", "Your account has been permanently deleted.");
               setView('signin');
             } catch (error) {
