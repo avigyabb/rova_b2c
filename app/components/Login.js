@@ -26,8 +26,15 @@ const Login = ({ setView, setUserKeyIndex }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('User signed in:', userCredential.user);
-      setUserKeyIndex(userCredential.user.uid);
-      await AsyncStorage.setItem('key', userCredential.user.uid);
+      const uid = userCredential.user.uid;
+      const pendingDeleteUid = await AsyncStorage.getItem('pendingDeleteAccountUid');
+
+      if (pendingDeleteUid && pendingDeleteUid === uid) {
+        alert('Deletion pending. Open your profile menu and tap "Delete account" again to permanently delete it.');
+      }
+
+      setUserKeyIndex(uid);
+      await AsyncStorage.setItem('key', uid);
     } catch (error) {
       if (email) {
         const usersRef = ref(database, 'users');

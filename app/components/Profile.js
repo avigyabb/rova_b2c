@@ -15,6 +15,7 @@ import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
 import FollowUsers from './FollowUsers';
 import CategoryTile from './CategoryTile';
+import { getAuth, deleteUser } from 'firebase/auth';
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -218,10 +219,120 @@ const Profile = ({ route, navigation }) => {
       [
         { text: "View Archived Lists", onPress: () => setFocusedCategory('Archived Lists') },
         { text: "Log out", style: "destructive", onPress: () => onLogOutPress() },
+        { text: "Delete account", style: "destructive", onPress: () => onDeleteAccountPress() },
         { text: "Cancel", style: "cancel" },
       ]
     );
   }
+
+  const onDeleteAccountPress = () => {
+    Alert.alert(
+      "Delete account?",
+      "This will permanently delete your account, all your posts/rankings, and your lists. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete permanently",
+          style: "destructive",
+          onPress: () => onDeleteAccountConfirm(),
+        },
+      ]
+    );
+  };
+
+  const onDeleteAccountConfirm = async () => {
+    try {
+      const pendingDeleteUid = await AsyncStorage.getItem('pendingDeleteAccountUid');
+
+      // Step 2: user logged back in and tapped delete again -> permanently delete now.
+      if (pendingDeleteUid && pendingDeleteUid === userKey) {
+        const deleteItemsByUser = async (uid) => {
+          const itemsRef = ref(database, 'items');
+          const itemsSnapshot = await get(itemsRef);
+          if (!itemsSnapshot.exists()) return;
+
+          const deletions = [];
+          itemsSnapshot.forEach((childSnapshot) => {
+            if (childSnapshot.val()?.user_id === uid) {
+              deletions.push(remove(ref(database, `items/${childSnapshot.key}`)));
+            }
+          });
+          await Promise.all(deletions);
+        };
+
+        const deleteCategoriesByUser = async (uid) => {
+          const categoriesRef = ref(database, 'categories');
+          const categoriesSnapshot = await get(categoriesRef);
+          if (!categoriesSnapshot.exists()) return;
+
+          const deletions = [];
+          categoriesSnapshot.forEach((childSnapshot) => {
+            if (childSnapshot.val()?.user_id === uid) {
+              deletions.push(remove(ref(database, `categories/${childSnapshot.key}`)));
+            }
+          });
+          await Promise.all(deletions);
+        };
+
+        const removeUserFromSocialGraphs = async (uid) => {
+          const usersRef = ref(database, 'users');
+          const usersSnapshot = await get(usersRef);
+          if (!usersSnapshot.exists()) return;
+
+          const updates = {};
+          usersSnapshot.forEach((childSnapshot) => {
+            const otherUid = childSnapshot.key;
+            if (otherUid === uid) return;
+            updates[`${otherUid}/followers/${uid}`] = null;
+            updates[`${otherUid}/following/${uid}`] = null;
+            updates[`${otherUid}/blocked_users/${uid}`] = null;
+          });
+
+          await update(usersRef, updates);
+        };
+
+        await deleteItemsByUser(userKey);
+        await deleteCategoriesByUser(userKey);
+        await removeUserFromSocialGraphs(userKey);
+        await remove(ref(database, `events/${userKey}`));
+        await remove(ref(database, `users/${userKey}`));
+
+        const auth = getAuth();
+        if (auth.currentUser && auth.currentUser.uid === userKey) {
+          await deleteUser(auth.currentUser);
+        }
+
+        await AsyncStorage.removeItem('pendingDeleteAccountUid');
+        await AsyncStorage.removeItem('username');
+        await AsyncStorage.removeItem('key');
+        fetchUserData();
+        setView('signin');
+        Alert.alert("Account deleted", "Your account has been permanently deleted.");
+        return;
+      }
+
+      // Step 1: request deletion, then require re-login and second delete action.
+      await AsyncStorage.setItem('pendingDeleteAccountUid', userKey);
+      await AsyncStorage.removeItem('username');
+      await AsyncStorage.removeItem('key');
+      fetchUserData();
+      setView('signin');
+      Alert.alert(
+        "Confirm deletion after login",
+        "Please log back in, then open the menu and tap Delete account again to permanently delete your account."
+      );
+    } catch (error) {
+      if (error?.code === 'auth/requires-recent-login') {
+        Alert.alert(
+          "Re-login required",
+          "For security, please log out and log back in, then tap Delete account again."
+        );
+        return;
+      }
+      console.error("Error deleting account:", error);
+      Alert.alert("Delete failed", "We couldn't delete your account. Please try again.");
+    }
+  };
 
   const followUser = async () => {
     // THIS IS TO VERIFY USERS
