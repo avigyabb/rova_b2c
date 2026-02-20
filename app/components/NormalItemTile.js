@@ -849,47 +849,56 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             <ActivityIndicator size="large" color="black" />
           </View>
         ) : (
-          <FlatList
-            data={profileList}
-            horizontal
-            keyExtractor={(item, index) => item.key ? item.key.toString() : index.toString()}
-            renderItem={({ item, index }) => {
-              const roundedScore = compareUserRating[index].toFixed(1);
-              const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
-              
-              return (
-                <View style={{ alignItems: 'center', marginRight: 9.5, marginLeft: 9.5, marginTop: 10 }}>
-                  <Image
-                    source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
-                    style={{ height: 47.5, width: 47.5, borderWidth: 0.5, borderRadius: 23.75, borderColor: 'lightgrey' }}
-                  />
-                    <Text 
-                      style={{ marginTop: 5, textAlign: 'center', maxWidth: 50 }} // Adjust maxWidth as necessary
-                      numberOfLines={1} 
-                      ellipsizeMode="tail"
-                    >
-                    {item.name}
-                  </Text>
-                  <View style={{ 
-                    position: 'absolute', 
-                    right: -5, 
-                    top: -5, 
-                    backgroundColor, 
-                    borderRadius: 15, 
-                    width: 30, 
-                    height: 30, 
-                    justifyContent: 'center', 
-                    alignItems: 'center',
-                    borderWidth: 1, 
-                    borderColor: 'white' 
-                  }}>
-                    <Text style={{ color: 'white', fontSize: 12 }}>{roundedScore}</Text>
-                  </View>
-                </View>
-              );
-            }}
-            showsHorizontalScrollIndicator={false}
-          />
+          profileList.length > 0 && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: 'grey', marginLeft: 10, marginBottom: 4 }}>
+                Also ranked by:
+              </Text>
+              <FlatList
+                data={profileList}
+                horizontal
+                nestedScrollEnabled
+                keyExtractor={(item, index) => item.key ? item.key.toString() : index.toString()}
+                renderItem={({ item, index }) => {
+                  const roundedScore = compareUserRating[index].toFixed(1);
+                  const backgroundColor = getScoreColorHSL(parseFloat(roundedScore));
+                  
+                  return (
+                    <View style={{ alignItems: 'center', marginRight: 9.5, marginLeft: 9.5, marginTop: 4, marginBottom: 8 }}>
+                      <Image
+                        source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
+                        style={{ height: 47.5, width: 47.5, borderWidth: 0.5, borderRadius: 23.75, borderColor: 'lightgrey' }}
+                      />
+                        <Text 
+                          style={{ marginTop: 5, textAlign: 'center', maxWidth: 50 }} // Adjust maxWidth as necessary
+                          numberOfLines={1} 
+                          ellipsizeMode="tail"
+                        >
+                        {item.name}
+                      </Text>
+                      <View style={{ 
+                        position: 'absolute', 
+                        right: -5, 
+                        top: -5, 
+                        backgroundColor, 
+                        borderRadius: 15, 
+                        width: 30, 
+                        height: 30, 
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        borderWidth: 1, 
+                        borderColor: 'white' 
+                      }}>
+                        <Text style={{ color: 'white', fontSize: 12 }}>{roundedScore}</Text>
+                      </View>
+                    </View>
+                  );
+                }}
+                showsHorizontalScrollIndicator={true}
+                contentContainerStyle={{ paddingHorizontal: 5 }}
+              />
+            </View>
+          )
         )
       )}
       </>
