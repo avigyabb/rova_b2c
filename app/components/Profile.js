@@ -223,6 +223,51 @@ const Profile = ({ route, navigation }) => {
     );
   }
 
+  const onBlockUserPress = () => {
+    Alert.alert(
+      "Block User",
+      `Are you sure you want to block @${profileInfo.username}? They will be removed from your feed and won't be able to interact with you.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Add to blocked list
+              const blockedRef = ref(database, `users/${userKey}/blocked/${visitingUserId}`);
+              await set(blockedRef, { timestamp: Date.now() });
+
+              // Remove from following
+              const followingRef = ref(database, `users/${userKey}/following/${visitingUserId}`);
+              await remove(followingRef);
+
+              // Remove from followers  
+              const followersRef = ref(database, `users/${visitingUserId}/followers/${userKey}`);
+              await remove(followersRef);
+
+              // Report to admins
+              const reportRef = ref(database, 'reports');
+              await push(reportRef, {
+                type: 'user_block',
+                blockedBy: userKey,
+                blockedUser: visitingUserId,
+                timestamp: Date.now(),
+                resolved: false
+              });
+
+              Alert.alert("User Blocked", `You have blocked @${profileInfo.username}`);
+              setFeedView(null);
+            } catch (error) {
+              console.error("Error blocking user:", error);
+              Alert.alert("Error", "Unable to block user. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  }
+
   const followUser = async () => {
     // THIS IS TO VERIFY USERS
     // const userRef1 = ref(database, 'users/' + userKey);
@@ -438,6 +483,18 @@ const Profile = ({ route, navigation }) => {
                     <Text style={styles.editButtons}>Follow</Text>
                   </TouchableOpacity>
                 )}
+              </View>
+            )}
+
+            {/* Block User Option */}
+            {visitingUserId && (
+              <View style={{ paddingHorizontal: 15, paddingBottom: 10 }}>
+                <TouchableOpacity 
+                  style={{ alignItems: 'center' }} 
+                  onPress={() => onBlockUserPress()}
+                >
+                  <Text style={{ color: 'red', fontSize: 14 }}>Block User</Text>
+                </TouchableOpacity>
               </View>
             )}
 

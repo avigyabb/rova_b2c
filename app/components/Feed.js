@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, update, set, push } from "firebase/database";
 import { Image } from 'expo-image';
@@ -324,23 +324,56 @@ const Feed = ({ route, navigation }) => {
       });
     }
 
+    const onReportContent = () => {
+      Alert.alert(
+        "Report Content",
+        "Why are you reporting this?",
+        [
+          { text: "Spam", onPress: () => reportContent('spam') },
+          { text: "Inappropriate", onPress: () => reportContent('inappropriate') },
+          { text: "Harassment", onPress: () => reportContent('harassment') },
+          { text: "Cancel", style: "cancel" }
+        ]
+      );
+    };
+
+    const reportContent = async (reason) => {
+      try {
+        const reportRef = ref(database, 'reports');
+        await push(reportRef, {
+          type: 'content',
+          contentId: item.postId || item.key,
+          contentType: item.content.includes('follow') ? 'follow' : 'post',
+          reportedBy: userKey,
+          evokerId: item.evokerId,
+          reason: reason,
+          timestamp: Date.now(),
+          resolved: false
+        });
+        Alert.alert("Reported", "Thank you. We'll review this content.");
+      } catch (error) {
+        console.error("Error reporting content:", error);
+      }
+    };
+
     return (
-      <View style={{ width: '95%', flexDirection: 'row', padding: 10 }}>
-        <TouchableOpacity onPress={() => {
-          setFeedView({ userKey: item.evokerId, username: userInfo.username });
-          setNotifications(null);
-        }}>
-          <Image
-            source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-            style={{ height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
-          />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row' }}>
-            <Text style={{ fontSize: 15, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 15, marginTop: 5, flexShrink: 1 }}>{item.content} <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text></Text>
+      <TouchableOpacity onLongPress={onReportContent} delayLongPress={500}>
+        <View style={{ width: '95%', flexDirection: 'row', padding: 10 }}>
+          <TouchableOpacity onPress={() => {
+            setFeedView({ userKey: item.evokerId, username: userInfo.username });
+            setNotifications(null);
+          }}>
+            <Image
+              source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
+              style={{ height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={{ fontSize: 15, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 15, marginTop: 5, flexShrink: 1 }}>{item.content} <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text></Text>
             {item.content.includes('follow') ? (
               <>
               {isLoadingFollowBack ? (
@@ -365,6 +398,7 @@ const Feed = ({ route, navigation }) => {
             )}
           </View>
         </View>
+        </TouchableOpacity>
       </View>
     );
   }

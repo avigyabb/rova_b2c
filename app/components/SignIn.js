@@ -33,6 +33,7 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [code, setCode] = useState('test');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loaded] = useFonts({
     'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
     'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
@@ -41,6 +42,11 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
   });
 
   const onSignIn = async () => {
+    if (!agreedToTerms) {
+      setErrorMessage('Please agree to Terms of Service');
+      return;
+    }
+
     if (password.length < 6) {
       setErrorMessage('Password too short');
       return;
@@ -152,6 +158,25 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
             {errorMessage && (
               <Text style={{ color: 'red', fontSize: 13, marginTop: 10, fontWeight: 'bold' }}>{errorMessage}</Text>
             )}
+
+            <TouchableOpacity 
+              onPress={() => setAgreedToTerms(!agreedToTerms)} 
+              style={{ flexDirection: 'row', marginTop: 15, alignItems: 'center' }}
+            >
+              <Text style={{ color: agreedToTerms ? 'green' : 'gray', fontSize: 20, marginRight: 8 }}>
+                {agreedToTerms ? '☑️' : '⬜'}
+              </Text>
+              <Text style={{ color: 'gray', fontSize: 12 }}>
+                I agree to the{' '}
+                <Text style={{ color: 'blue', textDecorationLine: 'underline' }}>
+                  Terms of Service
+                </Text>
+                {' '}and{' '}
+                <Text style={{ color: 'blue', textDecorationLine: 'underline' }}>
+                  Community Guidelines
+                </Text>
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={{ width: '100%', alignItems: 'center', marginTop: 60 }}>
