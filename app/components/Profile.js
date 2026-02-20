@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font';
 // import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import { database } from '../../firebaseConfig';
 import { ref, set, onValue, push, query, equalTo, orderByChild, get, remove, update } from "firebase/database";
+import { getAuth, deleteUser, signInWithEmailAndPassword } from "firebase/auth";
 import { useEffect, useRef, useState } from 'react';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import CategoryList from './CategoryList';
@@ -211,13 +212,70 @@ const Profile = ({ route, navigation }) => {
     );
   }
 
+  const onDeleteAccountPress = () => {
+    Alert.alert(
+      "Delete Account",
+      "This will permanently delete your account and all associated data. This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const auth = getAuth();
+              const user = auth.currentUser;
+
+              if (user) {
+                // Delete user data from Firebase Realtime Database first
+                const userRef = ref(database, 'users/' + userKey);
+                await remove(userRef);
+
+                // Also clean up followers/following relationships
+                const followersRef = ref(database, 'users/' + userKey + '/followers');
+                const followingRef = ref(database, 'users/' + userKey + '/following');
+                await remove(followersRef);
+                await remove(followingRef);
+
+                // Delete the user from Firebase Auth
+                await deleteUser(user);
+              }
+
+              // Clear local storage
+              await AsyncStorage.removeItem('username');
+              await AsyncStorage.removeItem('key');
+
+              Alert.alert("Account Deleted", "Your account has been permanently deleted.");
+              setView('signin');
+            } catch (error) {
+              console.error("Error deleting account:", error);
+              if (error.code === 'auth/requires-recent-login') {
+                Alert.alert(
+                  "Re-authentication Required",
+                  "Please log out and log back in to delete your account. This is a security requirement.",
+                  [{ text: "OK" }]
+                );
+              } else {
+                Alert.alert("Error", "Unable to delete account. Please try again later.");
+              }
+            }
+          }
+        }
+      ]
+    );
+  }
+
   const onProfileMenuPress = () => {
     Alert.alert(
       "Profile menu",
       "",
       [
         { text: "View Archived Lists", onPress: () => setFocusedCategory('Archived Lists') },
-        { text: "Log out", style: "destructive", onPress: () => onLogOutPress() },
+        { text: "Log out", onPress: () => onLogOutPress() },
+        { text: "Delete Account", style: "destructive", onPress: () => onDeleteAccountPress() },
         { text: "Cancel", style: "cancel" },
       ]
     );
