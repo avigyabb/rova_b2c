@@ -240,6 +240,23 @@ const Profile = ({ route, navigation }) => {
                 await remove(followersRef);
                 await remove(followingRef);
 
+                // Delete all categories created by this user
+                const userCategoriesQuery = query(
+                  ref(database, 'categories'),
+                  orderByChild('user_id'),
+                  equalTo(userKey)
+                );
+                const categoriesSnapshot = await get(userCategoriesQuery);
+                if (categoriesSnapshot.exists()) {
+                  categoriesSnapshot.forEach((category) => {
+                    remove(ref(database, 'categories/' + category.key));
+                  });
+                }
+
+                // Delete all events for this user
+                const eventsRef = ref(database, 'events/' + userKey);
+                await remove(eventsRef);
+
                 // Delete from Firebase Auth
                 await deleteUser(user);
               }
