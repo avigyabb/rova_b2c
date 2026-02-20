@@ -1,6 +1,6 @@
 // components/Login.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, TouchableWithoutFeedback, Keyboard, Touchable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, SafeAreaView, TouchableWithoutFeedback, Keyboard, Touchable, StyleSheet, Alert } from 'react-native';
 import { useFonts } from 'expo-font';
 import { ref, set, onValue, off, query, orderByChild, push, equalTo, get } from "firebase/database";
 import { database } from '../../firebaseConfig.js';
@@ -18,6 +18,32 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 10,
     letterSpacing: 1
+  },
+  termsRow: {
+    width: '80%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 18,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1.5,
+    borderColor: 'black',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  termsText: {
+    flex: 1,
+    color: 'gray',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: 'black',
+    textDecorationLine: 'underline',
   }
 });
 
@@ -32,6 +58,7 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [code, setCode] = useState('test');
   const [loaded] = useFonts({
     'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
@@ -39,6 +66,13 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
     'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
   });
+
+  const showTermsAlert = () => {
+    Alert.alert(
+      'Terms of Service (EULA)',
+      "By creating an account, you agree not to post, share, or promote objectionable content. We have zero tolerance for harassment, hate speech, abusive behavior, sexual exploitation, violent threats, or any content that harms others. Accounts that violate these rules may be suspended or permanently removed."
+    );
+  };
 
   const onSignIn = async () => {
     if (password.length < 6) {
@@ -80,6 +114,11 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
       return;
     }
 
+    if (!acceptedTerms) {
+      setErrorMessage('You must accept the Terms of Service');
+      return;
+    }
+
     // proceed with user creation
     let userCredential = null;
     try {
@@ -101,7 +140,9 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
       email: email,
       name: username, 
       bio: username + '\'s bio',
-      user_type: 'founding_member'
+      user_type: 'founding_member',
+      termsAccepted: true,
+      termsAcceptedAt: Date.now()
     })
     .then(() => console.log(`New user added`))
     .catch((error) => console.error(`Failed to add new user: ${error}`));
@@ -149,6 +190,21 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
               secureTextEntry
               style={styles.input}
             />
+            <View style={styles.termsRow}>
+              <TouchableOpacity
+                onPress={() => setAcceptedTerms((prev) => !prev)}
+                style={styles.checkbox}
+              >
+                <Text style={{ fontSize: 12, fontWeight: 'bold' }}>{acceptedTerms ? 'X' : ''}</Text>
+              </TouchableOpacity>
+              <Text style={styles.termsText}>
+                I agree to the{' '}
+                <Text style={styles.termsLink} onPress={showTermsAlert}>
+                  Terms of Service (EULA)
+                </Text>
+                .
+              </Text>
+            </View>
             {errorMessage && (
               <Text style={{ color: 'red', fontSize: 13, marginTop: 10, fontWeight: 'bold' }}>{errorMessage}</Text>
             )}
