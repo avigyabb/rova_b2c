@@ -457,6 +457,11 @@ const Feed = ({ route, navigation }) => {
     );
   }
 
+  const keyExtractor = useCallback((item) => item.key, []);
+  const renderFeedItem = useCallback(({ item }) => (
+    <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />
+  ), [topPostsTime, individualSpotifyAccessToken, promptAsync, onBlockUserLocal]);
+
   if (notifications) {
     return (
       <View style={{ backgroundColor: 'white', height: '100%' }}>
@@ -529,11 +534,6 @@ const Feed = ({ route, navigation }) => {
       />
     )
   }
-
-  const keyExtractor = useCallback((item) => item.key, []);
-  const renderFeedItem = useCallback(({ item }) => (
-    <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />
-  ), [topPostsTime, individualSpotifyAccessToken, promptAsync, onBlockUserLocal]);
 
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
