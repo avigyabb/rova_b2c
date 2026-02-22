@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, limitToLast, endBefore, get, update, set, push } from "firebase/database";
@@ -319,7 +319,7 @@ const Feed = ({ route, navigation }) => {
     }
   }, [response, blockedUserIds]);
 
-  const onBlockUserLocal = (blockedUserId) => {
+  const onBlockUserLocal = useCallback((blockedUserId) => {
     setBlockedUserIds((prev) => {
       const next = new Set(prev);
       next.add(blockedUserId);
@@ -345,7 +345,7 @@ const Feed = ({ route, navigation }) => {
     if (itemInfo && itemInfo.user_id === blockedUserId) {
       setItemInfo(null);
     }
-  };
+  }, [focusedItem, itemInfo]);
 
   const NotificationsTile = ({ item, visitingUserId }) => {
     const [userInfo, setUserInfo] = useState({});
@@ -530,6 +530,11 @@ const Feed = ({ route, navigation }) => {
     )
   }
 
+  const keyExtractor = useCallback((item) => item.key, []);
+  const renderFeedItem = useCallback(({ item }) => (
+    <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />
+  ), [topPostsTime, individualSpotifyAccessToken, promptAsync, onBlockUserLocal]);
+
   return (
     <View style={{ backgroundColor: 'white', height: '100%' }}>
       <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20, justifyContent: 'space-between', }}>
@@ -612,9 +617,15 @@ const Feed = ({ route, navigation }) => {
           <FeedItemTile item={listData[index]} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} setIndex={setIndex}/>
         )} uncomment this for swiping*/}
         <FlatList
-          data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
-          renderItem={({ item }) => <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />}
-          keyExtractor={(item) => item.key}
+          data={
+            feedType === 'Top Posts' && listData && listData[topPostsTime]
+              ? listData[topPostsTime].slice(0, numFeedItems)
+              : feedType === 'For You'
+                ? listData
+                : listData.slice(0, numFeedItems)
+          }
+          renderItem={renderFeedItem}
+          keyExtractor={keyExtractor}
           removeClippedSubviews={true}
           maxToRenderPerBatch={10}
           windowSize={5}
