@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, update, set, push } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, limitToLast, endBefore, get, update, set, push } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -56,7 +56,9 @@ const Feed = ({ route, navigation }) => {
   const [listData, setListData] = useState([]);
   const [feedView, setFeedView] = useState(null);
   const [refreshed, setRefreshed] = useState(false);
-  const [numFeedItems, setNumFeedItems] = useState(50);
+  const [numFeedItems, setNumFeedItems] = useState(20);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const oldestTimestampRef = useRef(null);
   const { userKey } = route.params;
   const [loaded] = useFonts({
     'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
@@ -96,7 +98,7 @@ const Feed = ({ route, navigation }) => {
     setRefreshed(true);
     const constsRef = ref(database, 'consts');
     get(constsRef).then((snapshot0) => {
-      const categoryItemsRef = ref(database, 'items');
+      const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(50));
 
       get(categoryItemsRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -106,8 +108,12 @@ const Feed = ({ route, navigation }) => {
             return snapshot0.val().feedType === 'customDescription' ? value?.custom ?? true : true;
           })
           .map(([key, value]) => ({ key, ...value }));
-          const filteredData = filterBlockedPosts(tempListData);
-          setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
+          const filteredData = filterBlockedPosts(tempListData).sort((a, b) => b.timestamp - a.timestamp);
+          setListData(filteredData);
+          setNumFeedItems(20);
+          if (filteredData.length > 0) {
+            oldestTimestampRef.current = filteredData[filteredData.length - 1].timestamp;
+          }
         }
         setRefreshed(false);
       }).catch((error) => {
@@ -128,6 +134,39 @@ const Feed = ({ route, navigation }) => {
     })
   }
 
+  const loadMoreItems = () => {
+    if (loadingMore) return;
+
+    if (feedType === 'For You') {
+      if (!oldestTimestampRef.current) return;
+      setLoadingMore(true);
+      const moreRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(20), endBefore(oldestTimestampRef.current));
+      get(moreRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const moreData = filterBlockedPosts(
+            Object.entries(snapshot.val()).map(([key, value]) => ({ key, ...value }))
+          ).sort((a, b) => b.timestamp - a.timestamp);
+          setListData(prev => [...prev, ...moreData]);
+          if (moreData.length > 0) {
+            oldestTimestampRef.current = moreData[moreData.length - 1].timestamp;
+          }
+        }
+        setLoadingMore(false);
+      }).catch(() => setLoadingMore(false));
+    } else {
+      // Following / Top Posts: data already fetched, just reveal more
+      setLoadingMore(true);
+      setNumFeedItems(prev => prev + 20);
+    }
+  };
+
+  // Reset the loadingMore guard after numFeedItems renders for Following/Top Posts
+  useEffect(() => {
+    if (feedType !== 'For You') {
+      setLoadingMore(false);
+    }
+  }, [numFeedItems]);
+
   const getFollowingListData = () => {
     setRefreshed(true);
     const userFollowingRef = ref(database, 'users/' + userKey + '/following');
@@ -135,12 +174,13 @@ const Feed = ({ route, navigation }) => {
     get(userFollowingRef).then((snapshot) => {
       if (snapshot.exists()) {
         followingList = Object.keys(snapshot.val());
-        const categoryItemsRef = ref(database, 'items');
+        const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(1000));
         get(categoryItemsRef).then((inner_snapshot) => {
           if (inner_snapshot.exists()) {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
             const filteredData = tempListData.filter(item => followingList.includes(item.user_id) && !isBlockedUser(item.user_id));
             setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
+            setNumFeedItems(20);
           }
           setRefreshed(false);
         }).catch((error) => {
@@ -165,7 +205,7 @@ const Feed = ({ route, navigation }) => {
   
   const getTopPostsListData = () => {
     setRefreshed(true);
-    const categoryItemsRef = ref(database, 'items');
+    const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(200));
     let tempListData = {};
     const oneHourAgo = Date.now() - 3600000;
     const oneDayAgo = Date.now() - 86400000;
@@ -184,6 +224,7 @@ const Feed = ({ route, navigation }) => {
         tempListData['All Time'] = tempListDataSorted
         // console.log(tempListData)
         setListData(filterBlockedTopPosts(tempListData));
+        setNumFeedItems(20);
       }
       setRefreshed(false);
     }).catch((error) => {
@@ -286,7 +327,7 @@ const Feed = ({ route, navigation }) => {
     }
   }, [response, blockedUserIds]);
 
-  const onBlockUserLocal = (blockedUserId) => {
+  const onBlockUserLocal = useCallback((blockedUserId) => {
     setBlockedUserIds((prev) => {
       const next = new Set(prev);
       next.add(blockedUserId);
@@ -312,7 +353,7 @@ const Feed = ({ route, navigation }) => {
     if (itemInfo && itemInfo.user_id === blockedUserId) {
       setItemInfo(null);
     }
-  };
+  }, [focusedItem, itemInfo]);
 
   const NotificationsTile = ({ item, visitingUserId }) => {
     const [userInfo, setUserInfo] = useState({});
@@ -423,6 +464,11 @@ const Feed = ({ route, navigation }) => {
       </View>
     );
   }
+
+  const keyExtractor = useCallback((item) => item.key, []);
+  const renderFeedItem = useCallback(({ item }) => (
+    <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />
+  ), [topPostsTime, individualSpotifyAccessToken, promptAsync, onBlockUserLocal]);
 
   if (notifications) {
     return (
@@ -579,25 +625,23 @@ const Feed = ({ route, navigation }) => {
           <FeedItemTile item={listData[index]} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} setIndex={setIndex}/>
         )} uncomment this for swiping*/}
         <FlatList
-          data={feedType === 'Top Posts' && listData && listData[topPostsTime] ? listData[topPostsTime].slice(0, numFeedItems) : listData.slice(0, numFeedItems)}
-          renderItem={({ item }) => <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />}
-          keyExtractor={(item, index) => index.toString()}
+          data={
+            feedType === 'Top Posts' && listData && listData[topPostsTime]
+              ? listData[topPostsTime].slice(0, numFeedItems)
+              : feedType === 'For You'
+                ? listData
+                : listData.slice(0, numFeedItems)
+          }
+          renderItem={renderFeedItem}
+          keyExtractor={keyExtractor}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          initialNumToRender={10}
           numColumns={1}
           key={"single-column"}
-          onScroll={(event) => {
-            const scrollY = event.nativeEvent.contentOffset.y;
-            if (scrollY < -110 && !refreshed) {
-              setRefreshed(true);
-              if (feedType === 'For You') {
-                getListData();
-              } else if (feedType === 'Following') {
-                getFollowingListData();
-              } else if (feedType === 'Top Posts') {
-                getTopPostsListData();
-              }
-            }
-          }}
-          scrollEventThrottle={1} // Define how often to update the scroll position
+          onEndReached={loadMoreItems}
+          onEndReachedThreshold={0.5}
           style={{ zIndex: 1 }}
           showsVerticalScrollIndicator={false}
         />

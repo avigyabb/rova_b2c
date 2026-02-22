@@ -261,9 +261,13 @@ const Explore = ({ route, navigation }) => {
           <FlatList
             data={topMovies}
             renderItem={({ item, index }) => <ExploreItemTile item={item} index={index} itemsInCategory={itemsInCategory}/>}
-            keyExtractor={(item, index) => index.toString()}
+            keyExtractor={(item) => item.image}
             numColumns={1}
             key={"single-column"}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            initialNumToRender={10}
           />
           </>
         )}
@@ -317,9 +321,13 @@ const Explore = ({ route, navigation }) => {
         <FlatList
           data={userListData}
           renderItem={({ item, index }) => <UserTile item={item} index={index}/>}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item) => item.id}
           numColumns={1}
           key={"single-column"}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={20}
+          windowSize={5}
+          initialNumToRender={20}
         />
       </View> 
     </TouchableWithoutFeedback>

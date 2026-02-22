@@ -122,14 +122,8 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   }
   
   const getProfileList = async (userIDList) => {
-    for (let userID of userIDList) {
-      try {
-        const addition = await getProfile(userID);
-        if (addition) {profileList.push(addition);}
-      } catch (error) {
-        console.log(error);
-      }
-    }
+    const results = await Promise.all(userIDList.map(userID => getProfile(userID).catch(() => null)));
+    results.forEach(addition => { if (addition) { profileList.push(addition); } });
     setLoading(false);
     return profileList;
   }
@@ -464,7 +458,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     );
   };
 
-  const CommentTile = ({ item }) => {
+  const CommentTile = React.memo(({ item }) => {
     const [userInfo, setUserInfo] = useState({});
 
     useEffect(() => {
@@ -492,6 +486,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             <Image
               source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
               style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+              cachePolicy="memory-and-disk"
             />
           </TouchableOpacity>
           <View>
@@ -509,7 +504,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           </View>
         </View>
     );
-  }
+  });
 
   const fetchDevices = async () => {
     const devicesUrl = 'https://api.spotify.com/v1/me/player/devices';
@@ -668,6 +663,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           <Image
             source={userImage}
             style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
+            cachePolicy="memory-and-disk"
           />
         </TouchableOpacity>
         <View>
@@ -750,15 +746,16 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
               <Image
                 source={{ uri: item.image }}
                 style={{
-                  height: dimensions.height, 
-                  width: dimensions.width, 
-                  borderWidth: 0.5, 
-                  marginRight: 10, 
-                  borderRadius: 5, 
+                  height: dimensions.height,
+                  width: dimensions.width,
+                  borderWidth: 0.5,
+                  marginRight: 10,
+                  borderRadius: 5,
                   borderColor: 'lightgrey' ,
                   marginTop: 10
                 }}
                 onLoad={onImageLoad}
+                cachePolicy="memory-and-disk"
               />
               
             {/* </TouchableOpacity> */}
@@ -866,8 +863,9 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
                   return (
                     <View style={{ alignItems: 'center', marginRight: 9.5, marginLeft: 9.5, marginTop: 4, marginBottom: 8 }}>
                       <Image
-                        source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }} 
+                        source={item.profile_pic ? { uri: item.profile_pic } : { uri: 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }}
                         style={{ height: 47.5, width: 47.5, borderWidth: 0.5, borderRadius: 23.75, borderColor: 'lightgrey' }}
+                        cachePolicy="memory-and-disk"
                       />
                         <Text 
                           style={{ marginTop: 5, textAlign: 'center', maxWidth: 50 }} // Adjust maxWidth as necessary

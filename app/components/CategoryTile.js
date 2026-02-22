@@ -41,6 +41,7 @@ const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fro
             position: 'absolute', // Positions the image to fill the parent
           }}
           resizeMode="cover"
+          cachePolicy="memory-and-disk"
         />
         <View style={{
           ...StyleSheet.absoluteFillObject,
