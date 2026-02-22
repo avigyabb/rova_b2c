@@ -122,14 +122,8 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   }
   
   const getProfileList = async (userIDList) => {
-    for (let userID of userIDList) {
-      try {
-        const addition = await getProfile(userID);
-        if (addition) {profileList.push(addition);}
-      } catch (error) {
-        console.log(error);
-      }
-    }
+    const results = await Promise.all(userIDList.map(userID => getProfile(userID).catch(() => null)));
+    results.forEach(addition => { if (addition) { profileList.push(addition); } });
     setLoading(false);
     return profileList;
   }
