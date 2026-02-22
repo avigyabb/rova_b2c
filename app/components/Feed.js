@@ -502,7 +502,7 @@ const Feed = ({ route, navigation }) => {
         </TouchableOpacity>
   
       </View>
-      <NormalItemTile item={focusedItem} visitingUserId={userKey} navigation={navigation} showComments={true} onBlockUser={onBlockUserLocal}/>
+      <NormalItemTile item={focusedItem} userKey={userKey} visitingUserId={userKey} navigation={navigation} showComments={true} setFeedView={setFeedView} onBlockUser={onBlockUserLocal}/>
       </View>
     );
   }
@@ -524,7 +524,7 @@ const Feed = ({ route, navigation }) => {
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
         </View>
-        <NormalItemTile item={itemInfo} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal}/>
+        <NormalItemTile item={itemInfo} userKey={userKey} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal}/>
       </View>
     );
   }
