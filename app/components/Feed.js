@@ -655,9 +655,6 @@ const Feed = ({ route, navigation }) => {
           style={{ zIndex: 1 }}
           showsVerticalScrollIndicator={false}
         />
-        <View style={{ position: 'absolute', width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 170 }}>
-          <Ionicons name='reload' size={40} color='lightgray' />
-        </View>
         </>
       )}
     </View>
