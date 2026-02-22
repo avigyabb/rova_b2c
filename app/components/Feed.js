@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, limitToLast, get, update, set, push } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, limitToLast, endBefore, get, update, set, push } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -56,7 +56,9 @@ const Feed = ({ route, navigation }) => {
   const [listData, setListData] = useState([]);
   const [feedView, setFeedView] = useState(null);
   const [refreshed, setRefreshed] = useState(false);
-  const [numFeedItems, setNumFeedItems] = useState(50);
+  const [numFeedItems, setNumFeedItems] = useState(20);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const oldestTimestampRef = useRef(null);
   const { userKey } = route.params;
   const [loaded] = useFonts({
     'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
@@ -106,8 +108,12 @@ const Feed = ({ route, navigation }) => {
             return snapshot0.val().feedType === 'customDescription' ? value?.custom ?? true : true;
           })
           .map(([key, value]) => ({ key, ...value }));
-          const filteredData = filterBlockedPosts(tempListData);
-          setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
+          const filteredData = filterBlockedPosts(tempListData).sort((a, b) => b.timestamp - a.timestamp);
+          setListData(filteredData);
+          setNumFeedItems(20);
+          if (filteredData.length > 0) {
+            oldestTimestampRef.current = filteredData[filteredData.length - 1].timestamp;
+          }
         }
         setRefreshed(false);
       }).catch((error) => {
@@ -128,6 +134,31 @@ const Feed = ({ route, navigation }) => {
     })
   }
 
+  const loadMoreItems = () => {
+    if (loadingMore) return;
+
+    if (feedType === 'For You') {
+      if (!oldestTimestampRef.current) return;
+      setLoadingMore(true);
+      const moreRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(20), endBefore(oldestTimestampRef.current));
+      get(moreRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const moreData = filterBlockedPosts(
+            Object.entries(snapshot.val()).map(([key, value]) => ({ key, ...value }))
+          ).sort((a, b) => b.timestamp - a.timestamp);
+          setListData(prev => [...prev, ...moreData]);
+          if (moreData.length > 0) {
+            oldestTimestampRef.current = moreData[moreData.length - 1].timestamp;
+          }
+        }
+        setLoadingMore(false);
+      }).catch(() => setLoadingMore(false));
+    } else {
+      // Following / Top Posts: data already fetched, just reveal more
+      setNumFeedItems(prev => prev + 20);
+    }
+  };
+
   const getFollowingListData = () => {
     setRefreshed(true);
     const userFollowingRef = ref(database, 'users/' + userKey + '/following');
@@ -141,6 +172,7 @@ const Feed = ({ route, navigation }) => {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
             const filteredData = tempListData.filter(item => followingList.includes(item.user_id) && !isBlockedUser(item.user_id));
             setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
+            setNumFeedItems(20);
           }
           setRefreshed(false);
         }).catch((error) => {
@@ -184,6 +216,7 @@ const Feed = ({ route, navigation }) => {
         tempListData['All Time'] = tempListDataSorted
         // console.log(tempListData)
         setListData(filterBlockedTopPosts(tempListData));
+        setNumFeedItems(20);
       }
       setRefreshed(false);
     }).catch((error) => {
@@ -588,20 +621,8 @@ const Feed = ({ route, navigation }) => {
           initialNumToRender={10}
           numColumns={1}
           key={"single-column"}
-          onScroll={(event) => {
-            const scrollY = event.nativeEvent.contentOffset.y;
-            if (scrollY < -110 && !refreshed) {
-              setRefreshed(true);
-              if (feedType === 'For You') {
-                getListData();
-              } else if (feedType === 'Following') {
-                getFollowingListData();
-              } else if (feedType === 'Top Posts') {
-                getTopPostsListData();
-              }
-            }
-          }}
-          scrollEventThrottle={1} // Define how often to update the scroll position
+          onEndReached={loadMoreItems}
+          onEndReachedThreshold={0.5}
           style={{ zIndex: 1 }}
           showsVerticalScrollIndicator={false}
         />
