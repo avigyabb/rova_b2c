@@ -96,7 +96,7 @@ const Profile = ({ route, navigation }) => {
     const categoriesRef = ref(database, 'categories');
     const userCategoriesQuery = query(categoriesRef, orderByChild('user_id'), equalTo(userKey));
     // Execute the query and listen for updates
-    onValue(userCategoriesQuery, (snapshot) => {
+    const unsubscribe = onValue(userCategoriesQuery, (snapshot) => {
       const activeCategories = [];
       const archived = [];
 
@@ -117,6 +117,7 @@ const Profile = ({ route, navigation }) => {
     });
 
     getUserInfo();
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
