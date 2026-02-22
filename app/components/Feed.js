@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { database } from '../../firebaseConfig';
-import { ref, onValue, off, query, orderByChild, equalTo, get, update, set, push } from "firebase/database";
+import { ref, onValue, off, query, orderByChild, equalTo, limitToLast, get, update, set, push } from "firebase/database";
 import { Image } from 'expo-image';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
@@ -96,7 +96,7 @@ const Feed = ({ route, navigation }) => {
     setRefreshed(true);
     const constsRef = ref(database, 'consts');
     get(constsRef).then((snapshot0) => {
-      const categoryItemsRef = ref(database, 'items');
+      const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(50));
 
       get(categoryItemsRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -135,7 +135,7 @@ const Feed = ({ route, navigation }) => {
     get(userFollowingRef).then((snapshot) => {
       if (snapshot.exists()) {
         followingList = Object.keys(snapshot.val());
-        const categoryItemsRef = ref(database, 'items');
+        const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(200));
         get(categoryItemsRef).then((inner_snapshot) => {
           if (inner_snapshot.exists()) {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
@@ -165,7 +165,7 @@ const Feed = ({ route, navigation }) => {
   
   const getTopPostsListData = () => {
     setRefreshed(true);
-    const categoryItemsRef = ref(database, 'items');
+    const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(200));
     let tempListData = {};
     const oneHourAgo = Date.now() - 3600000;
     const oneDayAgo = Date.now() - 86400000;
