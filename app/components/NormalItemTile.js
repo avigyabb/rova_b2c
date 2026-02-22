@@ -458,7 +458,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     );
   };
 
-  const CommentTile = ({ item }) => {
+  const CommentTile = React.memo(({ item }) => {
     const [userInfo, setUserInfo] = useState({});
 
     useEffect(() => {
@@ -504,7 +504,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           </View>
         </View>
     );
-  }
+  });
 
   const fetchDevices = async () => {
     const devicesUrl = 'https://api.spotify.com/v1/me/player/devices';
