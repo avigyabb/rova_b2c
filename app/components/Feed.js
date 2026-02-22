@@ -155,9 +155,17 @@ const Feed = ({ route, navigation }) => {
       }).catch(() => setLoadingMore(false));
     } else {
       // Following / Top Posts: data already fetched, just reveal more
+      setLoadingMore(true);
       setNumFeedItems(prev => prev + 20);
     }
   };
+
+  // Reset the loadingMore guard after numFeedItems renders for Following/Top Posts
+  useEffect(() => {
+    if (feedType !== 'For You') {
+      setLoadingMore(false);
+    }
+  }, [numFeedItems]);
 
   const getFollowingListData = () => {
     setRefreshed(true);
