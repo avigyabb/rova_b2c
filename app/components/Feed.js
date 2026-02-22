@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, limitToLast, endBefore, get, update, set, push } from "firebase/database";
 import { Image } from 'expo-image';
@@ -642,6 +642,16 @@ const Feed = ({ route, navigation }) => {
           key={"single-column"}
           onEndReached={loadMoreItems}
           onEndReachedThreshold={0.5}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshed}
+              onRefresh={() => {
+                if (feedType === 'For You') getListData();
+                else if (feedType === 'Following') getFollowingListData();
+                else if (feedType === 'Top Posts') getTopPostsListData();
+              }}
+            />
+          }
           style={{ zIndex: 1 }}
           showsVerticalScrollIndicator={false}
         />
