@@ -309,7 +309,12 @@ const Feed = ({ route, navigation }) => {
         </View>
         <FlatList
           data={notifications}
-          renderItem={({ item}) => <NotificationsTile item={item} />}
+          renderItem={({ item }) => <NotificationsTile item={item} />}
+          keyExtractor={(item) => item.id}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={20}
+          windowSize={5}
+          initialNumToRender={20}
         />
       </View>
     )
