@@ -16,16 +16,17 @@ const PeopleList = ({ taggedUsers, setTaggedUsers, userKey }) => {
       return;
     }
     const usersRef = ref(database, 'users');
+    const prefix = text.toLowerCase().trim();
     const usernameQuery = query(
       usersRef,
-      orderByChild('username'),
-      startAt(text.toLowerCase()),
-      endAt(text.toLowerCase() + '\uf8ff')
+      orderByChild('username_lowercase'),
+      startAt(prefix),
+      endAt(prefix + '\uf8ff')
     );
     try {
       const snapshot = await get(usernameQuery);
+      const results = [];
       if (snapshot.exists()) {
-        const results = [];
         snapshot.forEach((child) => {
           if (child.key !== userKey) {
             const userData = child.val();
@@ -37,10 +38,8 @@ const PeopleList = ({ taggedUsers, setTaggedUsers, userKey }) => {
             });
           }
         });
-        setSearchResults(results);
-      } else {
-        setSearchResults([]);
       }
+      setSearchResults(results);
     } catch (error) {
       console.error('Error searching users:', error);
     }
