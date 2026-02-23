@@ -174,102 +174,109 @@ const openaiApi = axios.create({
 });
 
   return (
-    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <TouchableOpacity onPress={() => {
-            setAddView('')
-            setNewItemDescription('')
-            setNewItemImageUris([])
-          }}>
-            <Text style={{ fontWeight: 'bold', color: 'black', fontSize: 16 }}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={async () => { 
-            
-            try {
-              const moderation_response = await openaiApi.post('', { input: newItemDescription });
-              if (moderation_response.data.results[0].flagged){
-                alert("This description does not follow our guidelines")
-                return;
-              }
-              setAddView('');
-            } catch (error) {
-              // Fail-open so users can still continue if moderation service is unavailable.
-              setAddView('');
+    <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
+      {/* Cancel / Done — have own handlers, no TWBF needed */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <TouchableOpacity onPress={() => {
+          setAddView('')
+          setNewItemDescription('')
+          setNewItemImageUris([])
+        }}>
+          <Text style={{ fontWeight: 'bold', color: 'black', fontSize: 16 }}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={async () => {
+          try {
+            const moderation_response = await openaiApi.post('', { input: newItemDescription });
+            if (moderation_response.data.results[0].flagged){
+              alert("This description does not follow our guidelines")
+              return;
             }
-            
+            setAddView('');
+          } catch (error) {
+            // Fail-open so users can still continue if moderation service is unavailable.
+            setAddView('');
           }
-         } style={{
-            backgroundColor: 'black',
-            padding: 6,
-            paddingHorizontal: 10,
-            borderRadius: 15
-          }}>
-            <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 16 }}>Done</Text>
-          </TouchableOpacity>
-        </View>
-    
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {newItemImageUris.length > 0 && (
-            <Image
-              source={{ uri: newItemImageUris[0] }}
-              style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
-            />
-          )}
-          <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-              <Ionicons name="duplicate" size={40} color="gray" />
-              <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Add Image</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ flexDirection: 'row', marginTop: 15 }}>
-          <Image
-            source={profilePic}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 19,
-            }}
-          />
-          <TextInput
-            placeholder={'Add a description...'}
-            value={newItemDescription}
-            onChangeText={setNewItemDescription}
-            placeholderTextColor="gray"
-            multiline={true}
-            style={{ 
-              marginLeft: 10, 
-              fontSize: 18, 
-              flex: 1,
-              height: 170
-            }}
-          />
-        </View>
-
-        <View style={{ flexDirection: 'row', borderTopWidth: 1, borderColor: 'lightgray', paddingTop: 15 }}>
-          <TouchableOpacity onPress={getPeople} style={styles.postButtons}>
-            <Ionicons name="person-circle" size={20} color="black" />
-            <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Friends</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={getLocation} style={styles.postButtons}>
-            <Ionicons name="location-sharp" size={20} color="black" />
-            <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Location</Text>
-          </TouchableOpacity>
-        </View>
-        {taggedUsers && taggedUsers.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-            {taggedUsers.map(u => (
-              <View key={u.userId} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'lightgray', borderRadius: 15, paddingHorizontal: 10, paddingVertical: 5, marginRight: 8 }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 13 }}>@{u.username}</Text>
-                <TouchableOpacity onPress={() => setTaggedUsers(taggedUsers.filter(t => t.userId !== u.userId))} style={{ marginLeft: 6 }}>
-                  <Ionicons name="close-circle" size={16} color="gray" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
-        )}
+        }} style={{
+          backgroundColor: 'black',
+          padding: 6,
+          paddingHorizontal: 10,
+          borderRadius: 15
+        }}>
+          <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 16 }}>Done</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableWithoutFeedback>
+
+      {/* Chips — outside TWBF so horizontal scroll is never intercepted */}
+      {taggedUsers && taggedUsers.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8, flexGrow: 0 }} contentContainerStyle={{ alignItems: 'center' }}>
+          {taggedUsers.map(u => (
+            <View key={u.userId} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'lightgray', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, marginRight: 8 }}>
+              <Image
+                source={{ uri: u.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png' }}
+                style={{ width: 22, height: 22, borderRadius: 11, marginRight: 5 }}
+              />
+              <Text style={{ fontWeight: 'bold', fontSize: 12 }}>@{u.username}</Text>
+              <TouchableOpacity onPress={() => setTaggedUsers(taggedUsers.filter(t => t.userId !== u.userId))} style={{ marginLeft: 5 }}>
+                <Ionicons name="close-circle" size={14} color="gray" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Image, description input, tag buttons — TWBF only wraps this area */}
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {newItemImageUris.length > 0 && (
+              <Image
+                source={{ uri: newItemImageUris[0] }}
+                style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
+              />
+            )}
+            <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
+                <Ionicons name="duplicate" size={40} color="gray" />
+                <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Add Image</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: 'row', marginTop: 15 }}>
+            <Image
+              source={profilePic}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+              }}
+            />
+            <TextInput
+              placeholder={'Add a description...'}
+              value={newItemDescription}
+              onChangeText={setNewItemDescription}
+              placeholderTextColor="gray"
+              multiline={true}
+              style={{
+                marginLeft: 10,
+                fontSize: 18,
+                flex: 1,
+                height: 170
+              }}
+            />
+          </View>
+
+          <View style={{ flexDirection: 'row', borderTopWidth: 1, borderColor: 'lightgray', paddingTop: 15 }}>
+            <TouchableOpacity onPress={getPeople} style={styles.postButtons}>
+              <Ionicons name="person-circle" size={20} color="black" />
+              <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Friends</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={getLocation} style={styles.postButtons}>
+              <Ionicons name="location-sharp" size={20} color="black" />
+              <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Location</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </View>
   )
 }
 
