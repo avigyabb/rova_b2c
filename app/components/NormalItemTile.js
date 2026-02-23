@@ -695,6 +695,16 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       </View>
           
       <View style={{ marginLeft: 60, width: 300, marginTop: 10 }}>
+        {item.tagged_users && Object.keys(item.tagged_users).length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 }}>
+            <Text style={{ color: 'gray', fontSize: 13 }}>with </Text>
+            {Object.entries(item.tagged_users).map(([uid, u], i, arr) => (
+              <TouchableOpacity key={uid} onPress={() => uid === userKey ? navigation.navigate('Profile') : setFeedView({ userKey: uid, username: u.username })}>
+                <Text style={{ color: '#2980b9', fontSize: 13 }}>@{u.username}{i < arr.length - 1 ? ', ' : ''}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
         {editMode ? (
           <TextInput
             value={itemDescription}

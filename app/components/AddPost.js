@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
 import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import * as ImagePicker from 'expo-image-picker';
 import LocationList from './AddFlow/TagLocation';
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView, setAddedCustomImage }) => {
+const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView, setAddedCustomImage, taggedUsers, setTaggedUsers, userKey }) => {
 
   const [addPageView, setAddPageView] = useState(null);
   var safety = false;
@@ -159,7 +159,7 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
               <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Tag Friends</Text>
           </View>
         </View>
-        <PeopleList/>
+        <PeopleList taggedUsers={taggedUsers} setTaggedUsers={setTaggedUsers} userKey={userKey} />
       </View>
     )
   }
@@ -256,6 +256,18 @@ const openaiApi = axios.create({
             <Text style={{ marginLeft: 8, fontWeight: 'bold', fontSize: 14 }}>Tag Location</Text>
           </TouchableOpacity>
         </View>
+        {taggedUsers && taggedUsers.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+            {taggedUsers.map(u => (
+              <View key={u.userId} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'lightgray', borderRadius: 15, paddingHorizontal: 10, paddingVertical: 5, marginRight: 8 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 13 }}>@{u.username}</Text>
+                <TouchableOpacity onPress={() => setTaggedUsers(taggedUsers.filter(t => t.userId !== u.userId))} style={{ marginLeft: 6 }}>
+                  <Ionicons name="close-circle" size={16} color="gray" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
       </View>
     </TouchableWithoutFeedback>
   )

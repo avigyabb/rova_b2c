@@ -1,177 +1,129 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Text, View, FlatList, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, TextInput, Keyboard } from 'react-native';
-import { useFonts } from 'expo-font';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { search } from './../Search';
+import React, { useState } from 'react';
+import { Text, View, FlatList, TouchableOpacity, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { database } from '../../../firebaseConfig';
+import { ref, query, orderByChild, startAt, endAt, get } from "firebase/database";
 
-const styles = StyleSheet.create({
-    optionsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      width: '100%',
-    },
-    option: {
-      width: 70,
-      height: 70,
-      borderRadius: 35,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 4,
-    },
-    selectedOption: {
-      borderWidth: 2,
-      borderColor: 'white',
-    },
-    optionText: {
-      textAlign: 'center',
-      marginTop: 4,
-    },
-    optionBox: {
-      width: '26%',
-      alignItems: 'center',
-    },
-    cardsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 10,
-      width: '96%',
-    },
-    card: {
-      borderWidth: 1,
-      borderColor: 'lightgray',
-      borderRadius: 10,
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '47%',
-      marginHorizontal: '1.5%',
-      height: 150,
-    },
-    orText: {
-      fontSize: 14,
-      fontWeight: 'bold',
-      color: 'white',
-    },
-    orContainer: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'black',
-      position: 'absolute',
-      zIndex: 1,
-    },
-    itemContent: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      width: '83%',
-      textAlign: 'center',
-    },
-    location: {
-      fontSize: 14,
-      color: 'grey',
-    },
-    actionsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: '90%',
-    },
-    actionButton: {
-      padding: 10,
-    },
-    actionText: {
-      fontSize: 16,
+const PeopleList = ({ taggedUsers, setTaggedUsers, userKey }) => {
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchText, setSearchText] = useState('');
+
+  const searchUsers = async (text) => {
+    setSearchText(text);
+    if (!text.trim()) {
+      setSearchResults([]);
+      return;
     }
-  });
-
-const PeopleList = ({}) => {
-
-    const [searchResults, setSearchResults] = useState([]);
-    const [newItem, setNewItem] = useState('');
-    const [newItemCategoryType, setNewItemCategoryType] = useState('');
-    const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
-    const [itemsInCategory, setItemsInCategory] = useState(null);
-    
-    return (
-        <View>
-            <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}> 
-                <View style={{ backgroundColor: 'white', paddingHorizontal: 20, height: '100%' }}>
-                    {/* <View style={{
-                        flexDirection: 'row',
-                        marginTop: 15,
-                        backgroundColor: 'lightgray',
-                        paddingHorizontal: 15,
-                        borderRadius: 10,
-                        alignItems: 'center', // Aligns the TextInput and the icon vertically
-                        marginBottom: 10
-                    }}>
-                        <Ionicons name="search" size={24} color="black" style={styles.icon} />
-                        <TextInput
-                            placeholder={'Search Locations...'}
-                            placeholderTextColor="gray"
-                            onChangeText={(text) => {
-                                setNewItem(text);
-                                search(spotifyAccessToken, 'Locations', setSearchResults, text);
-                            }}
-                            style={{ 
-                            fontSize: 16,
-                            letterSpacing: 0.4,
-                            paddingLeft: 10,
-                            fontWeight: 'bold',
-                            height: 50
-                            }}
-                        /> 
-                    </View> */}
-                    <View style={{ flex: 1, alignItems: 'center', marginTop: '30%' }}>
-                        <Text style={{ color: 'gray', fontSize: 20, marginBottom: 30 }}>Coming Soon! 👬</Text>
-                    </View>
-                    {/* <FlatList
-                        data={searchResults}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity onPress={() => {
-                            setNewItem(item.content)
-                            setNewItemImageUris([item.image])
-                            setNewItemDescription(item.description)
-                            setPresetDescription(item.description)
-                            setTrackUri(item.uri || null)
-                            }} 
-                            style={{ 
-                            flexDirection: 'row', 
-                            alignItems: 'center',
-                            padding: 5,
-                            borderColor: 'lightgray',
-                            borderBottomWidth: 0.5,
-                            }}>
-                            {item.image ? (
-                                <Image source={{ uri: item.image }} style={{ 
-                                width: newItemCategoryType === 'Movies' || newItemCategoryType === 'Shows' ? 40 : 60, height: 60,
-                                borderRadius: 5,
-                                borderWidth: 0.5,
-                                borderColor: 'lightgray'
-                                }}/>
-                            ) : (
-                                <View style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', backgroundColor: 'lightgray', borderRadius: 5 }}>
-                                <Ionicons name="location-sharp" size={40} color="black" />
-                                </View>
-                            )}
-                            <View style={{ marginLeft: 10, width: 250 }}>
-                                <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
-                                <Text style={{ color: 'gray', fontSize: 12 }}>{item.description}</Text>
-                            </View>
-                            { itemsInCategory && itemsInCategory.has(item.content) && <Ionicons name="list" size={25} />}
-                            </TouchableOpacity>
-                        )}
-                        keyExtractor={(item, index) => index.toString()}
-                        numColumns={1}
-                        key={"single-column"}
-                    /> */}
-                </View> 
-            </TouchableWithoutFeedback>
-        </View>
+    const usersRef = ref(database, 'users');
+    const usernameQuery = query(
+      usersRef,
+      orderByChild('username'),
+      startAt(text.toLowerCase()),
+      endAt(text.toLowerCase() + '\uf8ff')
     );
+    try {
+      const snapshot = await get(usernameQuery);
+      if (snapshot.exists()) {
+        const results = [];
+        snapshot.forEach((child) => {
+          if (child.key !== userKey) {
+            const userData = child.val();
+            results.push({
+              userId: child.key,
+              name: userData.name,
+              username: userData.username,
+              profile_pic: userData.profile_pic,
+            });
+          }
+        });
+        setSearchResults(results);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+    }
   };
-  
-  export default PeopleList;
+
+  const toggleUser = (user) => {
+    const isSelected = taggedUsers.some(u => u.userId === user.userId);
+    if (isSelected) {
+      setTaggedUsers(taggedUsers.filter(u => u.userId !== user.userId));
+    } else {
+      setTaggedUsers([...taggedUsers, user]);
+    }
+  };
+
+  return (
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+      <View style={{ backgroundColor: 'white', paddingHorizontal: 20, height: '100%' }}>
+        <View style={{
+          flexDirection: 'row',
+          marginTop: 15,
+          backgroundColor: 'lightgray',
+          paddingHorizontal: 15,
+          borderRadius: 10,
+          alignItems: 'center',
+          marginBottom: 10
+        }}>
+          <Ionicons name="search" size={24} color="black" />
+          <TextInput
+            placeholder={'Search by username...'}
+            placeholderTextColor="gray"
+            value={searchText}
+            onChangeText={searchUsers}
+            autoCapitalize="none"
+            style={{
+              fontSize: 16,
+              letterSpacing: 0.4,
+              paddingLeft: 10,
+              fontWeight: 'bold',
+              height: 50,
+              flex: 1
+            }}
+          />
+        </View>
+
+        {taggedUsers.length > 0 && (
+          <Text style={{ fontSize: 13, color: 'gray', marginBottom: 6 }}>
+            Tagged: {taggedUsers.map(u => '@' + u.username).join(', ')}
+          </Text>
+        )}
+
+        <FlatList
+          data={searchResults}
+          keyExtractor={(item) => item.userId}
+          renderItem={({ item }) => {
+            const isSelected = taggedUsers.some(u => u.userId === item.userId);
+            return (
+              <TouchableOpacity
+                onPress={() => toggleUser(item)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: 10,
+                  borderBottomWidth: 0.5,
+                  borderColor: 'lightgray',
+                }}
+              >
+                <Image
+                  source={item.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
+                  style={{ width: 45, height: 45, borderRadius: 22.5, borderWidth: 0.5, borderColor: 'lightgray' }}
+                  cachePolicy="memory-and-disk"
+                />
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Text style={{ fontWeight: 'bold', fontSize: 15 }}>{item.name}</Text>
+                  <Text style={{ color: 'gray', fontSize: 13 }}>@{item.username}</Text>
+                </View>
+                {isSelected && <Ionicons name="checkmark-circle" size={24} color="black" />}
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </View>
+    </TouchableWithoutFeedback>
+  );
+};
+
+export default PeopleList;
