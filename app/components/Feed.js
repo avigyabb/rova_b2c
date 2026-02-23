@@ -450,7 +450,7 @@ const Feed = ({ route, navigation }) => {
               )}
               </>
             ) : (
-              item.image ? (
+              item.image ? ( // TODO: should probably fetch from the postID instead of passing through the notification, but this works for now
                 <TouchableOpacity onPress={() => onItemPress(item)}>
                   <Image
                     source={{ uri: item.image }}
