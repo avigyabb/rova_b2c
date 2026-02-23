@@ -16,7 +16,7 @@ var artists = ''
 export const search = async (spotifyAccessToken, newItemCategoryType, setSearchResults, text) => {
   
   if (newItemCategoryType === 'Movies' || newItemCategoryType === 'Shows') {
-    const API_KEY = '0259695ad57c17e0c504fae2bf270bc4';
+    const API_KEY = '0259695ad57c17e0c504fae2bf270bc4'; // TODO: api key
     const BASE_URL = 'https://api.themoviedb.org/3';
     const imgBaseURL = "https://image.tmdb.org/t/p/";
     const imgSize = "original";
@@ -86,7 +86,7 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
       console.error('Error:', error);
     });
   } else if (text && newItemCategoryType === 'Locations') {
-    const API_KEY = 'AIzaSyDln_j0XWKTwl9tJHdrh-R9ELSoge7mCW0';
+    const API_KEY = 'AIzaSyDln_j0XWKTwl9tJHdrh-R9ELSoge7mCW0'; // TODO: api key
     const searchText = encodeURIComponent(text);
     const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchText}&key=${API_KEY}`;
 
@@ -106,7 +106,7 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
         console.error('Error:', error);
       });
   } else {
-    // const API_KEY = '43545255-2ce8252df331f629bb4ae8719';
+    // const API_KEY = '43545255-2ce8252df331f629bb4ae8719'; // TODO: api key
     // const URL = `https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(text)}&image_type=photo`;
     
     // axios.get(URL).then((res) => {
