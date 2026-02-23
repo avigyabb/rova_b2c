@@ -58,7 +58,7 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
     const selectedUri = result.assets[0].uri;
 
     try {
-      const apiKey = "AIzaSyDxK3oZA5yBjSC0Lvrs_wyT53Jputlx-IA";
+      const apiKey = "AIzaSyDxK3oZA5yBjSC0Lvrs_wyT53Jputlx-IA"; // TODO: key leaked
       const apiURL = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
       const base64ImageData = await FileSystem.readAsStringAsync(selectedUri, {
         encoding: FileSystem.EncodingType.Base64,
@@ -164,7 +164,7 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
     )
   }
 
-  const openaiAPIKey = "sk-ambora-service-tRGLRzm8TpX7LyaXbEJ1T3BlbkFJZUJGeBOwv2SUDUBYrn8o";
+  const openaiAPIKey = "sk-ambora-service-tRGLRzm8TpX7LyaXbEJ1T3BlbkFJZUJGeBOwv2SUDUBYrn8o"; // TODO: key leaked
 const openaiApi = axios.create({
   baseURL: 'https://api.openai.com/v1/moderations',
   headers: {

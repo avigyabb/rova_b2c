@@ -75,6 +75,7 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
   };
 
   const onSignIn = async () => {
+
     if (password.length < 6) {
       setErrorMessage('Password too short');
       return;
@@ -135,10 +136,11 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
     setView('pickCategory');
     await AsyncStorage.setItem('username', username);
     await AsyncStorage.setItem('key', user.uid);
-    set(newUserRef, { 
+    set(newUserRef, {
       username: username,
+      username_lowercase: username.toLowerCase(),
       email: email,
-      name: username, 
+      name: username,
       bio: username + '\'s bio',
       user_type: 'founding_member',
       termsAccepted: true,

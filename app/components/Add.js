@@ -453,7 +453,7 @@ const Add = ({ route, navigation }) => {
       await finalizeRerankCleanup();
       for (const taggedUser of taggedUsers) {
         const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
-        set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey });
+        set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey, image: newItemImageUris[0] || null });
         update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
       }
       setAddView('itemAdded');
