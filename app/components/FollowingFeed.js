@@ -116,7 +116,10 @@ const Feed = ({ route, navigation }) => {
         get(categoryItemsRef).then((inner_snapshot) => {
           if (inner_snapshot.exists()) {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
-            const filteredData = tempListData.filter(item => followingList.includes(item.user_id));
+            const filteredData = tempListData.filter(item =>
+              followingList.includes(item.user_id) ||
+              (item.tagged_users && Object.keys(item.tagged_users).some(uid => followingList.includes(uid)))
+            );
             setListData(filteredData.sort((a, b) => b.timestamp - a.timestamp));
           }
           setRefreshed(false);

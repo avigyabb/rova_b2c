@@ -137,6 +137,7 @@ const Add = ({ route, navigation }) => {
   const [itemsInCategory, setItemsInCategory] = useState(null);
   const [loadingItems, setLoadingItems] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
+  const [taggedUsers, setTaggedUsers] = useState([]);
 
   const resetRankingState = () => {
     setRankMode(false);
@@ -328,6 +329,7 @@ const Add = ({ route, navigation }) => {
               'content_description': newItemDescription
             };
             // make sure any changes to newItemObj are also reflected in itemComparisons
+            let newKey = null;
             let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
             for (let i = 0; i < items.length; i++) {
               const item = items[i];
@@ -337,12 +339,13 @@ const Add = ({ route, navigation }) => {
               } else {
                 setNewItemFinalScore(item.score.toFixed(1));
                 itemRef = push(ref(database, 'items'));
+                newKey = itemRef.key;
               }
-              update(itemRef, { 
+              update(itemRef, {
                 bucket: newItemBucket,
                 category_id: newItemCategory,
                 category_name: newItemCategoryName,
-                content: item.content, 
+                content: item.content,
                 description: item.description,
                 image: item.image,
                 score: item.score,
@@ -353,11 +356,14 @@ const Add = ({ route, navigation }) => {
                 imageType: item.imageType || null,
                 id: item.id || null,
                 artist: item.artist || null,
-                content_description: item.content_description || null
+                content_description: item.content_description || null,
+                ...(!item.key && taggedUsers.length > 0 ? {
+                  tagged_users: taggedUsers.reduce((acc, u) => { acc[u.userId] = { name: u.name, username: u.username }; return acc; }, {})
+                } : {})
               })
               .then(() => console.log(`Score updated for ${item.content} ${items}`))
               .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
-              
+
               // update category photo if its the best
               if (item.score === 10.0) {
                 const categoryRef = ref(database, 'categories/' + newItemCategory);
@@ -372,6 +378,11 @@ const Add = ({ route, navigation }) => {
               }
             }
             await finalizeRerankCleanup();
+            for (const taggedUser of taggedUsers) {
+              const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
+              set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey });
+              update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
+            }
             setAddView('itemAdded'); // ~ do we need this?
           });
         }
@@ -392,6 +403,7 @@ const Add = ({ route, navigation }) => {
 
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
+      let newKey = null;
       let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
@@ -401,12 +413,13 @@ const Add = ({ route, navigation }) => {
         } else {
           setNewItemFinalScore(item.score.toFixed(1));
           itemRef = push(ref(database, 'items'));
+          newKey = itemRef.key;
         }
-        update(itemRef, { 
+        update(itemRef, {
           bucket: newItemBucket,
           category_id: newItemCategory,
           category_name: newItemCategoryName,
-          content: item.content, 
+          content: item.content,
           description: item.description,
           image: item.image,
           score: item.score,
@@ -416,7 +429,10 @@ const Add = ({ route, navigation }) => {
           trackUri: item.trackUri || null,
           id: item.id || null,
           artist: item.artist || null,
-          content_description: item.content_description || null
+          content_description: item.content_description || null,
+          ...(!item.key && taggedUsers.length > 0 ? {
+            tagged_users: taggedUsers.reduce((acc, u) => { acc[u.userId] = { name: u.name, username: u.username }; return acc; }, {})
+          } : {})
         })
         .then(() => console.log(`Score updated for ${item.content} ${items}`))
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
@@ -435,6 +451,11 @@ const Add = ({ route, navigation }) => {
         }
       }
       await finalizeRerankCleanup();
+      for (const taggedUser of taggedUsers) {
+        const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
+        set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey });
+        update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
+      }
       setAddView('itemAdded');
     }
 
@@ -580,9 +601,18 @@ const Add = ({ route, navigation }) => {
       updateObject.trackUri = trackUri;
     }
 
+    if (taggedUsers.length > 0) {
+      updateObject.tagged_users = taggedUsers.reduce((acc, u) => { acc[u.userId] = { name: u.name, username: u.username }; return acc; }, {});
+    }
+
     try {
       await update(newLaterItemRef, updateObject);
       console.log('New later item added');
+      for (const taggedUser of taggedUsers) {
+        const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
+        set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newLaterItemRef.key });
+        update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
+      }
       await finalizeRerankCleanup();
     } catch (error) {
       console.error(`Failed to add later item: ${error}`);
@@ -641,6 +671,7 @@ const Add = ({ route, navigation }) => {
     setSearchResults([]);
     setAddedCustomImage(false);
     setRankMode(false);
+    setTaggedUsers([]);
   }
 
   const onContinuePress = () => {
@@ -660,13 +691,16 @@ const Add = ({ route, navigation }) => {
 
   if (addView === 'AddPost') {
     return (
-      <AddPost 
+      <AddPost
         newItemDescription={newItemDescription}
-        setNewItemDescription={setNewItemDescription} 
+        setNewItemDescription={setNewItemDescription}
         newItemImageUris={newItemImageUris}
-        setNewItemImageUris={setNewItemImageUris} 
-        setAddView={setAddView}  
+        setNewItemImageUris={setNewItemImageUris}
+        setAddView={setAddView}
         setAddedCustomImage={setAddedCustomImage}
+        taggedUsers={taggedUsers}
+        setTaggedUsers={setTaggedUsers}
+        userKey={userKey}
       />
     );
   }
