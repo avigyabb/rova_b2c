@@ -23,6 +23,8 @@ const Groups = ({ route, navigation }) => {
   const [school, setSchool] = useState(null);
 
   useEffect(() => {
+    setLeaderboardCategory('All Categories');
+
     // get user info
     const userRef = ref(database, 'users/' + userKey);
     get(userRef).then((snapshot) => {
@@ -30,10 +32,26 @@ const Groups = ({ route, navigation }) => {
       setSchool(snapshot.val().school || null);
     })
 
-    let usersRef = ref(database, 'users');
-    if (groupType === 'School') {
-      usersRef = query(usersRef, orderByChild('school'), equalTo(school));
+    if (groupType === 'Global') {
+      // Single precomputed read instead of N+1 per-user category queries
+      get(ref(database, 'leaderboards/top_catalogers')).then(snapshot => {
+        const entries = Object.entries(snapshot.val() || {})
+          .map(([userId, data]) => ({
+            key: userId,
+            ...data,
+            map: { 'All Categories': data.total_items },
+          }))
+          .sort((a, b) => a.rank - b.rank);
+        setGroupsListData(entries);
+        setChips([['All Categories', [0, 0]]]);
+      }).catch((error) => {
+        console.error("Error fetching leaderboard:", error);
+      });
+      return;
     }
+
+    // School mode: N+1 logic (school leaderboards are not precomputed)
+    const usersRef = query(ref(database, 'users'), orderByChild('school'), equalTo(school));
     const tempGroupsListData = [];
     const overallMap = { // &&&
       'All Categories': [0, 0], // first index is number of people, 2nd is number of rankings
@@ -44,10 +62,10 @@ const Groups = ({ route, navigation }) => {
     }
 
     get(usersRef).then((snapshot) => {
-      if (snapshot.exists()) {  
+      if (snapshot.exists()) {
         processUsers(snapshot, tempGroupsListData, overallMap)
           .then(() => {
-            setGroupsListData(tempGroupsListData.filter((item) => item.map['All Categories'] > 0).sort((a, b) => b.map['All Categories'] - a.map['All Categories'])); // ~ CAUSES TONS OF REFRESHES MUST FIX
+            setGroupsListData(tempGroupsListData.filter((item) => item.map['All Categories'] > 0).sort((a, b) => b.map['All Categories'] - a.map['All Categories']));
             setChips(Object.entries(overallMap).filter(([key, value]) => !Number.isNaN(value) && key !== '').sort((a, b) => {
               if (a[1][0] !== b[1][0]) {
                 return b[1][0] - a[1][0];

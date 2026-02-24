@@ -67,7 +67,7 @@ const Feed = ({ route, navigation }) => {
     'Unbounded': require('../../assets/fonts/Unbounded/Unbounded-VariableFont_wght.ttf'),
   });
   const [feedType, setFeedType] = useState('Following');
-  const [topPostsTime, setTopPostsTime] = useState('Past Hour');
+  const [topPostsTime, setTopPostsTime] = useState('All Time');
   const [itemInfo, setItemInfo] = useState(null);
   const [notifications, setNotifications] = useState(null);
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
@@ -205,30 +205,23 @@ const Feed = ({ route, navigation }) => {
   
   const getTopPostsListData = () => {
     setRefreshed(true);
-    const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(200));
-    let tempListData = {};
-    const oneHourAgo = Date.now() - 3600000;
-    const oneDayAgo = Date.now() - 86400000;
-    const oneWeekAgo = Date.now() - 604800000;
+    const toArray = obj =>
+      Object.entries(obj || {})
+        .map(([id, data]) => ({ key: id, ...data }))
+        .sort((a, b) => a.rank - b.rank);
 
-    get(categoryItemsRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        const tempListDataSorted = Object.entries(snapshot.val())
-          .filter(([key, value]) => key !== 'undefined')
-          .map(([key, value]) => ({ key, ...value }))
-          .sort((a, b) => ((b.likes ? Object.keys(b.likes).length : 0) + (b.dislikes ? Object.keys(b.dislikes).length : 0)) - ((a.likes ? Object.keys(a.likes).length : 0) + (a.dislikes ? Object.keys(a.dislikes).length : 0)));
-
-        tempListData['Past Hour'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneHourAgo)
-        tempListData['Past Day'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneDayAgo)
-        tempListData['Past Week'] = tempListDataSorted.filter(item => item.timestamp && item.timestamp > oneWeekAgo)
-        tempListData['All Time'] = tempListDataSorted
-        // console.log(tempListData)
-        setListData(filterBlockedTopPosts(tempListData));
-        setNumFeedItems(20);
-      }
+    get(ref(database, 'leaderboards')).then(snapshot => {
+      const lb = snapshot.val() || {};
+      const tempListData = {
+        'All Time':  toArray(lb.top_posts_all_time),
+        'Past Week': toArray(lb.top_posts_past_week),
+      };
+      setListData(filterBlockedTopPosts(tempListData));
+      setNumFeedItems(20);
       setRefreshed(false);
-    }).catch((error) => {
-      console.error("Error fetching categories:", error);
+    }).catch(err => {
+      console.error('Leaderboard fetch failed:', err);
+      setRefreshed(false);
     });
 
     const userRef = ref(database, 'users/' + userKey);
@@ -592,12 +585,6 @@ const Feed = ({ route, navigation }) => {
       
       {feedType === 'Top Posts' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', paddingVertical: 10, justifyContent: 'space-evenly' }}>
-          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Hour' && {backgroundColor: 'black'}]} onPress={() => {setTopPostsTime('Past Hour') }}>
-            <Text style={[styles.timesText, topPostsTime === 'Past Hour' && {color: 'white'}]}>Past Hour</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Day' && {backgroundColor: 'black'}]} onPress={() => {setTopPostsTime('Past Day')}}>
-            <Text style={[styles.timesText, topPostsTime === 'Past Day' && {color: 'white'}]}>Past Day</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={[styles.timesButton, topPostsTime === 'Past Week' && {backgroundColor: 'black'}]} onPress={() => setTopPostsTime('Past Week')}>
             <Text style={[styles.timesText, topPostsTime === 'Past Week' && {color: 'white'}]}>Past Week</Text>
           </TouchableOpacity>
