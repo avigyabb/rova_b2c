@@ -205,18 +205,28 @@ const Feed = ({ route, navigation }) => {
   
   const getTopPostsListData = () => {
     setRefreshed(true);
-    const toArray = obj =>
-      Object.entries(obj || {})
-        .map(([id, data]) => ({ key: id, ...data }))
-        .sort((a, b) => a.rank - b.rank);
 
-    get(ref(database, 'leaderboards')).then(snapshot => {
+    const fetchRankedItems = (ids) => {
+      if (!ids) return Promise.resolve([]);
+      return Promise.all(
+        Object.values(ids).map(id => get(ref(database, 'items/' + id)))
+      ).then(snaps =>
+        snaps
+          .filter(snap => snap.exists())
+          .map(snap => ({ key: snap.key, ...snap.val() }))
+      );
+    };
+
+    get(ref(database, 'leaderboards')).then(async snapshot => {
       const lb = snapshot.val() || {};
-      const tempListData = {
-        'All Time':  toArray(lb.top_posts_all_time),
-        'Past Week': toArray(lb.top_posts_past_week),
-      };
-      setListData(filterBlockedTopPosts(tempListData));
+      const [allTime, pastWeek] = await Promise.all([
+        fetchRankedItems(lb.top_posts_all_time),
+        fetchRankedItems(lb.top_posts_past_week),
+      ]);
+      setListData(filterBlockedTopPosts({
+        'All Time':  allTime,
+        'Past Week': pastWeek,
+      }));
       setNumFeedItems(20);
       setRefreshed(false);
     }).catch(err => {
