@@ -669,6 +669,17 @@ const Feed = ({ route, navigation }) => {
           initialNumToRender={10}
           numColumns={1}
           key={"single-column"}
+          ListEmptyComponent={
+            feedType === 'Top Posts' ? (
+              <View style={{ alignItems: 'center', marginTop: 80 }}>
+                <Text style={{ color: 'gray', fontSize: 16 }}>
+                  {topPostsTime === 'All Time'
+                    ? 'No posts yet'
+                    : `No posts in the ${topPostsTime.toLowerCase()}`}
+                </Text>
+              </View>
+            ) : null
+          }
           onEndReached={loadMoreItems}
           onEndReachedThreshold={0.5}
           refreshControl={
