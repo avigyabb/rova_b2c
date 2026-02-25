@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
 });
 
 const ExploreItemTile = ({ item, index, itemsInCategory }) => {
-  let scoreColor = getScoreColorHSL(Number(item.score/item.num_items.toFixed(1)));
+  let scoreColor = getScoreColorHSL(Number((item.score / item.num_items).toFixed(1)));
 
   return (
       <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
