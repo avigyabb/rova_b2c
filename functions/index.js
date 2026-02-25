@@ -9,6 +9,9 @@ const TOP_N = 200;
 // Duplicated from app/consts.js — kept in sync manually
 const DEFAULT_CATEGORY_TYPES = new Set(['Songs', 'Albums', 'Movies', 'Artists', 'Shows']);
 
+// Firebase RTDB keys cannot contain these characters
+const INVALID_KEY_RE = /[.#$\/\[\]]/;
+
 const NOT_INCLUDED_CATEGORIES = new Set([
   'Test', 'Test3', 'When the', 'New2', 'New test', 'Random stuff',
   'Shows Test', 'The', 'New Test', 'Random items', 'Dvgg', 'dtd',
@@ -161,6 +164,7 @@ export const computeLeaderboards = onSchedule(
       const raw = cat.category_name?.trim();
       if (!raw || NOT_INCLUDED_CATEGORIES.has(raw)) continue;
       const mapped = LARGER_CATEGORIES[raw] || raw;
+      if (INVALID_KEY_RE.test(mapped)) continue;
       if (!customNameUserSets[mapped]) customNameUserSets[mapped] = new Set();
       customNameUserSets[mapped].add(cat.user_id);
     }
@@ -187,6 +191,7 @@ export const computeLeaderboards = onSchedule(
         const raw = cat.category_name?.trim();
         if (!raw || NOT_INCLUDED_CATEGORIES.has(raw)) continue;
         const mapped = LARGER_CATEGORIES[raw] || raw;
+        if (INVALID_KEY_RE.test(mapped)) continue;
         if (!popularCustomNames.has(mapped)) continue;
         userCatalogData[uid].by_type[mapped] =
           (userCatalogData[uid].by_type[mapped] || 0) + cat.num_items;
