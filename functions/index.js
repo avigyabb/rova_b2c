@@ -74,22 +74,30 @@ export const computeLeaderboards = onSchedule(
       .sort((a, b) => b.engagement - a.engagement)
       .slice(0, TOP_N);
 
-    // 6. Top catalogers — sum num_items per user across all categories
-    const itemCountByUser = {};
+    // 6. Top catalogers — sum num_items per user across all categories, with per-type breakdown
+    const userCatalogData = {};
     for (const cat of Object.values(categories)) {
-      if (!cat.user_id) continue;
-      itemCountByUser[cat.user_id] = (itemCountByUser[cat.user_id] || 0) + (cat.num_items || 0);
+      if (!cat.user_id || !cat.num_items) continue;
+      const uid = cat.user_id;
+      if (!userCatalogData[uid]) userCatalogData[uid] = { total: 0, by_type: {} };
+      userCatalogData[uid].total += cat.num_items;
+      const type = cat.category_type;
+      if (type && type !== 'Locations') {
+        userCatalogData[uid].by_type[type] =
+          (userCatalogData[uid].by_type[type] || 0) + cat.num_items;
+      }
     }
-    const topCatalogers = Object.entries(itemCountByUser)
+    const topCatalogers = Object.entries(userCatalogData)
       .filter(([uid]) => users[uid])
-      .sort(([, a], [, b]) => b - a)
+      .sort(([, a], [, b]) => b.total - a.total)
       .slice(0, TOP_N)
-      .map(([uid, total_items], i) => ({
-        userId:      uid,
-        username:    users[uid].username    || '',
-        name:        users[uid].name        || '',
-        profile_pic: users[uid].profile_pic || '',
-        total_items,
+      .map(([uid, data], i) => ({
+        userId:           uid,
+        username:         users[uid].username    || '',
+        name:             users[uid].name        || '',
+        profile_pic:      users[uid].profile_pic || '',
+        total_items:      data.total,
+        by_category_type: data.by_type,
         rank: i + 1,
       }));
 

@@ -39,11 +39,25 @@ const Groups = ({ route, navigation }) => {
           .map(([userId, data]) => ({
             key: userId,
             ...data,
-            map: { 'All Categories': data.total_items },
+            map: { 'All Categories': data.total_items, ...(data.by_category_type || {}) },
           }))
           .sort((a, b) => a.rank - b.rank);
         setGroupsListData(entries);
-        setChips([['All Categories', [0, 0]]]);
+
+        // Build chips from per-category counts across all entries
+        const chipMap = {};
+        for (const entry of entries) {
+          for (const [type, count] of Object.entries(entry.by_category_type || {})) {
+            if (!chipMap[type]) chipMap[type] = [0, 0];
+            chipMap[type][0] += 1;
+            chipMap[type][1] += count;
+          }
+        }
+        const allChips = [
+          ['All Categories', [entries.length, entries.reduce((s, e) => s + (e.total_items || 0), 0)]],
+          ...Object.entries(chipMap).sort((a, b) => b[1][1] - a[1][1]),
+        ];
+        setChips(allChips);
       }).catch((error) => {
         console.error("Error fetching leaderboard:", error);
       });
