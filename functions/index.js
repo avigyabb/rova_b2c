@@ -6,6 +6,68 @@ initializeApp();
 
 const TOP_N = 200;
 
+// Duplicated from app/consts.js — kept in sync manually
+const DEFAULT_CATEGORY_TYPES = new Set(['Songs', 'Albums', 'Movies', 'Artists', 'Shows']);
+
+const NOT_INCLUDED_CATEGORIES = new Set([
+  'Test', 'Test3', 'When the', 'New2', 'New test', 'Random stuff',
+  'Shows Test', 'The', 'New Test', 'Random items', 'Dvgg', 'dtd',
+  'Things I Didn\'t Enjoy That Much', 'Things i dislike',
+]);
+
+const LARGER_CATEGORIES = {
+  'anime': 'Anime', 'Shows/Anime': 'Anime',
+  'Disney rides': 'Amusement Park Rides',
+  'artists': 'Artists',
+  'carry brawlers': 'Brawl Stars', 'Top 10 Brawlers': 'Brawl Stars',
+  'My favorite Brawlers': 'Brawl Stars', 'Brawl Stars Brawlers': 'Brawl Stars',
+  'Hyper Cars': 'Cars',
+  'Hikes/Cliff Jumping': 'Cliff Jumping',
+  'Bevs': 'Food', 'Meals': 'Food', 'Chocolate': 'Food',
+  'Homecooked Meals': 'Food', 'starbucks orders': 'Food',
+  "every food i've ever eaten": 'Food', 'Food Around USC': 'Food',
+  'Disneyland food': 'Food', "Food I've Had While High": 'Food', 'Cuisines': 'Food',
+  'fit checks': 'Fashion', 'Jeans/tops': 'Fashion',
+  'Interesting life takes n advice of mine': 'Life Advice',
+  'Self improvement': 'Life Advice', 'Life': 'Life Advice',
+  'places': 'Locations', 'General Locations': 'Locations',
+  'Destinations': 'Locations', 'Places': 'Locations',
+  'Best Countries': 'Locations', 'Cities': 'Locations',
+  "Places i've been too/restaurants": 'Locations',
+  'Cities/Locations': 'Locations', 'Regions': 'Locations',
+  "Places i've been off the drank": 'Locations', 'Sesh spots': 'Locations',
+  'Cities/Towns': 'Locations', 'USC study spots': 'Locations',
+  'Places in SD': 'Locations', 'Specific Locations/Experiences': 'Locations',
+  'mmmm': 'NBA', 'Basketball Players': 'NBA',
+  'NBA Games I\u2019ve Been To': 'NBA',
+  'GHC Freaks': 'People', 'unc wylin': 'People',
+  'HopSkipDriver Uncs': 'People', 'Boxers': 'People',
+  'The Bhaddest': 'People', 'Best Africans': 'People',
+  'Best Armenian Thugs': 'People', 'People/characters': 'People',
+  'IB Warriors': 'People', 'Top Melkonian Marauders': 'People',
+  'GHC Big Backs': 'People', 'Ghc Teachers': 'People',
+  'People who need to go to sleep': 'People',
+  'El segundo freaks': 'People', 'Freaky ah': 'People',
+  'Dylans': 'People', 'hi jason': 'People', 'Yahdel': 'People',
+  'Ambora Profiles': 'People', 'Impractical Jokes Special Guests': 'People',
+  'best starter(all gens)': 'Pokemon', 'pokemon regions': 'Pokemon',
+  'Photos With Aura': 'Photos', 'Pictures': 'Photos', 'Images': 'Photos',
+  'Street Taco Rankings': 'Restaurants', 'Food Spots': 'Restaurants',
+  'Restaurants/Food': 'Restaurants', 'Fast Food': 'Restaurants',
+  'Street Food': 'Restaurants', 'Eats': 'Restaurants',
+  'Street Tacos': 'Restaurants', "Places i've been too/restaurants": 'Restaurants',
+  'Faves \uD83E\uDD29': 'Restaurants',
+  'On Repeat': 'Songs', 'top 5 songs of all time': 'Songs',
+  'Kendrick vs. Drake Disstracks': 'Songs',
+  'sneakers/shoes': 'Shoes', 'running shoes': 'Shoes',
+  'shows/movies': 'Shows', 'shows': 'Shows', 'TV Shows': 'Shows',
+  'Superhero Shows': 'Shows',
+  'shows ranked on how happy they made me': 'Shows',
+  'TV': 'Shows', 'goodness': 'Shows',
+  'Valorant Maps': 'Valorant', 'Val Maps': 'Valorant',
+  'Urbex spots': 'Urbex', 'Urbex destinations': 'Urbex',
+};
+
 export const computeLeaderboards = onSchedule(
   {
     schedule: 'every 1 hours',
@@ -89,16 +151,45 @@ export const computeLeaderboards = onSchedule(
 
     // 6. Top catalogers — sum num_items per user with per-type breakdown
     //    Kept fully denormalized since total_items is computed, not stored on user nodes
+
+    // Pre-pass: find custom category names used by 2+ users (for chip visibility threshold)
+    const customNameUserSets = {};
+    for (const cat of Object.values(categories)) {
+      if (!cat.user_id || !cat.num_items) continue;
+      const type = cat.category_type;
+      if (type && type !== 'null' && DEFAULT_CATEGORY_TYPES.has(type)) continue;
+      const raw = cat.category_name?.trim();
+      if (!raw || NOT_INCLUDED_CATEGORIES.has(raw)) continue;
+      const mapped = LARGER_CATEGORIES[raw] || raw;
+      if (!customNameUserSets[mapped]) customNameUserSets[mapped] = new Set();
+      customNameUserSets[mapped].add(cat.user_id);
+    }
+    const popularCustomNames = new Set(
+      Object.entries(customNameUserSets)
+        .filter(([, users]) => users.size > 1)
+        .map(([name]) => name)
+    );
+
     const userCatalogData = {};
     for (const cat of Object.values(categories)) {
       if (!cat.user_id || !cat.num_items) continue;
       const uid = cat.user_id;
       if (!userCatalogData[uid]) userCatalogData[uid] = { total: 0, by_type: {} };
       userCatalogData[uid].total += cat.num_items;
+
       const type = cat.category_type;
-      if (type && type !== 'Locations') {
+      if (type && type !== 'null' && DEFAULT_CATEGORY_TYPES.has(type)) {
+        // Default type (Songs, Albums, Movies, Artists, Shows)
         userCatalogData[uid].by_type[type] =
           (userCatalogData[uid].by_type[type] || 0) + cat.num_items;
+      } else {
+        // Custom category — map through largerCategories, include only if popular
+        const raw = cat.category_name?.trim();
+        if (!raw || NOT_INCLUDED_CATEGORIES.has(raw)) continue;
+        const mapped = LARGER_CATEGORIES[raw] || raw;
+        if (!popularCustomNames.has(mapped)) continue;
+        userCatalogData[uid].by_type[mapped] =
+          (userCatalogData[uid].by_type[mapped] || 0) + cat.num_items;
       }
     }
     const topCatalogers = Object.entries(userCatalogData)
