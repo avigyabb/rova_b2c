@@ -54,7 +54,40 @@ export const computeLeaderboards = onSchedule(
       .slice(0, TOP_N)
       .map(item => item.itemId);
 
-    // 5. Top catalogers — sum num_items per user with per-type breakdown
+    // 5. Explore leaderboards — top items per category type, ranked by avg score
+    //    Single pass: build catId→type lookup, then aggregate items by image URL
+    const EXPLORE_TYPES = ['Movies', 'Albums', 'Songs', 'Shows'];
+    const catTypeMap = {};
+    for (const [catId, cat] of Object.entries(categories)) {
+      catTypeMap[catId] = cat.category_type;
+    }
+
+    const exploreAgg = { Movies: {}, Albums: {}, Songs: {}, Shows: {} };
+    for (const [, item] of Object.entries(items)) {
+      const type = catTypeMap[item.category_id];
+      if (!EXPLORE_TYPES.includes(type)) continue;
+      if (!item.image || !item.content || item.score == null || item.score < 0) continue;
+
+      const key = item.image;
+      if (!exploreAgg[type][key]) {
+        exploreAgg[type][key] = { image: key, name: item.content, score: 0, num_items: 0 };
+        if (item.artist) exploreAgg[type][key].artist = item.artist;
+      }
+      exploreAgg[type][key].score     += item.score;
+      exploreAgg[type][key].num_items += 1;
+      exploreAgg[type][key].name       = item.content; // last write wins for name
+      if (item.artist) exploreAgg[type][key].artist = item.artist;
+    }
+
+    const topExplore = {};
+    for (const type of EXPLORE_TYPES) {
+      topExplore[`top_${type.toLowerCase()}`] = Object.values(exploreAgg[type])
+        .filter(v => v.num_items > 1)
+        .sort((a, b) => (b.score / b.num_items) - (a.score / a.num_items))
+        .slice(0, TOP_N);
+    }
+
+    // 6. Top catalogers — sum num_items per user with per-type breakdown
     //    Kept fully denormalized since total_items is computed, not stored on user nodes
     const userCatalogData = {};
     for (const cat of Object.values(categories)) {
@@ -88,11 +121,12 @@ export const computeLeaderboards = onSchedule(
       return acc;
     }, {});
 
-    // 6. Atomic write — replaces entire /leaderboards node
+    // 7. Atomic write — replaces entire /leaderboards node
     await db.ref('leaderboards').set({
       top_posts_all_time:  allTimeSorted,
       top_posts_past_week: weekSorted,
       top_catalogers:      catalogersMap,
+      ...topExplore,
       meta: {
         last_updated:  now,
         items_scanned: Object.keys(items).length,
@@ -103,7 +137,8 @@ export const computeLeaderboards = onSchedule(
     console.log(
       `Done — all_time: ${allTimeSorted.length}, ` +
       `past_week: ${weekSorted.length}, ` +
-      `catalogers: ${topCatalogers.length}`
+      `catalogers: ${topCatalogers.length}, ` +
+      EXPLORE_TYPES.map(t => `${t.toLowerCase()}: ${topExplore[`top_${t.toLowerCase()}`].length}`).join(', ')
     );
   }
 );
