@@ -191,7 +191,7 @@ export const largerCategories = {
 
 export const spotifyAuthConfig = {
   clientId: '3895cb48f70545b898a65747b63b430d',
-  clientSecret: '8d70ee092b614f58b488ce149e827ab1', // Be cautious with your client secret
+  clientSecret: '8d70ee092b614f58b488ce149e827ab1', // Be cautious with your client secret // TODO: api key
   redirectUrl: 'YOUR_REDIRECT_URI', // This must match the configuration in your Spotify dashboard
   scopes: ['user-modify-playback-state', 'user-read-playback-state'],
   serviceConfiguration: {

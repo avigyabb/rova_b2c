@@ -30,13 +30,16 @@ const styles = StyleSheet.create({
 });
 
 const ExploreItemTile = ({ item, index, itemsInCategory }) => {
-  let scoreColor = getScoreColorHSL(Number(item.score/item.num_items.toFixed(1)));
+  let scoreColor = getScoreColorHSL(Number((item.score / item.num_items).toFixed(1)));
 
   return (
       <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
         <View style={{ flexDirection: 'row' }}>
           <View style={{ width: '85%' }}>
             <Text style={{ fontWeight: 'bold', fontSize: 16.5 }}>{index + 1}) {item.name}</Text>
+            {item.artist && (
+              <Text style={{ color: 'grey', fontSize: 13, marginTop: 2 }}>{item.artist}</Text>
+            )}
             <View style={{ flexDirection: 'row', marginTop: 10, }}>
               {item.image && (
                 <Image

@@ -23,6 +23,8 @@ const Groups = ({ route, navigation }) => {
   const [school, setSchool] = useState(null);
 
   useEffect(() => {
+    setLeaderboardCategory('All Categories');
+
     // get user info
     const userRef = ref(database, 'users/' + userKey);
     get(userRef).then((snapshot) => {
@@ -30,10 +32,40 @@ const Groups = ({ route, navigation }) => {
       setSchool(snapshot.val().school || null);
     })
 
-    let usersRef = ref(database, 'users');
-    if (groupType === 'School') {
-      usersRef = query(usersRef, orderByChild('school'), equalTo(school));
+    if (groupType === 'Global') {
+      // Single precomputed read instead of N+1 per-user category queries
+      get(ref(database, 'leaderboards/top_catalogers')).then(snapshot => {
+        const entries = Object.entries(snapshot.val() || {})
+          .map(([userId, data]) => ({
+            key: userId,
+            ...data,
+            map: { 'All Categories': data.total_items, ...(data.by_category_type || {}) },
+          }))
+          .sort((a, b) => a.rank - b.rank);
+        setGroupsListData(entries);
+
+        // Build chips from per-category counts across all entries
+        const chipMap = {};
+        for (const entry of entries) {
+          for (const [type, count] of Object.entries(entry.by_category_type || {})) {
+            if (!chipMap[type]) chipMap[type] = [0, 0];
+            chipMap[type][0] += 1;
+            chipMap[type][1] += count;
+          }
+        }
+        const allChips = [
+          ['All Categories', [entries.length, entries.reduce((s, e) => s + (e.total_items || 0), 0)]],
+          ...Object.entries(chipMap).sort((a, b) => b[1][1] - a[1][1]),
+        ];
+        setChips(allChips);
+      }).catch((error) => {
+        console.error("Error fetching leaderboard:", error);
+      });
+      return;
     }
+
+    // School mode: N+1 logic (school leaderboards are not precomputed)
+    const usersRef = query(ref(database, 'users'), orderByChild('school'), equalTo(school));
     const tempGroupsListData = [];
     const overallMap = { // &&&
       'All Categories': [0, 0], // first index is number of people, 2nd is number of rankings
@@ -44,10 +76,10 @@ const Groups = ({ route, navigation }) => {
     }
 
     get(usersRef).then((snapshot) => {
-      if (snapshot.exists()) {  
+      if (snapshot.exists()) {
         processUsers(snapshot, tempGroupsListData, overallMap)
           .then(() => {
-            setGroupsListData(tempGroupsListData.filter((item) => item.map['All Categories'] > 0).sort((a, b) => b.map['All Categories'] - a.map['All Categories'])); // ~ CAUSES TONS OF REFRESHES MUST FIX
+            setGroupsListData(tempGroupsListData.filter((item) => item.map['All Categories'] > 0).sort((a, b) => b.map['All Categories'] - a.map['All Categories']));
             setChips(Object.entries(overallMap).filter(([key, value]) => !Number.isNaN(value) && key !== '').sort((a, b) => {
               if (a[1][0] !== b[1][0]) {
                 return b[1][0] - a[1][0];
