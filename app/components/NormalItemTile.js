@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import Carousel from 'react-native-reanimated-carousel';
 import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update, child } from "firebase/database";
@@ -752,27 +753,21 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
             />
           ) : item.images && item.images.length > 1 ? (
             <View style={{ marginTop: 10 }}>
-              <ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                style={{ width: 260, height: 260, borderRadius: 5, borderWidth: 0.5, borderColor: 'lightgrey' }}
-                onScroll={(e) => {
-                  const index = Math.round(e.nativeEvent.contentOffset.x / 260);
-                  setCarouselIndex(index);
-                }}
-                scrollEventThrottle={16}
-              >
-                {item.images.map((imgUri, idx) => (
+              <Carousel
+                width={260}
+                height={260}
+                data={item.images}
+                onSnapToItem={setCarouselIndex}
+                scrollAnimationDuration={200}
+                renderItem={({ item: imgUri }) => (
                   <Image
-                    key={idx}
                     source={{ uri: imgUri }}
-                    style={{ width: 260, height: 260 }}
+                    style={{ width: 260, height: 260, borderRadius: 5, borderWidth: 0.5, borderColor: 'lightgrey' }}
                     contentFit="cover"
                     cachePolicy="memory-and-disk"
                   />
-                ))}
-              </ScrollView>
+                )}
+              />
               <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 6 }}>
                 {item.images.map((_, idx) => (
                   <View
