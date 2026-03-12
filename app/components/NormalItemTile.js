@@ -102,6 +102,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [compareUserRating, setCompareUserRating] = useState([])
   const [profileList, setProfileList] = useState([])
   const [loading, setLoading] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -735,7 +736,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           )}
           </>
         )}
-        {item.image && ( 
+        {item.image && (
           <>
           {item.imageType && item.imageType === 'video' ? (
             <Video
@@ -749,27 +750,59 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
               useNativeControls                   // Show the native controls.
               style={{ width: 300, height: 300 }} // You can adjust the size.
             />
-          ) : (
-            <>
-            {/* <TouchableOpacity onPress={() => onItemImagePress(item)}> */}
-              
-              <Image
-                source={{ uri: item.image }}
-                style={{
-                  height: dimensions.height,
-                  width: dimensions.width,
-                  borderWidth: 0.5,
-                  marginRight: 10,
-                  borderRadius: 5,
-                  borderColor: 'lightgrey' ,
-                  marginTop: 10
+          ) : item.images && item.images.length > 1 ? (
+            <View style={{ marginTop: 10 }}>
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                style={{ width: 260, height: 260, borderRadius: 5, borderWidth: 0.5, borderColor: 'lightgrey' }}
+                onScroll={(e) => {
+                  const index = Math.round(e.nativeEvent.contentOffset.x / 260);
+                  setCarouselIndex(index);
                 }}
-                onLoad={onImageLoad}
-                cachePolicy="memory-and-disk"
-              />
-              
-            {/* </TouchableOpacity> */}
-            </>
+                scrollEventThrottle={16}
+              >
+                {item.images.map((imgUri, idx) => (
+                  <Image
+                    key={idx}
+                    source={{ uri: imgUri }}
+                    style={{ width: 260, height: 260 }}
+                    contentFit="cover"
+                    cachePolicy="memory-and-disk"
+                  />
+                ))}
+              </ScrollView>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 6 }}>
+                {item.images.map((_, idx) => (
+                  <View
+                    key={idx}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: idx === carouselIndex ? '#000' : '#ccc',
+                      marginHorizontal: 3,
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : (
+            <Image
+              source={{ uri: item.image }}
+              style={{
+                height: dimensions.height,
+                width: dimensions.width,
+                borderWidth: 0.5,
+                marginRight: 10,
+                borderRadius: 5,
+                borderColor: 'lightgrey',
+                marginTop: 10
+              }}
+              onLoad={onImageLoad}
+              cachePolicy="memory-and-disk"
+            />
           )}
           </>
         )}

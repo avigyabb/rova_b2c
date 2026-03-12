@@ -285,122 +285,62 @@ const Add = ({ route, navigation }) => {
     return array
   }
 
+  const uploadImageUri = (uri) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const filename = uri.substring(uri.lastIndexOf('/') + 1);
+        const storageRef = storRef(storage, filename);
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Upload is ' + progress + '% done');
+          },
+          (error) => {
+            console.error('Upload failed', error);
+            reject(error);
+          },
+          async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log('File available at', downloadURL);
+            resolve(downloadURL);
+          }
+        );
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
   // update 4 here ***
   // I've had errors where some fields in the database don't have a field causing an error that is not logged
   const addNewItem = async (newItemBucket, newBinarySearchM, isNewCard) => {
     setRankMode(false);
     setAddView('addingItem');
-    // eventually have to do a for loop for all the images
     if (newItemImageUris.length > 0 && addedCustomImage) {
-      const imageUri = newItemImageUris[0];
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      const filename = imageUri.substring(imageUri.lastIndexOf('/') + 1);
-      const storageRef = storRef(storage, filename);
-      const uploadTask = uploadBytesResumable(storageRef, blob);
+      const firstUri = newItemImageUris[0];
       let imageType = 'image';
-      if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
+      if (firstUri.endsWith('.mp4') || firstUri.endsWith('.avi') || firstUri.endsWith('.mov') || firstUri.endsWith('.mkv') || firstUri.endsWith('.wmv') || firstUri.endsWith('.webm') || firstUri.endsWith('.flv') || firstUri.endsWith('.mp3')) {
         imageType = 'video';
       }
 
-      uploadTask.on('state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log('Upload is ' + progress + '% done');
-        }, 
-        (error) => {
-          console.error('Upload failed', error);
-        }, 
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
-            console.log('File available at', downloadURL);
+      const downloadURLs = await Promise.all(newItemImageUris.map(uploadImageUri));
 
-            const newItemObj = {
-              'bucket': newItemBucket, // can't remove
-              'content': newItem, 
-              'description': newItemDescription, 
-              'image': downloadURL, 
-              'score': null,
-              'timestamp': Date.now(),
-              'custom': true,
-              'trackUri': trackUri,
-              'imageType': imageType,
-              'id': newItemId,
-              'content_description': newItemDescription
-            };
-            // make sure any changes to newItemObj are also reflected in itemComparisons
-            let newKey = null;
-            let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
-            for (let i = 0; i < items.length; i++) {
-              const item = items[i];
-              let itemRef = null;
-              if (item.key) { // There is a key, this is an item that already has been added
-                itemRef = ref(database, `items/${item.key}`);
-              } else {
-                setNewItemFinalScore(item.score.toFixed(1));
-                itemRef = push(ref(database, 'items'));
-                newKey = itemRef.key;
-              }
-              update(itemRef, {
-                bucket: newItemBucket,
-                category_id: newItemCategory,
-                category_name: newItemCategoryName,
-                content: item.content,
-                description: item.description,
-                image: item.image,
-                score: item.score,
-                timestamp: item.timestamp || 0,
-                user_id: userKey,
-                custom: item.custom,
-                trackUri: item.trackUri || null,
-                imageType: item.imageType || null,
-                id: item.id || null,
-                artist: item.artist || null,
-                content_description: item.content_description || null,
-                ...(!item.key && taggedUsers.length > 0 ? {
-                  tagged_users: taggedUsers.reduce((acc, u) => { acc[u.userId] = { name: u.name, username: u.username }; return acc; }, {})
-                } : {})
-              })
-              .then(() => console.log(`Score updated for ${item.content} ${items}`))
-              .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
-
-              // update category photo if its the best
-              if (item.score === 10.0) {
-                const categoryRef = ref(database, 'categories/' + newItemCategory);
-                get(categoryRef).then((snapshot) => {
-                  if (snapshot.exists() && snapshot.val().presetImage && !snapshot.val().user_set_image) {
-                    console.log("switched photos")
-                    update(categoryRef, {
-                      imageUri: item.image
-                    })
-                  }
-                })
-              }
-            }
-            await finalizeRerankCleanup();
-            for (const taggedUser of taggedUsers) {
-              const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
-              set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey });
-              update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
-            }
-            setAddView('itemAdded'); // ~ do we need this?
-          });
-        }
-      );
-    } else {
       const newItemObj = {
-        'bucket': newItemBucket, 
-        'content': newItem, 
-        'description': newItemDescription, 
-        'image': newItemImageUris[0]|| '', 
+        'bucket': newItemBucket, // can't remove
+        'content': newItem,
+        'description': newItemDescription,
+        'image': downloadURLs[0],
+        'images': downloadURLs,
         'score': null,
         'timestamp': Date.now(),
-        'custom': presetDescription !== newItemDescription,
+        'custom': true,
         'trackUri': trackUri,
+        'imageType': imageType,
         'id': newItemId,
-        'content_description': newItemDescription,
-        'artist': newItemArtist
-
+        'content_description': newItemDescription
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
       let newKey = null;
@@ -422,6 +362,79 @@ const Add = ({ route, navigation }) => {
           content: item.content,
           description: item.description,
           image: item.image,
+          images: item.images || null,
+          score: item.score,
+          timestamp: item.timestamp || 0,
+          user_id: userKey,
+          custom: item.custom,
+          trackUri: item.trackUri || null,
+          imageType: item.imageType || null,
+          id: item.id || null,
+          artist: item.artist || null,
+          content_description: item.content_description || null,
+          ...(!item.key && taggedUsers.length > 0 ? {
+            tagged_users: taggedUsers.reduce((acc, u) => { acc[u.userId] = { name: u.name, username: u.username }; return acc; }, {})
+          } : {})
+        })
+        .then(() => console.log(`Score updated for ${item.content} ${items}`))
+        .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
+
+        // update category photo if its the best
+        if (item.score === 10.0) {
+          const categoryRef = ref(database, 'categories/' + newItemCategory);
+          get(categoryRef).then((snapshot) => {
+            if (snapshot.exists() && snapshot.val().presetImage && !snapshot.val().user_set_image) {
+              console.log("switched photos")
+              update(categoryRef, {
+                imageUri: item.image
+              })
+            }
+          })
+        }
+      }
+      await finalizeRerankCleanup();
+      for (const taggedUser of taggedUsers) {
+        const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
+        set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey });
+        update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
+      }
+      setAddView('itemAdded'); // ~ do we need this?
+    } else {
+      const newItemObj = {
+        'bucket': newItemBucket,
+        'content': newItem,
+        'description': newItemDescription,
+        'image': newItemImageUris[0] || '',
+        'images': newItemImageUris.length > 0 ? [newItemImageUris[0]] : [],
+        'score': null,
+        'timestamp': Date.now(),
+        'custom': presetDescription !== newItemDescription,
+        'trackUri': trackUri,
+        'id': newItemId,
+        'content_description': newItemDescription,
+        'artist': newItemArtist
+      };
+      // make sure any changes to newItemObj are also reflected in itemComparisons
+      let newKey = null;
+      let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        let itemRef = null;
+        if (item.key) { // There is a key, this is an item that already has been added
+          itemRef = ref(database, `items/${item.key}`);
+        } else {
+          setNewItemFinalScore(item.score.toFixed(1));
+          itemRef = push(ref(database, 'items'));
+          newKey = itemRef.key;
+        }
+        update(itemRef, {
+          bucket: newItemBucket,
+          category_id: newItemCategory,
+          category_name: newItemCategoryName,
+          content: item.content,
+          description: item.description,
+          image: item.image,
+          images: item.images || null,
           score: item.score,
           timestamp: item.timestamp || 0,
           user_id: userKey,
