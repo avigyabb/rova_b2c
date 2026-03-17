@@ -34,8 +34,33 @@ const styles = StyleSheet.create({
 const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView, setAddedCustomImage, taggedUsers, setTaggedUsers, userKey }) => {
 
   const [addPageView, setAddPageView] = useState(null);
-  var safety = false;
 
+  const checkImageSafety = async (uri) => {
+    try {
+      const apiKey = "AIzaSyDxK3oZA5yBjSC0Lvrs_wyT53Jputlx-IA"; // TODO: key leaked
+      const apiURL = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+      const base64ImageData = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const requestData = {
+        requests: [{ image: { content: base64ImageData }, features: [{ type: "SAFE_SEARCH_DETECTION" }] }]
+      };
+      const apiResponse = await axios.post(apiURL, requestData);
+      const safeSearch = apiResponse?.data?.responses?.[0]?.safeSearchAnnotation;
+      if (safeSearch) {
+        const unsafeValues = ['LIKELY', 'VERY_LIKELY'];
+        return (
+          unsafeValues.includes(safeSearch.adult) ||
+          unsafeValues.includes(safeSearch.medical) ||
+          unsafeValues.includes(safeSearch.violence)
+        );
+      }
+      return false;
+    } catch (error) {
+      console.log('Error analyzing image', error);
+      return false; // Fail-open
+    }
+  };
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -44,10 +69,13 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
       return;
     }
 
+    const remaining = 5 - newItemImageUris.length;
+    if (remaining <= 0) return;
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4,3],
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
       quality: 1,
     });
 
@@ -55,47 +83,18 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
       return;
     }
 
-    const selectedUri = result.assets[0].uri;
+    const selectedUris = result.assets.map(a => a.uri);
 
-    try {
-      const apiKey = "AIzaSyDxK3oZA5yBjSC0Lvrs_wyT53Jputlx-IA"; // TODO: key leaked
-      const apiURL = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
-      const base64ImageData = await FileSystem.readAsStringAsync(selectedUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const requestData ={
-        requests:[
-          {
-            image: { content: base64ImageData },
-            features: [{type: "SAFE_SEARCH_DETECTION"}]
-          }
-        ]
-      };
-
-      const apiResponse = await axios.post(apiURL, requestData);
-      const safeSearch = apiResponse?.data?.responses?.[0]?.safeSearchAnnotation;
-
-      if (safeSearch) {
-        const unsafeValues = ['LIKELY', 'VERY_LIKELY'];
-        safety =
-          unsafeValues.includes(safeSearch.adult) ||
-          unsafeValues.includes(safeSearch.medical) ||
-          unsafeValues.includes(safeSearch.violence);
-      } else {
-        safety = false;
+    // Moderate each image; abort on first violation
+    for (const uri of selectedUris) {
+      const unsafe = await checkImageSafety(uri);
+      if (unsafe) {
+        alert("One or more images do not follow our guidelines.");
+        return;
       }
-    } catch(error){
-      // Fail-open so image upload still works if moderation API is unavailable.
-      console.log('Error analyzing image', error);
-      safety = false;
     }
 
-    if (safety){
-      alert("This image does not follow our guidelines");
-      return;
-    }
-
-    setNewItemImageUris([selectedUri]);
+    setNewItemImageUris([...newItemImageUris, ...selectedUris]);
     setAddedCustomImage(true);
   }; 
   // const getLocation = async () => {
@@ -227,18 +226,28 @@ const openaiApi = axios.create({
       {/* Image, description input, tag buttons — TWBF only wraps this area */}
       <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
         <View>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {newItemImageUris.length > 0 && (
-              <Image
-                source={{ uri: newItemImageUris[0] }}
-                style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
-              />
-            )}
-            <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10, marginBottom: 5, flexGrow: 0 }} contentContainerStyle={{ alignItems: 'center' }}>
+            {newItemImageUris.map((uri, index) => (
+              <View key={uri} style={{ position: 'relative', marginRight: 8 }}>
+                <Image
+                  source={{ uri }}
+                  style={{ height: 90, width: 90, borderRadius: 8, borderWidth: 0.5, borderColor: 'lightgray' }}
+                />
+                <TouchableOpacity
+                  onPress={() => setNewItemImageUris(newItemImageUris.filter((_, i) => i !== index))}
+                  style={{ position: 'absolute', top: -6, right: -6 }}
+                >
+                  <Ionicons name="close-circle" size={20} color="black" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {newItemImageUris.length < 5 && (
+              <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
                 <Ionicons name="duplicate" size={40} color="gray" />
                 <Text style={{ marginTop: 8, fontWeight: 'bold', fontSize: 14, color: 'gray' }}>Add Image</Text>
-            </TouchableOpacity>
-          </View>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
 
           <View style={{ flexDirection: 'row', marginTop: 15 }}>
             <Image

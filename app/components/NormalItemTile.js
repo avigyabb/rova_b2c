@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import Carousel from 'react-native-reanimated-carousel';
 import { Text, View, FlatList, TouchableOpacity, TextInput, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard, ScrollView, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, get, set, remove, push, update, child } from "firebase/database";
@@ -102,6 +103,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [compareUserRating, setCompareUserRating] = useState([])
   const [profileList, setProfileList] = useState([])
   const [loading, setLoading] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -735,7 +737,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           )}
           </>
         )}
-        {item.image && ( 
+        {item.image && (
           <>
           {item.imageType && item.imageType === 'video' ? (
             <Video
@@ -749,27 +751,53 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
               useNativeControls                   // Show the native controls.
               style={{ width: 300, height: 300 }} // You can adjust the size.
             />
-          ) : (
-            <>
-            {/* <TouchableOpacity onPress={() => onItemImagePress(item)}> */}
-              
-              <Image
-                source={{ uri: item.image }}
-                style={{
-                  height: dimensions.height,
-                  width: dimensions.width,
-                  borderWidth: 0.5,
-                  marginRight: 10,
-                  borderRadius: 5,
-                  borderColor: 'lightgrey' ,
-                  marginTop: 10
-                }}
-                onLoad={onImageLoad}
-                cachePolicy="memory-and-disk"
+          ) : item.images && item.images.length > 1 ? (
+            <View style={{ marginTop: 10 }}>
+              <Carousel
+                width={260}
+                height={260}
+                data={item.images}
+                onSnapToItem={setCarouselIndex}
+                scrollAnimationDuration={200}
+                renderItem={({ item: imgUri }) => (
+                  <Image
+                    source={{ uri: imgUri }}
+                    style={{ width: 260, height: 260, borderRadius: 5, borderWidth: 0.5, borderColor: 'lightgrey' }}
+                    contentFit="cover"
+                    cachePolicy="memory-and-disk"
+                  />
+                )}
               />
-              
-            {/* </TouchableOpacity> */}
-            </>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 6, marginRight: 40 }}>
+                {item.images.map((_, idx) => (
+                  <View
+                    key={idx}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: idx === carouselIndex ? '#000' : '#ccc',
+                      marginHorizontal: 3,
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : (
+            <Image
+              source={{ uri: item.image }}
+              style={{
+                height: dimensions.height,
+                width: dimensions.width,
+                borderWidth: 0.5,
+                marginRight: 10,
+                borderRadius: 5,
+                borderColor: 'lightgrey',
+                marginTop: 10
+              }}
+              onLoad={onImageLoad}
+              cachePolicy="memory-and-disk"
+            />
           )}
           </>
         )}
