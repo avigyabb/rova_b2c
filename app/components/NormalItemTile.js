@@ -768,7 +768,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
                   />
                 )}
               />
-              <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 6 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 6, marginRight: 40 }}>
                 {item.images.map((_, idx) => (
                   <View
                     key={idx}
