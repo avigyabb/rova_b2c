@@ -31,10 +31,18 @@
     "ios": {
       "bundleIdentifier": "com.swing.b2capp",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "icon": "./assets/AppIcon.png"
+      "icon": "./assets/AppIcon.png",
+      "runtimeVersion": "1.0.0"
     },
     "android": {
-      "package": "com.swing.b2capp"
+      "package": "com.swing.b2capp",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "extra": {
       "firebaseApiKey": "AIzaSyAHmo5zkdpph4xa-CgO2eWrwpq56tzC9hE",
@@ -44,6 +52,9 @@
       "eas": {
         "projectId": "afd38dc6-6bba-4bac-ac7d-e465d3880be6"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/afd38dc6-6bba-4bac-ac7d-e465d3880be6"
     }
   }
 }
