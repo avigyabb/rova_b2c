@@ -188,6 +188,42 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
   };
 
   // ── Step 2: proceed to reorder, fetching covers first ───────────────────
+  const fetchCover = async (book) => {
+    const isbn = book.isbn13 || book.isbn;
+
+    // 1. Open Library by ISBN (very comprehensive, no API key)
+    if (isbn) {
+      try {
+        const olUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
+        const check = await axios.head(`${olUrl}?default=false`);
+        if (check.status === 200) return olUrl;
+      } catch {}
+    }
+
+    // 2. Google Books by ISBN
+    if (isbn) {
+      try {
+        const res = await axios.get(
+          `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`
+        );
+        const thumb = res.data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
+        if (thumb) return thumb.replace('http://', 'https://');
+      } catch {}
+    }
+
+    // 3. Google Books title+author search (catches books with no ISBN in CSV)
+    try {
+      const q = encodeURIComponent(`intitle:${book.title} inauthor:${book.author}`);
+      const res = await axios.get(
+        `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`
+      );
+      const thumb = res.data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
+      if (thumb) return thumb.replace('http://', 'https://');
+    } catch {}
+
+    return null;
+  };
+
   const proceedToReorder = async () => {
     setFetchingCovers(true);
 
@@ -200,20 +236,13 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
     const batchSize = 5;
     for (let i = 0; i < withCovers.length; i += batchSize) {
       await Promise.all(withCovers.slice(i, i + batchSize).map(async (book, batchIdx) => {
-        const isbn = book.isbn13 || book.isbn;
-        if (!isbn) return;
-        try {
-          const res = await axios.get(
-            `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`
-          );
-          const thumb = res.data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
-          if (thumb) {
-            withCovers[i + batchIdx] = { ...book, image: thumb.replace('http://', 'https://') };
-          }
-        } catch {}
+        const img = await fetchCover(book);
+        if (img) {
+          withCovers[i + batchIdx] = { ...book, image: img };
+        }
       }));
       if (i + batchSize < withCovers.length) {
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 200));
       }
     }
 
@@ -276,6 +305,7 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
           user_id: userKey,
           timestamp: Date.now(),
           id: 'Books' + book.goodreadsId,
+          isbn: book.isbn13 || book.isbn || '',
           custom: book.review ? true : false,
           trackUri: null,
           artist: null,
