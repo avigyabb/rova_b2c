@@ -790,7 +790,7 @@ const Add = ({ route, navigation }) => {
     return (
       <>
       <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
-        <TouchableOpacity onPress={() => setAddView(null)}> 
+        <TouchableOpacity onPress={() => setAddView(null)}>
           <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
         <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> </Text>
@@ -798,7 +798,7 @@ const Add = ({ route, navigation }) => {
       <AddCategory onBackPress={() => {
           setAddView(null)
           getUserCategories()
-        }} 
+        }}
         userKey={userKey}
       />
       </>

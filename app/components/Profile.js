@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import profilePic from '../../assets/images/emptyProfilePic3.png';
 import Hyperlink from 'react-native-hyperlink';
 import FollowUsers from './FollowUsers';
+import GoodreadsImport from './GoodreadsImport';
 import CategoryTile from './CategoryTile';
 import { getAuth, deleteUser } from 'firebase/auth';
 
@@ -219,6 +220,7 @@ const Profile = ({ route, navigation }) => {
       "",
       [
         { text: "View Archived Lists", onPress: () => setFocusedCategory('Archived Lists') },
+        { text: "Import from Goodreads", onPress: () => setFocusedCategory('goodreadsImport') },
         { text: "Log out", style: "destructive", onPress: () => onLogOutPress() },
         { text: "Delete account", style: "destructive", onPress: () => onDeleteAccountPress() },
         { text: "Cancel", style: "cancel" },
@@ -431,6 +433,11 @@ const Profile = ({ route, navigation }) => {
 
           <AddCategory onBackPress={() => onBackPress()} userKey={userKey} />
         </>
+      ) : focusedCategory === 'goodreadsImport' ? (
+        <GoodreadsImport
+          onBackPress={() => onBackPress()}
+          userKey={userKey}
+        />
       ) : focusedCategory === 'Archived Lists' ? (
         <>
           <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
