@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import axios from 'axios';
 import { ref, push, set, update } from 'firebase/database';
 import { database } from '../../firebaseConfig';
