@@ -6,8 +6,9 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import axios from 'axios';
-import { ref, push, set, update } from 'firebase/database';
+import { ref, push, set } from 'firebase/database';
 import { database } from '../../firebaseConfig';
 
 // ─── CSV parser (handles RFC 4180 quoted fields) ────────────────────────────
@@ -55,6 +56,7 @@ function parseGoodreadsCSV(text) {
   const isbnIdx = idx('ISBN');
   const avgRatingIdx = idx('Average Rating');
   const bookIdIdx = idx('Book Id');
+  const reviewIdx = idx('My Review');
 
   const books = [];
   for (let i = 1; i < lines.length; i++) {
@@ -68,6 +70,7 @@ function parseGoodreadsCSV(text) {
     const isbn13 = fields[isbn13Idx]?.replace(/[^0-9X]/gi, '') || '';
     const isbn = fields[isbnIdx]?.replace(/[^0-9X]/gi, '') || '';
     const goodreadsId = fields[bookIdIdx]?.trim() || String(i);
+    const review = reviewIdx >= 0 ? (fields[reviewIdx]?.trim() || '') : '';
 
     let bucket;
     if (myRating >= 4) bucket = 'like';
@@ -75,7 +78,7 @@ function parseGoodreadsCSV(text) {
     else if (myRating >= 1) bucket = 'dislike';
     else bucket = 'later';
 
-    books.push({ title, author, myRating, avgRating, isbn13, isbn, goodreadsId, bucket, image: null });
+    books.push({ title, author, review, myRating, avgRating, isbn13, isbn, goodreadsId, bucket, image: null });
   }
 
   // Sort by myRating desc, then avgRating desc
@@ -158,8 +161,7 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
     const withCovers = [...allBooks];
     const batchSize = 5;
     for (let i = 0; i < withCovers.length; i += batchSize) {
-      const batch = withCovers.slice(i, i + batchSize);
-      await Promise.all(batch.map(async (book, batchIdx) => {
+      await Promise.all(withCovers.slice(i, i + batchSize).map(async (book, batchIdx) => {
         const isbn = book.isbn13 || book.isbn;
         if (!isbn) return;
         try {
@@ -172,7 +174,6 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
           }
         } catch {}
       }));
-      // Small delay between batches to avoid rate limiting
       if (i + batchSize < withCovers.length) {
         await new Promise(r => setTimeout(r, 300));
       }
@@ -187,16 +188,7 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
     setImportStep('reorder');
   };
 
-  // ── Step 3: move a book up or down within its bucket ─────────────────────
-  const moveBook = (setter, books, index, direction) => {
-    const newBooks = [...books];
-    const swapIdx = index + direction;
-    if (swapIdx < 0 || swapIdx >= newBooks.length) return;
-    [newBooks[index], newBooks[swapIdx]] = [newBooks[swapIdx], newBooks[index]];
-    setter(newBooks);
-  };
-
-  // ── Step 4: save to Firebase ─────────────────────────────────────────────
+  // ── Step 3: save to Firebase ─────────────────────────────────────────────
   const bulkSaveToFirebase = async () => {
     setImportStep('saving');
     try {
@@ -209,10 +201,8 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
       const scoredBooks = calculateScores(booksByBucket);
       const totalBooks = scoredBooks.length;
 
-      // Find cover for category image (first liked book with a cover)
       const coverBook = likedBooks.find(b => b.image) || neutralBooks.find(b => b.image);
 
-      // Create category
       const catRef = push(ref(database, 'categories'));
       await set(catRef, {
         category_name: categoryName,
@@ -227,14 +217,14 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
         category_description: '',
       });
 
-      // Write all items
       for (const book of scoredBooks) {
+        const description = book.review ? `${book.author}\n\n${book.review}` : book.author;
         const itemRef = push(ref(database, 'items'));
         await set(itemRef, {
           bucket: book.bucket,
           score: book.score,
           content: book.title,
-          description: book.author,
+          description,
           image: book.image || '',
           images: book.image ? [book.image] : [],
           category_id: catRef.key,
@@ -242,7 +232,7 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
           user_id: userKey,
           timestamp: Date.now(),
           id: 'Books' + book.goodreadsId,
-          custom: false,
+          custom: book.review ? true : false,
           trackUri: null,
           artist: null,
           content_description: `${book.title} ${book.author}`,
@@ -384,39 +374,34 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-          <Text style={styles.reorderHint}>Use the arrows to reorder books within each group.</Text>
+          <Text style={styles.reorderHint}>Long-press a book and drag to reorder within each group.</Text>
 
           {likedBooks.length > 0 && (
-            <BookSection
+            <DraggableSection
               title="Liked (4–5 ★)"
               color="#4CAF50"
               books={likedBooks}
-              onMove={(i, dir) => moveBook(setLikedBooks, likedBooks, i, dir)}
+              onDragEnd={({ data }) => setLikedBooks(data)}
             />
           )}
           {neutralBooks.length > 0 && (
-            <BookSection
+            <DraggableSection
               title="Neutral (3 ★)"
               color="#FF9800"
               books={neutralBooks}
-              onMove={(i, dir) => moveBook(setNeutralBooks, neutralBooks, i, dir)}
+              onDragEnd={({ data }) => setNeutralBooks(data)}
             />
           )}
           {dislikedBooks.length > 0 && (
-            <BookSection
+            <DraggableSection
               title="Disliked (1–2 ★)"
               color="#f44336"
               books={dislikedBooks}
-              onMove={(i, dir) => moveBook(setDislikedBooks, dislikedBooks, i, dir)}
+              onDragEnd={({ data }) => setDislikedBooks(data)}
             />
           )}
           {laterBooks.length > 0 && (
-            <BookSection
-              title="Later (unrated)"
-              color="#aaa"
-              books={laterBooks}
-              onMove={null}
-            />
+            <StaticSection title="Later (unrated)" color="#aaa" books={laterBooks} />
           )}
         </ScrollView>
 
@@ -464,26 +449,52 @@ const BucketChip = ({ color, label, sub }) => (
   </View>
 );
 
-const BookSection = ({ title, color, books, onMove }) => (
+const SectionHeader = ({ title, color, count }) => (
+  <View style={[styles.sectionHeader, { borderLeftColor: color }]}>
+    <Text style={styles.sectionHeaderText}>{title}</Text>
+    <Text style={styles.sectionCount}>{count} books</Text>
+  </View>
+);
+
+// Draggable bucket section — long-press to drag
+const DraggableSection = ({ title, color, books, onDragEnd }) => (
   <View style={styles.section}>
-    <View style={[styles.sectionHeader, { borderLeftColor: color }]}>
-      <Text style={styles.sectionHeaderText}>{title}</Text>
-      <Text style={styles.sectionCount}>{books.length} books</Text>
-    </View>
-    {books.map((book, index) => (
-      <BookRow
-        key={book.goodreadsId + index}
-        book={book}
-        index={index}
-        total={books.length}
-        onMove={onMove}
-      />
+    <SectionHeader title={title} color={color} count={books.length} />
+    <DraggableFlatList
+      data={books}
+      onDragEnd={onDragEnd}
+      keyExtractor={(item) => item.goodreadsId}
+      scrollEnabled={false}
+      renderItem={({ item, drag, isActive }) => (
+        <ScaleDecorator>
+          <TouchableOpacity
+            onLongPress={drag}
+            disabled={isActive}
+            style={[styles.bookRow, isActive && styles.bookRowActive]}
+          >
+            <BookRowContent book={item} />
+            <Ionicons name="reorder-three" size={24} color="#ccc" style={styles.dragHandle} />
+          </TouchableOpacity>
+        </ScaleDecorator>
+      )}
+    />
+  </View>
+);
+
+// Non-draggable section (for "Later" books)
+const StaticSection = ({ title, color, books }) => (
+  <View style={styles.section}>
+    <SectionHeader title={title} color={color} count={books.length} />
+    {books.map((book) => (
+      <View key={book.goodreadsId} style={styles.bookRow}>
+        <BookRowContent book={book} />
+      </View>
     ))}
   </View>
 );
 
-const BookRow = ({ book, index, total, onMove }) => (
-  <View style={styles.bookRow}>
+const BookRowContent = ({ book }) => (
+  <>
     {book.image ? (
       <Image source={{ uri: book.image }} style={styles.bookCover} />
     ) : (
@@ -498,25 +509,7 @@ const BookRow = ({ book, index, total, onMove }) => (
         <Text style={styles.bookRating}>{'★'.repeat(book.myRating)}{'☆'.repeat(5 - book.myRating)}</Text>
       )}
     </View>
-    {onMove && (
-      <View style={styles.moveButtons}>
-        <TouchableOpacity
-          onPress={() => onMove(index, -1)}
-          disabled={index === 0}
-          style={[styles.moveBtn, index === 0 && styles.moveBtnDisabled]}
-        >
-          <Ionicons name="chevron-up" size={20} color={index === 0 ? '#ccc' : '#333'} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => onMove(index, 1)}
-          disabled={index === total - 1}
-          style={[styles.moveBtn, index === total - 1 && styles.moveBtnDisabled]}
-        >
-          <Ionicons name="chevron-down" size={20} color={index === total - 1 ? '#ccc' : '#333'} />
-        </TouchableOpacity>
-      </View>
-    )}
-  </View>
+  </>
 );
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
@@ -586,16 +579,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 10,
     borderBottomWidth: 0.5, borderBottomColor: '#eee',
+    backgroundColor: 'white',
   },
+  bookRowActive: { backgroundColor: '#f5f5f5', opacity: 0.9 },
   bookCover: { width: 44, height: 60, borderRadius: 4, backgroundColor: '#f0f0f0' },
   bookCoverPlaceholder: { justifyContent: 'center', alignItems: 'center' },
   bookInfo: { flex: 1, marginLeft: 12 },
   bookTitle: { fontSize: 14, fontWeight: '600', color: '#111' },
   bookAuthor: { fontSize: 12, color: '#666', marginTop: 2 },
   bookRating: { fontSize: 12, color: '#F5A623', marginTop: 2 },
-  moveButtons: { flexDirection: 'column', marginLeft: 8 },
-  moveBtn: { padding: 4 },
-  moveBtnDisabled: { opacity: 0.3 },
+  dragHandle: { marginLeft: 8 },
   importBtnContainer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: 'white', padding: 16,
