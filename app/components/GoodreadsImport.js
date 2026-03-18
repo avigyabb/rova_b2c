@@ -122,6 +122,7 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
   const [neutralBooks, setNeutralBooks] = useState([]);
   const [dislikedBooks, setDislikedBooks] = useState([]);
   const [laterBooks, setLaterBooks] = useState([]);
+  const [activeTab, setActiveTab] = useState('like');
 
   // ── Step 1: pick & parse CSV ─────────────────────────────────────────────
   const pickAndParseCSV = async () => {
@@ -364,6 +365,16 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
 
   if (importStep === 'reorder') {
     const totalCount = likedBooks.length + neutralBooks.length + dislikedBooks.length + laterBooks.length;
+
+    const tabs = [
+      likedBooks.length > 0   && { key: 'like',    label: 'Liked',    color: '#4CAF50', books: likedBooks,    setter: setLikedBooks },
+      neutralBooks.length > 0 && { key: 'neutral', label: 'Neutral',  color: '#FF9800', books: neutralBooks,  setter: setNeutralBooks },
+      dislikedBooks.length > 0 && { key: 'dislike', label: 'Disliked', color: '#f44336', books: dislikedBooks, setter: setDislikedBooks },
+      laterBooks.length > 0   && { key: 'later',   label: 'Later',    color: '#aaa',    books: laterBooks,    setter: null },
+    ].filter(Boolean);
+
+    const currentTab = tabs.find(t => t.key === activeTab) || tabs[0];
+
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -373,37 +384,51 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
           <Text style={styles.headerTitle}>Arrange Books</Text>
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-          <Text style={styles.reorderHint}>Hold the ≡ handle and drag to reorder within each group.</Text>
+        {/* Bucket tabs */}
+        <View style={styles.tabBar}>
+          {tabs.map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && { borderBottomColor: tab.color, borderBottomWidth: 2 }]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Text style={[styles.tabText, activeTab === tab.key && { color: tab.color, fontWeight: 'bold' }]}>
+                {tab.label} ({tab.books.length})
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-          {likedBooks.length > 0 && (
-            <DraggableSection
-              title="Liked (4–5 ★)"
-              color="#4CAF50"
-              books={likedBooks}
-              onDragEnd={({ data }) => setLikedBooks(data)}
-            />
-          )}
-          {neutralBooks.length > 0 && (
-            <DraggableSection
-              title="Neutral (3 ★)"
-              color="#FF9800"
-              books={neutralBooks}
-              onDragEnd={({ data }) => setNeutralBooks(data)}
-            />
-          )}
-          {dislikedBooks.length > 0 && (
-            <DraggableSection
-              title="Disliked (1–2 ★)"
-              color="#f44336"
-              books={dislikedBooks}
-              onDragEnd={({ data }) => setDislikedBooks(data)}
-            />
-          )}
-          {laterBooks.length > 0 && (
-            <StaticSection title="Later (unrated)" color="#aaa" books={laterBooks} />
-          )}
-        </ScrollView>
+        <Text style={styles.reorderHint}>Hold the ≡ handle and drag to reorder.</Text>
+
+        {/* Single DraggableFlatList — no ScrollView nesting */}
+        {currentTab.setter ? (
+          <DraggableFlatList
+            data={currentTab.books}
+            onDragEnd={({ data }) => currentTab.setter(data)}
+            keyExtractor={(item) => item.goodreadsId}
+            contentContainerStyle={{ paddingBottom: 120 }}
+            renderItem={({ item, drag, isActive }) => (
+              <ScaleDecorator>
+                <View style={[styles.bookRow, isActive && styles.bookRowActive]}>
+                  <BookRowContent book={item} />
+                  <TouchableOpacity onPressIn={drag} style={styles.dragHandle}>
+                    <Ionicons name="reorder-three" size={24} color="#bbb" />
+                  </TouchableOpacity>
+                </View>
+              </ScaleDecorator>
+            )}
+          />
+        ) : (
+          // Later tab — static, no drag
+          <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+            {currentTab.books.map(book => (
+              <View key={book.goodreadsId} style={styles.bookRow}>
+                <BookRowContent book={book} />
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
         <View style={styles.importBtnContainer}>
           <TouchableOpacity style={styles.primaryBtn} onPress={bulkSaveToFirebase}>
@@ -441,8 +466,6 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
   return null;
 };
 
-const BOOK_ROW_HEIGHT = 80; // paddingVertical 10*2 + cover height 60
-
 // ─── Sub-components ──────────────────────────────────────────────────────────
 const BucketChip = ({ color, label, sub }) => (
   <View style={[styles.bucketChip, { borderColor: color }]}>
@@ -451,48 +474,7 @@ const BucketChip = ({ color, label, sub }) => (
   </View>
 );
 
-const SectionHeader = ({ title, color, count }) => (
-  <View style={[styles.sectionHeader, { borderLeftColor: color }]}>
-    <Text style={styles.sectionHeaderText}>{title}</Text>
-    <Text style={styles.sectionCount}>{count} books</Text>
-  </View>
-);
 
-// Draggable bucket section — hold the drag handle to reorder
-const DraggableSection = ({ title, color, books, onDragEnd }) => (
-  <View style={styles.section}>
-    <SectionHeader title={title} color={color} count={books.length} />
-    <DraggableFlatList
-      data={books}
-      onDragEnd={onDragEnd}
-      keyExtractor={(item) => item.goodreadsId}
-      scrollEnabled={false}
-      style={{ height: books.length * BOOK_ROW_HEIGHT }}
-      renderItem={({ item, drag, isActive }) => (
-        <ScaleDecorator>
-          <View style={[styles.bookRow, isActive && styles.bookRowActive]}>
-            <BookRowContent book={item} />
-            <TouchableOpacity onPressIn={drag} style={styles.dragHandle}>
-              <Ionicons name="reorder-three" size={24} color="#bbb" />
-            </TouchableOpacity>
-          </View>
-        </ScaleDecorator>
-      )}
-    />
-  </View>
-);
-
-// Non-draggable section (for "Later" books)
-const StaticSection = ({ title, color, books }) => (
-  <View style={styles.section}>
-    <SectionHeader title={title} color={color} count={books.length} />
-    {books.map((book) => (
-      <View key={book.goodreadsId} style={styles.bookRow}>
-        <BookRowContent book={book} />
-      </View>
-    ))}
-  </View>
-);
 
 const BookRowContent = ({ book }) => (
   <>
@@ -567,15 +549,10 @@ const styles = StyleSheet.create({
   importingCount: { fontSize: 14, color: '#666', marginTop: 12 },
   loadingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, gap: 10 },
   loadingText: { color: '#555', fontSize: 14 },
-  reorderHint: { fontSize: 13, color: '#888', padding: 16, paddingBottom: 4 },
-  section: { marginTop: 8 },
-  sectionHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 8, paddingHorizontal: 16, borderLeftWidth: 4,
-    backgroundColor: '#fafafa', marginBottom: 2,
-  },
-  sectionHeaderText: { fontWeight: 'bold', fontSize: 15 },
-  sectionCount: { color: '#888', fontSize: 13 },
+  reorderHint: { fontSize: 13, color: '#888', paddingHorizontal: 16, paddingVertical: 8 },
+  tabBar: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#eee' },
+  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabText: { fontSize: 13, color: '#888' },
   bookRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 10,
