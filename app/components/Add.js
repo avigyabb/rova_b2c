@@ -16,7 +16,6 @@ import { useIsFocused } from '@react-navigation/native';
 import { search } from './Search';
 import CategoryTile from './CategoryTile';
 import AddCategory from './AddCategory';
-import GoodreadsImport from './GoodreadsImport';
 
 const styles = StyleSheet.create({
   optionsContainer: {
@@ -806,18 +805,6 @@ const Add = ({ route, navigation }) => {
     )
   }
 
-  if (addView === 'goodreadsImport') {
-    return (
-      <GoodreadsImport
-        onBackPress={() => {
-          setAddView(null);
-          getUserCategories();
-        }}
-        userKey={userKey}
-      />
-    );
-  }
-
   //changed this function
   const handleTextChange = (text) => {
     setNewItem(text);
@@ -857,16 +844,10 @@ const Add = ({ route, navigation }) => {
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 5 }}>ambora\social</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setAddView('goodreadsImport')}>
-              <Ionicons name="book-outline" size={20} color="gray" />
-              <Text style={{ fontSize: 14, color: 'gray', marginLeft: 3 }}>Goodreads</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setAddView('addList')}>
-              <Ionicons name="add-outline" size={22} color="gray" />
-              <Text style={{ fontSize: 16, color: 'gray' }}>Add List</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setAddView('addList')}>
+            <Ionicons name="add-outline" size={22} color="gray" />
+            <Text style={{ fontSize: 16, color: 'gray' }}>Add List</Text>
+          </TouchableOpacity>
         </View>
 
         {!rankMode && (
