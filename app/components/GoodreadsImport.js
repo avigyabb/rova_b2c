@@ -374,7 +374,7 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-          <Text style={styles.reorderHint}>Long-press a book and drag to reorder within each group.</Text>
+          <Text style={styles.reorderHint}>Hold the ≡ handle and drag to reorder within each group.</Text>
 
           {likedBooks.length > 0 && (
             <DraggableSection
@@ -441,6 +441,8 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
   return null;
 };
 
+const BOOK_ROW_HEIGHT = 80; // paddingVertical 10*2 + cover height 60
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 const BucketChip = ({ color, label, sub }) => (
   <View style={[styles.bucketChip, { borderColor: color }]}>
@@ -456,7 +458,7 @@ const SectionHeader = ({ title, color, count }) => (
   </View>
 );
 
-// Draggable bucket section — long-press to drag
+// Draggable bucket section — hold the drag handle to reorder
 const DraggableSection = ({ title, color, books, onDragEnd }) => (
   <View style={styles.section}>
     <SectionHeader title={title} color={color} count={books.length} />
@@ -465,16 +467,15 @@ const DraggableSection = ({ title, color, books, onDragEnd }) => (
       onDragEnd={onDragEnd}
       keyExtractor={(item) => item.goodreadsId}
       scrollEnabled={false}
+      style={{ height: books.length * BOOK_ROW_HEIGHT }}
       renderItem={({ item, drag, isActive }) => (
         <ScaleDecorator>
-          <TouchableOpacity
-            onLongPress={drag}
-            disabled={isActive}
-            style={[styles.bookRow, isActive && styles.bookRowActive]}
-          >
+          <View style={[styles.bookRow, isActive && styles.bookRowActive]}>
             <BookRowContent book={item} />
-            <Ionicons name="reorder-three" size={24} color="#ccc" style={styles.dragHandle} />
-          </TouchableOpacity>
+            <TouchableOpacity onPressIn={drag} style={styles.dragHandle}>
+              <Ionicons name="reorder-three" size={24} color="#bbb" />
+            </TouchableOpacity>
+          </View>
         </ScaleDecorator>
       )}
     />
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
   bookTitle: { fontSize: 14, fontWeight: '600', color: '#111' },
   bookAuthor: { fontSize: 12, color: '#666', marginTop: 2 },
   bookRating: { fontSize: 12, color: '#F5A623', marginTop: 2 },
-  dragHandle: { marginLeft: 8 },
+  dragHandle: { marginLeft: 8, padding: 8 },
   importBtnContainer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: 'white', padding: 16,
