@@ -86,6 +86,43 @@ function parseGoodreadsCSV(text) {
   return books;
 }
 
+// ─── Flat-list helpers for combined drag-across-buckets reorder ──────────────
+const BUCKET_SECTIONS = [
+  { key: 'like',    title: 'Liked (4–5 ★)',   color: '#4CAF50' },
+  { key: 'neutral', title: 'Neutral (3 ★)',    color: '#FF9800' },
+  { key: 'dislike', title: 'Disliked (1–2 ★)', color: '#f44336' },
+  { key: 'later',   title: 'Later (unrated)',   color: '#aaa' },
+];
+
+function buildFlatData(liked, neutral, disliked, later) {
+  const bucketMap = { like: liked, neutral: neutral, dislike: disliked, later: later };
+  const result = [];
+  for (const sec of BUCKET_SECTIONS) {
+    const books = bucketMap[sec.key];
+    // Always show rated-bucket headers so users can drag books into empty buckets
+    if (sec.key === 'later' && books.length === 0) continue;
+    result.push({ type: 'header', id: `h_${sec.key}`, bucket: sec.key, title: sec.title, color: sec.color });
+    for (const book of books) {
+      result.push({ type: 'book', id: `book_${book.goodreadsId}`, ...book });
+    }
+  }
+  return result;
+}
+
+function reconstructFromFlat(data) {
+  const buckets = { like: [], neutral: [], dislike: [], later: [] };
+  let currentBucket = 'like';
+  for (const item of data) {
+    if (item.type === 'header') {
+      currentBucket = item.bucket;
+    } else {
+      const { type, id, ...book } = item;
+      buckets[currentBucket].push({ ...book, bucket: currentBucket });
+    }
+  }
+  return buckets;
+}
+
 // ─── Score calculation (mirrors addElementAndRecalculate in Add.js) ──────────
 function calculateScores(booksByBucket) {
   const minMaxMap = { like: [10.0, 6.7], neutral: [6.6, 3.3], dislike: [3.2, 0.0] };
@@ -122,7 +159,7 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
   const [neutralBooks, setNeutralBooks] = useState([]);
   const [dislikedBooks, setDislikedBooks] = useState([]);
   const [laterBooks, setLaterBooks] = useState([]);
-  const [activeTab, setActiveTab] = useState('like');
+  const [flatData, setFlatData] = useState([]);
 
   // ── Step 1: pick & parse CSV ─────────────────────────────────────────────
   const pickAndParseCSV = async () => {
@@ -180,10 +217,16 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
       }
     }
 
-    setLikedBooks(withCovers.filter(b => b.bucket === 'like'));
-    setNeutralBooks(withCovers.filter(b => b.bucket === 'neutral'));
-    setDislikedBooks(withCovers.filter(b => b.bucket === 'dislike'));
-    setLaterBooks(withCovers.filter(b => b.bucket === 'later'));
+    const liked    = withCovers.filter(b => b.bucket === 'like');
+    const neutral  = withCovers.filter(b => b.bucket === 'neutral');
+    const disliked = withCovers.filter(b => b.bucket === 'dislike');
+    const later    = withCovers.filter(b => b.bucket === 'later');
+
+    setLikedBooks(liked);
+    setNeutralBooks(neutral);
+    setDislikedBooks(disliked);
+    setLaterBooks(later);
+    setFlatData(buildFlatData(liked, neutral, disliked, later));
 
     setFetchingCovers(false);
     setImportStep('reorder');
@@ -366,14 +409,14 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
   if (importStep === 'reorder') {
     const totalCount = likedBooks.length + neutralBooks.length + dislikedBooks.length + laterBooks.length;
 
-    const tabs = [
-      likedBooks.length > 0   && { key: 'like',    label: 'Liked',    color: '#4CAF50', books: likedBooks,    setter: setLikedBooks },
-      neutralBooks.length > 0 && { key: 'neutral', label: 'Neutral',  color: '#FF9800', books: neutralBooks,  setter: setNeutralBooks },
-      dislikedBooks.length > 0 && { key: 'dislike', label: 'Disliked', color: '#f44336', books: dislikedBooks, setter: setDislikedBooks },
-      laterBooks.length > 0   && { key: 'later',   label: 'Later',    color: '#aaa',    books: laterBooks,    setter: null },
-    ].filter(Boolean);
-
-    const currentTab = tabs.find(t => t.key === activeTab) || tabs[0];
+    const handleDragEnd = ({ data }) => {
+      const buckets = reconstructFromFlat(data);
+      setLikedBooks(buckets.like);
+      setNeutralBooks(buckets.neutral);
+      setDislikedBooks(buckets.dislike);
+      setLaterBooks(buckets.later);
+      setFlatData(buildFlatData(buckets.like, buckets.neutral, buckets.dislike, buckets.later));
+    };
 
     return (
       <View style={styles.container}>
@@ -384,31 +427,22 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
           <Text style={styles.headerTitle}>Arrange Books</Text>
         </View>
 
-        {/* Bucket tabs */}
-        <View style={styles.tabBar}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.tab, activeTab === tab.key && { borderBottomColor: tab.color, borderBottomWidth: 2 }]}
-              onPress={() => setActiveTab(tab.key)}
-            >
-              <Text style={[styles.tabText, activeTab === tab.key && { color: tab.color, fontWeight: 'bold' }]}>
-                {tab.label} ({tab.books.length})
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Text style={styles.reorderHint}>Hold ≡ and drag to reorder or move between categories.</Text>
 
-        <Text style={styles.reorderHint}>Hold the ≡ handle and drag to reorder.</Text>
-
-        {/* Single DraggableFlatList — no ScrollView nesting */}
-        {currentTab.setter ? (
-          <DraggableFlatList
-            data={currentTab.books}
-            onDragEnd={({ data }) => currentTab.setter(data)}
-            keyExtractor={(item) => item.goodreadsId}
-            contentContainerStyle={{ paddingBottom: 120 }}
-            renderItem={({ item, drag, isActive }) => (
+        <DraggableFlatList
+          data={flatData}
+          onDragEnd={handleDragEnd}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          renderItem={({ item, drag, isActive }) => {
+            if (item.type === 'header') {
+              return (
+                <View style={[styles.sectionHeader, { borderLeftColor: item.color }]}>
+                  <Text style={[styles.sectionHeaderText, { color: item.color }]}>{item.title}</Text>
+                </View>
+              );
+            }
+            return (
               <ScaleDecorator>
                 <View style={[styles.bookRow, isActive && styles.bookRowActive]}>
                   <BookRowContent book={item} />
@@ -417,18 +451,9 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
                   </TouchableOpacity>
                 </View>
               </ScaleDecorator>
-            )}
-          />
-        ) : (
-          // Later tab — static, no drag
-          <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-            {currentTab.books.map(book => (
-              <View key={book.goodreadsId} style={styles.bookRow}>
-                <BookRowContent book={book} />
-              </View>
-            ))}
-          </ScrollView>
-        )}
+            );
+          }}
+        />
 
         <View style={styles.importBtnContainer}>
           <TouchableOpacity style={styles.primaryBtn} onPress={bulkSaveToFirebase}>
@@ -550,9 +575,12 @@ const styles = StyleSheet.create({
   loadingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, gap: 10 },
   loadingText: { color: '#555', fontSize: 14 },
   reorderHint: { fontSize: 13, color: '#888', paddingHorizontal: 16, paddingVertical: 8 },
-  tabBar: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#eee' },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabText: { fontSize: 13, color: '#888' },
+  sectionHeader: {
+    paddingHorizontal: 16, paddingVertical: 10,
+    backgroundColor: '#fafafa',
+    borderLeftWidth: 4, borderBottomWidth: 0.5, borderBottomColor: '#eee',
+  },
+  sectionHeaderText: { fontSize: 13, fontWeight: '700' },
   bookRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 10,
