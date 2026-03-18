@@ -16,6 +16,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { search } from './Search';
 import CategoryTile from './CategoryTile';
 import AddCategory from './AddCategory';
+import GoodreadsImport from './GoodreadsImport';
 
 const styles = StyleSheet.create({
   optionsContainer: {
@@ -790,7 +791,7 @@ const Add = ({ route, navigation }) => {
     return (
       <>
       <View style={{ flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'lightgrey', backgroundColor: 'white' }}>
-        <TouchableOpacity onPress={() => setAddView(null)}> 
+        <TouchableOpacity onPress={() => setAddView(null)}>
           <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
         <Text style={{ marginLeft: 'auto', marginRight: 10, fontSize: 15, fontWeight: 'bold' }}> </Text>
@@ -798,11 +799,23 @@ const Add = ({ route, navigation }) => {
       <AddCategory onBackPress={() => {
           setAddView(null)
           getUserCategories()
-        }} 
+        }}
         userKey={userKey}
       />
       </>
     )
+  }
+
+  if (addView === 'goodreadsImport') {
+    return (
+      <GoodreadsImport
+        onBackPress={() => {
+          setAddView(null);
+          getUserCategories();
+        }}
+        userKey={userKey}
+      />
+    );
   }
 
   //changed this function
@@ -844,10 +857,16 @@ const Add = ({ route, navigation }) => {
       <View style={{ backgroundColor: 'white', padding: 5, paddingLeft: 20, paddingRight: 20, height: '100%' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular', marginTop: 5 }}>ambora\social</Text>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setAddView('addList')}>
-            <Ionicons name="add-outline" size={22} color="gray" />
-            <Text style={{ fontSize: 16, color: 'gray' }}>Add List</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setAddView('goodreadsImport')}>
+              <Ionicons name="book-outline" size={20} color="gray" />
+              <Text style={{ fontSize: 14, color: 'gray', marginLeft: 3 }}>Goodreads</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setAddView('addList')}>
+              <Ionicons name="add-outline" size={22} color="gray" />
+              <Text style={{ fontSize: 16, color: 'gray' }}>Add List</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {!rankMode && (
