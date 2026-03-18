@@ -4,7 +4,7 @@ import axios from 'axios';
 
 // &&&
 export const presetTypesList = [
-  'Movies', 'Albums', 'Locations', 'Songs', 'Artists', 'Shows'
+  'Movies', 'Albums', 'Locations', 'Songs', 'Artists', 'Shows', 'Books'
 ]
 
 export const emailSchoolMap = {
@@ -240,6 +240,11 @@ export const signInCategories = [
     category_name: 'Anime',
     imageUri: 'https://static.wikia.nocookie.net/naruto/images/d/d6/Naruto_Part_I.png/revision/latest/scale-to-width-down/1200?cb=20210223094656',
     category_type: 'Shows',
+  },
+  {
+    category_name: 'Books',
+    imageUri: 'https://m.media-amazon.com/images/I/71kxa1-0mfL._AC_UF1000,1000_QL80_.jpg',
+    category_type: 'Books',
   },
   {
     category_name: 'Other...',

@@ -105,6 +105,25 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
       .catch(error => {
         console.error('Error:', error);
       });
+  } else if (text && newItemCategoryType === 'Books') {
+    const query = encodeURIComponent(text);
+    axios.get(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=10`)
+      .then(response => {
+        const items = response.data.items || [];
+        setSearchResults(items.map(vol => {
+          const info = vol.volumeInfo;
+          return {
+            content: info.title,
+            description: (info.authors || []).join(', '),
+            id: 'Books' + vol.id,
+            content_description: info.title + ' ' + (info.authors || []).join(', '),
+            image: info.imageLinks?.thumbnail?.replace('http://', 'https://') || undefined,
+          };
+        }));
+      })
+      .catch(error => {
+        console.error('Books search error:', error);
+      });
   } else {
     // const API_KEY = '43545255-2ce8252df331f629bb4ae8719'; // TODO: api key
     // const URL = `https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(text)}&image_type=photo`;
