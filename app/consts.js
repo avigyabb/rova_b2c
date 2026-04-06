@@ -248,6 +248,7 @@ export const signInCategories = [
   },
   {
     category_name: 'Other...',
+    category_type: 'Other',
   }
 ]
 
