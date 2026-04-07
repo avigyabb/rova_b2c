@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ref, set, remove, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
 import { database, storage } from '../../firebaseConfig';
-import { getStorage, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import Hyperlink from 'react-native-hyperlink';
 import * as ImagePicker from 'expo-image-picker';
 import NormalItemTile from "./NormalItemTile";
@@ -391,8 +391,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         const response = await fetch(categoryImage);
         const blob = await response.blob();
         const filename = categoryImage.substring(categoryImage.lastIndexOf('/') + 1);
-        const storageRef = storageRef(storage, filename);
-        const uploadTask = uploadBytesResumable(storageRef, blob);
+        const imageStorageRef = storageRef(storage, filename);
+        const uploadTask = uploadBytesResumable(imageStorageRef, blob);
 
         uploadTask.on('state_changed',
           (snapshot) => {
