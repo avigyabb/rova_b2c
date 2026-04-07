@@ -22,16 +22,16 @@ if [[ ! -d "ios" ]]; then
   exit 1
 fi
 
-if ! command -v xcrun >/dev/null 2>&1; then
-  echo "Error: xcrun not found. Install Xcode command line tools first."
+PLIST="$ROOT_DIR/ios/ambora/Info.plist"
+if [[ ! -f "$PLIST" ]]; then
+  echo "Error: Info.plist not found at $PLIST"
   exit 1
 fi
 
-echo "Incrementing iOS build number..."
-(
-  cd ios
-  xcrun agvtool next-version -all
-)
+CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")
+NEW_BUILD=$((CURRENT_BUILD + 1))
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD" "$PLIST"
+echo "Incremented iOS build number: $CURRENT_BUILD -> $NEW_BUILD"
 
 echo "Building iOS app with EAS (profile: $PROFILE)..."
 EAS_NO_VCS=1 npx eas-cli build --platform ios --profile "$PROFILE" --non-interactive

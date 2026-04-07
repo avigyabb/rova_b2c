@@ -86,7 +86,7 @@ const SignIn = ({ setView, setUserKeyIndex }) => {
       return;
     }
 
-    if (username.length > 30) {
+    if (username.length > 20) {
       setErrorMessage('Username too long');
       return;
     }
