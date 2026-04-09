@@ -1,0 +1,59 @@
+module.exports = {
+    "newArchEnabled": true,
+    "scheme": "amborasocial",
+    "web": {
+        "bundler": "metro"
+    },
+    "plugins": [
+        "expo-router",
+        "expo-font",
+        [
+            "expo-image-picker",
+            {
+            "photosPermission": "The app accesses your photos to let you share them with your friends."
+            }
+        ],
+        "@react-native-firebase/app",
+        [
+            "expo-build-properties",
+            {
+            "ios": {
+                "useFrameworks": "static"
+            }
+            }
+        ],
+        "expo-asset"
+    ],
+    "name": "ambora",
+    "slug": "rova-b2c-app",
+    "version": "1.0.41",
+    "ios": {
+        "bundleIdentifier": "com.swing.b2capp",
+        "googleServicesFile": "./GoogleService-Info.plist",
+        "icon": "./assets/AppIcon.png",
+        "runtimeVersion": "1.0.0"
+    },
+    "android": {
+        "package": "com.swing.b2capp",
+        "permissions": [
+            "android.permission.RECORD_AUDIO",
+            "android.permission.RECORD_AUDIO"
+        ],
+        "runtimeVersion": {
+            "policy": "appVersion"
+        }
+    },
+    "extra": {
+        "firebaseApiKey": "AIzaSyAHmo5zkdpph4xa-CgO2eWrwpq56tzC9hE",
+        "googleBooksApiKey": process.env.GOOGLE_BOOKS_API_KEY,
+        "router": {
+            "origin": false
+        },
+        "eas": {
+            "projectId": "afd38dc6-6bba-4bac-ac7d-e465d3880be6"
+        }
+    },
+    "updates": {
+        "url": "https://u.expo.dev/afd38dc6-6bba-4bac-ac7d-e465d3880be6"
+    }
+}
