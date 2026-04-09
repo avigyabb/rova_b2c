@@ -138,6 +138,7 @@ const Add = ({ route, navigation }) => {
   const [loadingItems, setLoadingItems] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [taggedUsers, setTaggedUsers] = useState([]);
+  const [userProfilePic, setUserProfilePic] = useState(null);
 
   const resetRankingState = () => {
     setRankMode(false);
@@ -190,6 +191,11 @@ const Add = ({ route, navigation }) => {
   useEffect(() => {
     getUserCategories();
     getSpotifyAccessToken();
+    get(ref(database, 'users/' + userKey)).then((snapshot) => {
+      if (snapshot.exists()) {
+        setUserProfilePic(snapshot.val().profile_pic || null);
+      }
+    });
   }, []);
 
   // Hydrate one-time payloads when Add is opened from another screen (rerank/add-from-post).
@@ -256,6 +262,13 @@ const Add = ({ route, navigation }) => {
     if (!isFocused) {
       resetRankingState();
       setRerankItemKey(null);
+    } else {
+      getUserCategories();
+      get(ref(database, 'users/' + userKey)).then((snapshot) => {
+        if (snapshot.exists()) {
+          setUserProfilePic(snapshot.val().profile_pic || null);
+        }
+      });
     }
   }, [isFocused]);
 
@@ -714,6 +727,7 @@ const Add = ({ route, navigation }) => {
         taggedUsers={taggedUsers}
         setTaggedUsers={setTaggedUsers}
         userKey={userKey}
+        userProfilePic={userProfilePic}
       />
     );
   }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
-import profilePic from '../../assets/images/lebron_profile_pic.webp';
+import profilePic from '../../assets/images/emptyProfilePic3.png';
 import * as ImagePicker from 'expo-image-picker';
 import LocationList from './AddFlow/TagLocation';
 import PeopleList from './AddFlow/TagFriends';
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView, setAddedCustomImage, taggedUsers, setTaggedUsers, userKey }) => {
+const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, setNewItemImageUris, setAddView, setAddedCustomImage, taggedUsers, setTaggedUsers, userKey, userProfilePic }) => {
 
   const [addPageView, setAddPageView] = useState(null);
 
@@ -251,7 +251,7 @@ const openaiApi = axios.create({
 
           <View style={{ flexDirection: 'row', marginTop: 15 }}>
             <Image
-              source={profilePic}
+              source={userProfilePic ? { uri: userProfilePic } : profilePic}
               style={{
                 width: 38,
                 height: 38,
