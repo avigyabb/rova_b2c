@@ -54,6 +54,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [focusedItem, setFocusedItem] = useState(null);
   const [focusedItemDescription, setFocusedItemDescription] = useState(null);
   const [presetImage, setPresetImage] = useState(true);
+  const [localMutation, setLocalMutation] = useState(false);
   const [profileView, setProfileView] = useState(null);
   const [searchVal, setSearchVal] = useState('');
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
@@ -71,7 +72,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const parentLaterLen = focusedList?.later?.length ?? 0;
   const localNowLen = listData?.now?.length ?? 0;
   const localLaterLen = listData?.later?.length ?? 0;
-  const isSyncingFromParent = parentNowLen !== localNowLen || parentLaterLen !== localLaterLen;
+  const isSyncingFromParent = !localMutation && (parentNowLen !== localNowLen || parentLaterLen !== localLaterLen);
   const shouldRenderList = !isLoading && !isSyncingFromParent;
 
   useEffect(() => {
@@ -217,6 +218,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   };
 
   const onDeleteItemPress = (item_bucket, item_category_id) => {
+    setLocalMutation(true);
     const delItemRef = ref(database, `items/${item_category_id}`);
     remove(delItemRef)
     .then(() => {
@@ -244,11 +246,11 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           .then(() => console.log(`Score updated for ${item[0]}`))
           .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));
 
-          if (item[1].score === 10.0) {
+          if (item[1].score === 10.0 && item[1].image) {
             const categoryRef = ref(database, 'categories/' + item_category_id);
             get(categoryRef).then((snapshot) => {
               if (snapshot.exists() && !snapshot.val().presetImage) {
-                update(categoryRef, { imageUri: item.image });
+                update(categoryRef, { imageUri: item[1].image });
               }
             });
           }
@@ -374,6 +376,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         const categoryRef = ref(database, 'categories/' + categoryId);
         await update(categoryRef, {
           imageUri: topItem && topItem.image ? topItem.image : null,
+          user_set_image: false,
         });
 
         console.log('Category image updated to the best item image successfully!');
@@ -409,7 +412,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 category_name: categoryInfo.category_name,
                 category_description: categoryInfo.category_description,
                 imageUri: downloadURL,
-                presetImage: true
+                presetImage: true,
+                user_set_image: true
               })
               .then(() => {
                 console.log('Category updated successfully!');

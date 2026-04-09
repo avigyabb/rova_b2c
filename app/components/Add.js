@@ -380,7 +380,7 @@ const Add = ({ route, navigation }) => {
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
 
         // update category photo if its the best
-        if (item.score === 10.0) {
+        if (item.score === 10.0 && item.image) {
           const categoryRef = ref(database, 'categories/' + newItemCategory);
           get(categoryRef).then((snapshot) => {
             if (snapshot.exists() && snapshot.val().presetImage && !snapshot.val().user_set_image) {
@@ -451,7 +451,7 @@ const Add = ({ route, navigation }) => {
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
 
         // update category photo if its the best
-        if (item.score === 10.0) {
+        if (item.score === 10.0 && item.image) {
           const categoryRef = ref(database, 'categories/' + newItemCategory);
           get(categoryRef).then((snapshot) => {
             if (snapshot.exists() && snapshot.val().presetImage && !snapshot.val().user_set_image) {
