@@ -62,9 +62,9 @@ const EditProfile = ({ userKey, onBackPress, getUserInfo }) => {
 
   const saveProfile = async () => {
 
-    if (name.length > 12 || name.length < 4) {
+    if (name.length > 30 || name.length < 4) {
       Alert.alert(
-        "Invalid Name Length, name must be between 4 and 12 characters long."
+        "Invalid Name Length, name must be between 4 and 30 characters long."
       );
       return;
     }
