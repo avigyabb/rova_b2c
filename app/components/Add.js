@@ -262,6 +262,13 @@ const Add = ({ route, navigation }) => {
     if (!isFocused) {
       resetRankingState();
       setRerankItemKey(null);
+    } else {
+      getUserCategories();
+      get(ref(database, 'users/' + userKey)).then((snapshot) => {
+        if (snapshot.exists()) {
+          setUserProfilePic(snapshot.val().profile_pic || null);
+        }
+      });
     }
   }, [isFocused]);
 
