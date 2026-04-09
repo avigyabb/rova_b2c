@@ -93,6 +93,10 @@ const Explore = ({ route, navigation }) => {
             <Image
               source={item.profile_pic ? { uri: item.profile_pic } : 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
               style={{ height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 25, borderColor: 'lightgrey' }}
+              contentFit="cover"
+              cachePolicy="memory-and-disk"
+              transition={100}
+              recyclingKey={item.profile_pic || item.id}
             />
             <View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>

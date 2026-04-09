@@ -45,6 +45,10 @@ const ExploreItemTile = ({ item, index, itemsInCategory }) => {
                 <Image
                   source={item.image }
                   style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                  contentFit="cover"
+                  cachePolicy="memory-and-disk"
+                  transition={100}
+                  recyclingKey={item.image || item.name}
                 />
               )}
                 <View style={{ width: 250 }}>

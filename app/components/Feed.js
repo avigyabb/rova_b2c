@@ -458,6 +458,10 @@ const Feed = ({ route, navigation }) => {
           <Image
             source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
             style={{ height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            contentFit="cover"
+            cachePolicy="memory-and-disk"
+            transition={100}
+            recyclingKey={userInfo.profile_pic || item.evokerId}
           />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -484,6 +488,10 @@ const Feed = ({ route, navigation }) => {
                   <Image
                     source={{ uri: item.image }}
                     style={{ width: 50, height: 50 }}
+                    contentFit="cover"
+                    cachePolicy="memory-and-disk"
+                    transition={100}
+                    recyclingKey={item.image || item.id}
                   />
                 </TouchableOpacity>
               ) : null
@@ -580,11 +588,19 @@ const Feed = ({ route, navigation }) => {
             <Image
               source={{ uri: profileInfo.profile_pic }}
               style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: 'lightgrey' }}
+              contentFit="cover"
+              cachePolicy="memory-and-disk"
+              transition={100}
+              recyclingKey={profileInfo.profile_pic || userKey}
             />
           ) : (
             <Image
               source={'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
               style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: 'lightgrey' }}
+              contentFit="cover"
+              cachePolicy="memory-and-disk"
+              transition={100}
+              recyclingKey={userKey}
             />
           )}
         </TouchableOpacity>

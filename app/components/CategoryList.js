@@ -1,5 +1,5 @@
-import React, {useEffect, useState, useMemo, useLayoutEffect} from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, TextInput, ScrollView, ActivityIndicator, InteractionManager } from "react-native";
+import React, {useEffect, useState, useMemo, useLayoutEffect, memo, useCallback} from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, TextInput, FlatList, ActivityIndicator, InteractionManager } from "react-native";
 import { Image } from 'expo-image';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ref, set, remove, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
@@ -35,6 +35,22 @@ const styles = StyleSheet.create({
   }
 });
 
+const ListThumbnail = memo(({ imageUri }) => {
+  if (!imageUri) return null;
+
+  return (
+    <Image
+      source={imageUri}
+      style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+      contentFit="cover"
+      cachePolicy="memory-and-disk"
+    />
+  );
+});
+
+const INITIAL_VISIBLE_ITEMS = 20;
+const VISIBLE_ITEMS_INCREMENT = 20;
+
 function getScoreColorHSL(score) {
   if (score < 0) {
     return '#A3A3A3';
@@ -45,6 +61,67 @@ function getScoreColorHSL(score) {
   return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
+const ListItemTile = memo(({
+  item,
+  item_key,
+  index,
+  editMode,
+  onItemPress,
+  onDeleteItemPress,
+  visitingUserId,
+  userKey,
+  itemsInCategory,
+  categoryType,
+}) => {
+  let scoreColor = getScoreColorHSL(Number(item.score));
+
+  return (
+    <TouchableOpacity onPress={() => onItemPress(item_key)}>
+      <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
+        <View style={{ flexDirection: 'row', paddingHorizontal: editMode && 10 }}>
+          {editMode && (
+            <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
+              <Ionicons name="remove-circle" size={25} color="red" />
+            </TouchableOpacity>
+          )}
+          <View style={{ width: '85%' }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16.5 }}>{index + 1}) {item.content}</Text>
+            <View style={{ flexDirection: 'row', marginTop: 10, }}>
+              {item.image && (
+                <ListThumbnail imageUri={item.image} />
+              )}
+              {item.description && item.description.length > 0 && (
+                <Hyperlink
+                  linkDefault={ true }
+                  linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
+                  onPress={ (url, text) => Linking.openURL(url) }
+                  style={{ flex: 1 }}
+                >
+                <View style={{ width: 250 }}>
+                  <Text style={{ color: 'grey', fontSize: 16 }}>
+                    {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
+                  </Text>
+                </View>
+                </Hyperlink>
+              )}
+            </View>
+          </View>
+          { !editMode && (
+            <View>
+              <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
+                <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
+              </View>
+              { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryType !== "" && (
+                <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 
+              )}
+            </View>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCategoryId, numItems, isMyProfile, visitingUserId, navigation, userKey, isLoading = false }) => {
   const [listView, setListView] = useState('now');
   const [listData, setListData] = useState(focusedList || { now: [], later: [] });
@@ -54,6 +131,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [focusedItem, setFocusedItem] = useState(null);
   const [focusedItemDescription, setFocusedItemDescription] = useState(null);
   const [presetImage, setPresetImage] = useState(true);
+  const [localMutation, setLocalMutation] = useState(false);
   const [profileView, setProfileView] = useState(null);
   const [searchVal, setSearchVal] = useState('');
   const [itemsInCategory, setItemsInCategory] = useState(new Set());
@@ -61,6 +139,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [categoryListView, setCategoryListView] = useState(null);
   const [listBackButtonKey, setListBackButtonKey] = useState(0);
   const [isListBackPressing, setIsListBackPressing] = useState(false);
+  const [visibleItemCount, setVisibleItemCount] = useState(INITIAL_VISIBLE_ITEMS);
 
   // Keep local editable list data in sync with parent updates before paint to avoid empty-state flicker.
   useLayoutEffect(() => {
@@ -71,12 +150,13 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const parentLaterLen = focusedList?.later?.length ?? 0;
   const localNowLen = listData?.now?.length ?? 0;
   const localLaterLen = listData?.later?.length ?? 0;
-  const isSyncingFromParent = parentNowLen !== localNowLen || parentLaterLen !== localLaterLen;
+  const isSyncingFromParent = !localMutation && (parentNowLen !== localNowLen || parentLaterLen !== localLaterLen);
   const shouldRenderList = !isLoading && !isSyncingFromParent;
 
   useEffect(() => {
     if (isLoading || !focusedCategoryId) return;
     let isCancelled = false;
+    setItemsInCategory(new Set());
 
     const categoryRef = ref(database, 'categories/' + focusedCategoryId);
     get(categoryRef).then((snapshot) => {
@@ -135,9 +215,13 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             if (sameUserCategoriesSnapshot.exists()) {
               let promises = [];
               let visitingUserCategoriesTemp = [];
+              const currentCategoryType = snapshot.val().category_type;
               sameUserCategoriesSnapshot.forEach((childSnapshot) => {
-                if (childSnapshot.val().category_type === snapshot.val().category_type) {
-                  visitingUserCategoriesTemp.push({id: childSnapshot.key, ...childSnapshot.val()});
+                const childCategory = childSnapshot.val();
+                const sameCategoryType = childCategory.category_type === currentCategoryType;
+
+                if (sameCategoryType) {
+                  visitingUserCategoriesTemp.push({id: childSnapshot.key, ...childCategory});
                   const categoryItemsRef = ref(database, 'items');
                   const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(childSnapshot.key));
                   promises.push(get(categoryItemsQuery));
@@ -152,7 +236,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                   if (categoryItemsSnapshot.exists()) {
                     categoryItemsSnapshot.forEach((childCategoryItemsSnapshot) => {
                       let item = childCategoryItemsSnapshot.val();
-                      items.add(item.image);
+                      if (item.score >= 0 && item.image) {
+                        items.add(item.image);
+                      }
                     });
                   }
                 });
@@ -217,6 +303,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   };
 
   const onDeleteItemPress = (item_bucket, item_category_id) => {
+    setLocalMutation(true);
     const delItemRef = ref(database, `items/${item_category_id}`);
     remove(delItemRef)
     .then(() => {
@@ -244,11 +331,11 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
           .then(() => console.log(`Score updated for ${item[0]}`))
           .catch((error) => console.error(`Failed to update score for ${item[0]}: ${error}`));
 
-          if (item[1].score === 10.0) {
+          if (item[1].score === 10.0 && item[1].image) {
             const categoryRef = ref(database, 'categories/' + item_category_id);
             get(categoryRef).then((snapshot) => {
               if (snapshot.exists() && !snapshot.val().presetImage) {
-                update(categoryRef, { imageUri: item.image });
+                update(categoryRef, { imageUri: item[1].image });
               }
             });
           }
@@ -292,59 +379,6 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     });
   }
 
-  const ListItemTile = ({ item, item_key, index }) => {
-    let scoreColor = getScoreColorHSL(Number(item.score));
-
-    return (
-      <TouchableOpacity onPress={() => onItemPress(item_key)}>
-        <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
-          <View style={{ flexDirection: 'row', paddingHorizontal: editMode && 10 }}>
-            {editMode && (
-              <TouchableOpacity onPress={() => onDeleteItemPress(item.bucket, item_key)} style={{ marginRight: 10 }}>
-                <Ionicons name="remove-circle" size={25} color="red" />
-              </TouchableOpacity>
-            )}
-            <View style={{ width: '85%' }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 16.5 }}>{index + 1}) {item.content}</Text>
-              <View style={{ flexDirection: 'row', marginTop: 10, }}>
-                {item.image && (
-                  <Image
-                    source={{ uri: item.image }}
-                    style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
-                  />
-                )}
-                {item.description && item.description.length > 0 && (
-                  <Hyperlink
-                    linkDefault={ true }
-                    linkStyle={ { color: '#2980b9', textDecorationLine: 'underline' } }
-                    onPress={ (url, text) => Linking.openURL(url) }
-                    style={{ flex: 1 }}
-                  >
-                  <View style={{ width: 250 }}>
-                    <Text style={{ color: 'grey', fontSize: 16 }}>
-                      {item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description}
-                    </Text>
-                  </View>
-                  </Hyperlink>
-                )}
-              </View>
-            </View>
-            { !editMode && (
-              <View>
-                <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
-                  <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
-                </View>
-                { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryInfo.category_type !== "" && (
-                  <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 
-                )}
-              </View>
-            )}
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  }
-
   const onIconViewPress = () => {
     if (listView === 'now') {
       setListView('later');
@@ -374,6 +408,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         const categoryRef = ref(database, 'categories/' + categoryId);
         await update(categoryRef, {
           imageUri: topItem && topItem.image ? topItem.image : null,
+          user_set_image: false,
         });
 
         console.log('Category image updated to the best item image successfully!');
@@ -409,7 +444,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                 category_name: categoryInfo.category_name,
                 category_description: categoryInfo.category_description,
                 imageUri: downloadURL,
-                presetImage: true
+                presetImage: true,
+                user_set_image: true
               })
               .then(() => {
                 console.log('Category updated successfully!');
@@ -491,24 +527,27 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   };
 
   const onArchiveCategoryPress = () => {
+    const isArchived = !!categoryInfo?.archived;
     Alert.alert(
-      "Archive this list?",
-      "Archived lists are hidden from your profile.",
+      isArchived ? "Unarchive this list?" : "Archive this list?",
+      isArchived
+        ? "This list will show up on your profile again."
+        : "Archived lists are hidden from your profile.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Archive",
-          style: "destructive",
+          text: isArchived ? "Unarchive" : "Archive",
+          style: isArchived ? "default" : "destructive",
           onPress: async () => {
             try {
               const categoryRef = ref(database, 'categories/' + focusedCategoryId);
               await update(categoryRef, {
-                archived: true,
-                archived_at: Date.now(),
+                archived: !isArchived,
+                archived_at: isArchived ? null : Date.now(),
               });
               onBackPress();
             } catch (error) {
-              console.error("Error archiving category:", error);
+              console.error(`Error ${isArchived ? 'unarchiving' : 'archiving'} category:`, error);
             }
           },
         },
@@ -517,12 +556,17 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   };
 
   const onListMenuPress = () => {
+    const archiveActionLabel = categoryInfo?.archived ? "Unarchive list" : "Archive list";
     Alert.alert(
       "List options",
       "",
       [
         { text: "Edit list", onPress: () => onEditPress() },
-        { text: "Archive list", style: "destructive", onPress: () => onArchiveCategoryPress() },
+        {
+          text: archiveActionLabel,
+          style: categoryInfo?.archived ? "default" : "destructive",
+          onPress: () => onArchiveCategoryPress(),
+        },
         { text: "Cancel", style: "cancel" },
       ]
     );
@@ -555,21 +599,51 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     })
   }
 
-  const memoizedList = useMemo(() => {
+  const filteredListData = useMemo(() => {
     if (!shouldRenderList) return [];
 
-    // Filter the items based on the search value, keeping the original index
-    const filteredList = listData[listView]
-      .map((item, index) => ({ ...item, originalIndex: index })) // Add the original index to each item
-      .filter(({ 1: item }) =>
-        item.content && item.content.toLowerCase().includes(searchVal.toLowerCase())
+    return listData[listView]
+      .map((entry, index) => ({
+        itemKey: entry[0],
+        itemData: entry[1],
+        originalIndex: index,
+      }))
+      .filter(({ itemData }) =>
+        itemData.content && itemData.content.toLowerCase().includes(searchVal.toLowerCase())
       );
-  
-    // Map the filtered items to ListItemTile components, using the original index
-    return filteredList.map(({ 1: item, 0: key, originalIndex }) => (
-      <ListItemTile item={item} item_key={key} index={originalIndex} key={key} />
-    ));
-  }, [shouldRenderList, listData, listView, searchVal, editMode, itemsInCategory]);  
+  }, [shouldRenderList, listData, listView, searchVal]);
+
+  const visibleListData = useMemo(() => {
+    return filteredListData.slice(0, visibleItemCount);
+  }, [filteredListData, visibleItemCount]);
+
+  useEffect(() => {
+    setVisibleItemCount(INITIAL_VISIBLE_ITEMS);
+  }, [focusedCategoryId, listView, searchVal]);
+
+  useEffect(() => {
+    setVisibleItemCount((prev) => Math.min(Math.max(prev, INITIAL_VISIBLE_ITEMS), filteredListData.length || INITIAL_VISIBLE_ITEMS));
+  }, [filteredListData.length]);
+
+  const loadMoreVisibleItems = useCallback(() => {
+    if (visibleItemCount >= filteredListData.length) return;
+    setVisibleItemCount((prev) => Math.min(prev + VISIBLE_ITEMS_INCREMENT, filteredListData.length));
+  }, [visibleItemCount, filteredListData.length]);
+
+  const renderListItem = useCallback(({ item }) => (
+    <ListItemTile
+      item={item.itemData}
+      item_key={item.itemKey}
+      index={item.originalIndex}
+      editMode={editMode}
+      onItemPress={onItemPress}
+      onDeleteItemPress={onDeleteItemPress}
+      visitingUserId={visitingUserId}
+      userKey={userKey}
+      itemsInCategory={itemsInCategory}
+      categoryType={categoryInfo.category_type}
+    />
+  ), [editMode, onItemPress, onDeleteItemPress, visitingUserId, userKey, itemsInCategory, categoryInfo.category_type]);
 
   if (categoryListView === 'Similarity Score') {
     return (
@@ -693,117 +767,136 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   </View>
 </View>
 
-      
-      <ScrollView>
-      <View style={{ padding: 10 }}>
-        {editMode ? (
+      <FlatList
+        data={isLoading || isSyncingFromParent ? [] : visibleListData}
+        renderItem={renderListItem}
+        keyExtractor={(item) => item.itemKey}
+        extraData={{ itemsInCategory, editMode, categoryType: categoryInfo.category_type }}
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={INITIAL_VISIBLE_ITEMS}
+        maxToRenderPerBatch={VISIBLE_ITEMS_INCREMENT}
+        windowSize={8}
+        onEndReached={loadMoreVisibleItems}
+        onEndReachedThreshold={0.35}
+        ListHeaderComponent={(
           <>
-          {categoryImage ? (
-            <Image
-              source={{ uri: categoryImage }}
-              style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
-            />
-          ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
-                <Ionicons name="image" size={40} color="gray" />
-                <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
-            </TouchableOpacity>
-            {presetImage && (
-              <TouchableOpacity style={{ marginLeft: 20, borderColor: 'red', padding: 5, borderWidth: 1, borderRadius: 5}} onPress={() => removePresetImage(focusedCategoryId)}>
-                <Text style={{ fontWeight: 'bold', fontSize: 12, color: 'red' }}>Remove Preset Image</Text>
-              </TouchableOpacity>
-            )}
+            <View style={{ padding: 10 }}>
+              {editMode ? (
+                <>
+                {categoryImage ? (
+                  <Image
+                    source={{ uri: categoryImage }}
+                    style={[styles.addedImages, {height: 150, width: 150, borderWidth: 0.5, marginRight: 10}]}
+                  />
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity onPress={pickImage} style={styles.addedImages}>
+                      <Ionicons name="image" size={40} color="gray" />
+                      <Text style={{ marginTop: 4, fontWeight: 'bold', fontSize: 12, color: 'gray' }}>Edit Image</Text>
+                  </TouchableOpacity>
+                  {presetImage && (
+                    <TouchableOpacity style={{ marginLeft: 20, borderColor: 'red', padding: 5, borderWidth: 1, borderRadius: 5}} onPress={() => removePresetImage(focusedCategoryId)}>
+                      <Text style={{ fontWeight: 'bold', fontSize: 12, color: 'red' }}>Remove Preset Image</Text>
+                    </TouchableOpacity>
+                  )}
+                  </View>
+                )}
+                <TextInput
+                  value={categoryInfo.category_name}
+                  onChangeText={(text) => {
+                    setCategoryInfo(prevState => ({
+                      ...prevState,
+                      category_name: text
+                    }))
+                  }}
+                  style={{ 
+                    fontWeight: 'bold', 
+                    fontSize: 30, 
+                    fontStyle: 'italic',
+                    borderColor: 'lightgrey',
+                    borderBottomWidth: 1,
+                    paddingBottom: 5
+                  }}
+                />
+                <TextInput
+                  value={categoryInfo.category_description}
+                  multiline={true}
+                  onChangeText={(text) => {
+                    setCategoryInfo(prevState => ({
+                      ...prevState,
+                      category_description: text
+                    }))
+                  }}
+                  maxHeight={150}
+                  scrollEnabled={true}
+                  style={{ 
+                    color: 'gray', 
+                    marginVertical: 10,
+                    borderColor: 'lightgrey',
+                    borderBottomWidth: 1,
+                    paddingBottom: 5
+                  }}
+                />
+                </>
+              ) : (
+                <>
+                <Text style={{ fontWeight: 'bold', fontSize: 30, fontStyle: 'italic', padding: 1 }}>{categoryInfo.category_name}</Text>
+                <Text style={{ color: 'gray', marginVertical: 10 }}>{categoryInfo.category_description}</Text>
+                </>
+              )}
             </View>
-          )}
-          <TextInput
-            value={categoryInfo.category_name}
-            onChangeText={(text) => {
-              setCategoryInfo(prevState => ({
-                ...prevState,
-                category_name: text
-              }))
-            }}
-            style={{ 
-              fontWeight: 'bold', 
-              fontSize: 30, 
-              fontStyle: 'italic',
-              borderColor: 'lightgrey',
-              borderBottomWidth: 1,
-              paddingBottom: 5
-            }}
-          />
-          <TextInput
-            value={categoryInfo.category_description}
-            multiline={true}
-            onChangeText={(text) => {
-              setCategoryInfo(prevState => ({
-                ...prevState,
-                category_description: text
-              }))
-            }}
-            maxHeight={150} // this height seemed okay to me, but feel free to make it bigger / smaller
-            scrollEnabled={true}
-            style={{ 
-              color: 'gray', 
-              marginVertical: 10,
-              borderColor: 'lightgrey',
-              borderBottomWidth: 1,
-              paddingBottom: 5
-            }}
-          />
-          </>
-        ) : (
-          <>
-          <Text style={{ fontWeight: 'bold', fontSize: 30, fontStyle: 'italic', padding: 1 }}>{categoryInfo.category_name}</Text>
-          <Text style={{ color: 'gray', marginVertical: 10 }}>{categoryInfo.category_description}</Text>
+
+            <View style={{ flexDirection: 'row', borderBottomWidth: 0.5, borderTopWidth: 0.5, borderColor: 'lightgrey' }}>
+              <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'now' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
+                <TouchableOpacity onPress={() => onIconViewPress()}>
+                  <Ionicons name="podium" size={listView === 'now' ? 32 : 30} color={listView === 'now' ? 'black' : 'gray'} />
+                </TouchableOpacity>
+              </View>
+              <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'later' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
+                <TouchableOpacity onPress={() => onIconViewPress()}>
+                  <Ionicons name="bookmarks" size={listView === 'later' ? 30 : 28} color={listView === 'later' ? 'black' : 'gray'} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {!isLoading && !isSyncingFromParent && listData[listView].length > 0 && (
+              <TextInput
+                placeholder={'Search Items...'}
+                value={searchVal} 
+                onChangeText={setSearchVal}
+                placeholderTextColor="gray"
+                style={{ 
+                  fontSize: 16, 
+                  borderColor: 'lightgrey',
+                  borderWidth: 0.5,
+                  borderRadius: 30,
+                  padding: 10,
+                  marginRight: 10,
+                  marginLeft: 10,
+                  paddingHorizontal: 20,
+                  marginVertical: 15
+                }}
+              />
+            )}
           </>
         )}
-      </View>
-
-      <View style={{ flexDirection: 'row', borderBottomWidth: 0.5, borderTopWidth: 0.5, borderColor: 'lightgrey' }}>
-        <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'now' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
-          <TouchableOpacity onPress={() => onIconViewPress()}>
-            <Ionicons name="podium" size={listView === 'now' ? 32 : 30} color={listView === 'now' ? 'black' : 'gray'} />
-          </TouchableOpacity>
-        </View>
-        <View style={{ width: '50%', alignItems: 'center', padding: 8, borderBottomColor: listView === 'later' ? 'black' : 'transparent', borderBottomWidth: 2 }}>
-          <TouchableOpacity onPress={() => onIconViewPress()}>
-            <Ionicons name="bookmarks" size={listView === 'later' ? 30 : 28} color={listView === 'later' ? 'black' : 'gray'} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {isLoading || isSyncingFromParent ? (
-        <View pointerEvents="none" style={{ paddingVertical: 40, alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="black" />
-          <Text style={{ marginTop: 10, color: 'gray' }}>Loading items...</Text>
-        </View>
-      ) : listData[listView].length > 0 ? (  
-        <>
-        <TextInput
-          placeholder={'Search Items...'}
-          value={searchVal} 
-          onChangeText={setSearchVal}
-          placeholderTextColor="gray"
-          style={{ 
-            fontSize: 16, 
-            borderColor: 'lightgrey',
-            borderWidth: 0.5,
-            borderRadius: 30,
-            padding: 10,
-            marginRight: 10,
-            marginLeft: 10,
-            paddingHorizontal: 20,
-            marginVertical: 15
-          }}
-        />          
-        {memoizedList}
-        </>
-      ) : (
-        <Text style={{ textAlign: 'center', fontWeight: 'bold', color: 'gray', fontSize: 16, marginTop: '50%' }}>Add items to see your rankings... 😶‍🌫️</Text>
-      )}
-      </ScrollView>
+        ListEmptyComponent={(
+          isLoading || isSyncingFromParent ? (
+            <View pointerEvents="none" style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator size="large" color="black" />
+              <Text style={{ marginTop: 10, color: 'gray' }}>Loading items...</Text>
+            </View>
+          ) : (
+            <Text style={{ textAlign: 'center', fontWeight: 'bold', color: 'gray', fontSize: 16, marginTop: 120 }}>Add items to see your rankings... 😶‍🌫️</Text>
+          )
+        )}
+        ListFooterComponent={visibleListData.length < filteredListData.length ? (
+          <View style={{ paddingVertical: 18, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color="gray" />
+          </View>
+        ) : <View style={{ height: 24 }} />}
+        contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
+      />
     </View>
   );
 }

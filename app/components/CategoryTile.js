@@ -25,7 +25,6 @@ const styles = StyleSheet.create({
 })
 
 const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fromPage }) => {
-  console.log(imageUri)
   return (
     <TouchableOpacity style={fromPage === 'Add' ? styles.tile2 : fromPage === 'PickCategory' ? styles.tile3 : styles.tile } onPress={() => onCategoryPress()}>
       <View style={{
@@ -40,8 +39,10 @@ const CategoryTile = ({ category_name, imageUri, num_items, onCategoryPress, fro
             height: '100%',
             position: 'absolute', // Positions the image to fill the parent
           }}
-          resizeMode="cover"
+          contentFit="cover"
           cachePolicy="memory-and-disk"
+          transition={100}
+          recyclingKey={imageUri || category_name}
         />
         <View style={{
           ...StyleSheet.absoluteFillObject,

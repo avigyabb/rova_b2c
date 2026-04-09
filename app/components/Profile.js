@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share } from 'react-native';
+import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator } from 'react-native';
 import { Image as ReactImage } from 'react-native';
 import { useFonts } from 'expo-font';
 // import profilePic from '../../assets/images/lebron_profile_pic.webp';
@@ -17,6 +17,7 @@ import FollowUsers from './FollowUsers';
 import GoodreadsImport from './GoodreadsImport';
 import CategoryTile from './CategoryTile';
 import { getAuth, deleteUser } from 'firebase/auth';
+import { triggerExploreInviteShare } from '../../exploreInviteShare';
 
 const styles = StyleSheet.create({
   profilePic: {
@@ -163,23 +164,16 @@ const Profile = ({ route, navigation }) => {
     });
   }
 
-  const shareLink = () => {
-    Share.share({
-      message: 'Follow these steps and rank with me on ambora/social!',
-      url: 'https://testflight.apple.com/join/6VpEA1gh',
-    })
-    .then((result) => {
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          console.log('Shared with activity type: ', result.activityType);
-        } else {
-          console.log('Shared');
-        }
-      } else if (result.action === Share.dismissedAction) {
-        console.log('Dismissed');
-      }
-    })
-    .catch((error) => console.error('Error sharing:', error));
+  const shareLink = async () => {
+    await triggerExploreInviteShare({
+      userKey,
+      onInviteCountUpdated: (nextInviteCount) => {
+        setProfileInfo((currentProfileInfo) => ({
+          ...currentProfileInfo,
+          inviteCount: nextInviteCount,
+        }));
+      },
+    });
   };
 
   const onBackPress = () => {
