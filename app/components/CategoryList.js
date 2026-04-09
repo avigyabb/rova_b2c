@@ -527,24 +527,27 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   };
 
   const onArchiveCategoryPress = () => {
+    const isArchived = !!categoryInfo?.archived;
     Alert.alert(
-      "Archive this list?",
-      "Archived lists are hidden from your profile.",
+      isArchived ? "Unarchive this list?" : "Archive this list?",
+      isArchived
+        ? "This list will show up on your profile again."
+        : "Archived lists are hidden from your profile.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Archive",
-          style: "destructive",
+          text: isArchived ? "Unarchive" : "Archive",
+          style: isArchived ? "default" : "destructive",
           onPress: async () => {
             try {
               const categoryRef = ref(database, 'categories/' + focusedCategoryId);
               await update(categoryRef, {
-                archived: true,
-                archived_at: Date.now(),
+                archived: !isArchived,
+                archived_at: isArchived ? null : Date.now(),
               });
               onBackPress();
             } catch (error) {
-              console.error("Error archiving category:", error);
+              console.error(`Error ${isArchived ? 'unarchiving' : 'archiving'} category:`, error);
             }
           },
         },
@@ -553,12 +556,17 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   };
 
   const onListMenuPress = () => {
+    const archiveActionLabel = categoryInfo?.archived ? "Unarchive list" : "Archive list";
     Alert.alert(
       "List options",
       "",
       [
         { text: "Edit list", onPress: () => onEditPress() },
-        { text: "Archive list", style: "destructive", onPress: () => onArchiveCategoryPress() },
+        {
+          text: archiveActionLabel,
+          style: categoryInfo?.archived ? "default" : "destructive",
+          onPress: () => onArchiveCategoryPress(),
+        },
         { text: "Cancel", style: "cancel" },
       ]
     );
