@@ -9,6 +9,9 @@ import profilePic from '../../assets/images/lebron_profile_pic.webp';
 import AddPost from './AddPost';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // Modular imports for storage
 import axios from 'axios';
+import Constants from 'expo-constants';
+
+const GOOGLE_BOOKS_API_KEY = Constants.expoConfig?.extra?.googleBooksApiKey;
 import qs from 'qs';
 import { Buffer } from 'buffer';
 import { useIsFocused } from '@react-navigation/native';
@@ -107,7 +110,7 @@ export const search = async (spotifyAccessToken, newItemCategoryType, setSearchR
       });
   } else if (text && newItemCategoryType === 'Books') {
     const query = encodeURIComponent(text);
-    axios.get(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=10`)
+    axios.get(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=10&key=${GOOGLE_BOOKS_API_KEY}`)
       .then(response => {
         const items = response.data.items || [];
         setSearchResults(items.map(vol => {

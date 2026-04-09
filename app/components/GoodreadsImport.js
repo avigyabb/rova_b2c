@@ -10,6 +10,9 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import axios from 'axios';
 import { ref, push, set } from 'firebase/database';
 import { database } from '../../firebaseConfig';
+import Constants from 'expo-constants';
+
+const GOOGLE_BOOKS_API_KEY = Constants.expoConfig?.extra?.googleBooksApiKey;
 
 // ─── CSV parser (handles RFC 4180 quoted fields) ────────────────────────────
 function parseCSVLine(line) {
@@ -190,37 +193,54 @@ const GoodreadsImport = ({ onBackPress, userKey }) => {
   // ── Step 2: proceed to reorder, fetching covers first ───────────────────
   const fetchCover = async (book) => {
     const isbn = book.isbn13 || book.isbn;
+    const label = `"${book.title}" (isbn: ${isbn || 'none'})`;
 
     // 1. Open Library by ISBN (very comprehensive, no API key)
     if (isbn) {
       try {
         const olUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
         const check = await axios.head(`${olUrl}?default=false`);
-        if (check.status === 200) return olUrl;
-      } catch {}
+        if (check.status === 200) {
+          console.log(`[cover] ${label} → Open Library`);
+          return olUrl;
+        }
+      } catch (e) {
+        console.log(`[cover] ${label} Open Library error:`, e?.response?.status ?? e?.message);
+      }
     }
 
     // 2. Google Books by ISBN
     if (isbn) {
       try {
         const res = await axios.get(
-          `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`
+          `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1&key=${GOOGLE_BOOKS_API_KEY}`
         );
         const thumb = res.data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
-        if (thumb) return thumb.replace('http://', 'https://');
-      } catch {}
+        if (thumb) {
+          console.log(`[cover] ${label} → Google Books (ISBN)`);
+          return thumb.replace('http://', 'https://');
+        }
+      } catch (e) {
+        console.log(`[cover] ${label} Google Books ISBN error:`, e?.response?.status ?? e?.message);
+      }
     }
 
     // 3. Google Books title+author search (catches books with no ISBN in CSV)
     try {
       const q = encodeURIComponent(`intitle:${book.title} inauthor:${book.author}`);
       const res = await axios.get(
-        `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`
+        `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1&key=${GOOGLE_BOOKS_API_KEY}`
       );
       const thumb = res.data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
-      if (thumb) return thumb.replace('http://', 'https://');
-    } catch {}
+      if (thumb) {
+        console.log(`[cover] ${label} → Google Books (title+author)`);
+        return thumb.replace('http://', 'https://');
+      }
+    } catch (e) {
+      console.log(`[cover] ${label} Google Books title error:`, e?.response?.status ?? e?.message);
+    }
 
+    console.log(`[cover] ${label} → NO COVER FOUND`);
     return null;
   };
 
