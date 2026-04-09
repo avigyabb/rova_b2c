@@ -781,6 +781,10 @@ const Add = ({ route, navigation }) => {
               <Image
                 source={{ uri: newItemImageUris[0] }}
                 style={{height: 80, width: 80, borderWidth: 0.5, borderRadius: 5, borderColor: 'lightgrey' }}
+                contentFit="cover"
+                cachePolicy="memory-and-disk"
+                transition={100}
+                recyclingKey={newItemImageUris[0]}
               />
             )}
             
@@ -918,7 +922,7 @@ const Add = ({ route, navigation }) => {
                       let items = new Set();
                       snapshot.forEach((childSnapshot) => {
                         let item = childSnapshot.val();
-                        items.add(item.content);
+                        if (item.image) items.add(item.image);
                       })
                       setNumItems(Object.keys(snapshot.val()).length)
                       setItemsInCategory(items)
@@ -1024,7 +1028,12 @@ const Add = ({ route, navigation }) => {
                       borderRadius: 5,
                       borderWidth: 0.5,
                       borderColor: 'lightgray'
-                    }}/>
+                    }}
+                    contentFit="cover"
+                    cachePolicy="memory-and-disk"
+                    transition={100}
+                    recyclingKey={item.image || item.content}
+                    />
                   ) : (
                     <View style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', backgroundColor: 'lightgray', borderRadius: 5 }}>
                       <Ionicons name="location-sharp" size={40} color="black" />
@@ -1034,7 +1043,7 @@ const Add = ({ route, navigation }) => {
                     <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
                     <Text style={{ color: 'gray', fontSize: 12 }}>{item.description}</Text>
                   </View>
-                  { itemsInCategory && itemsInCategory.has(item.content) && <Ionicons name="list" size={25} />}
+                  { itemsInCategory && item.image && itemsInCategory.has(item.image) && <Ionicons name="list" size={25} />}
                 </TouchableOpacity>
               )}
               keyExtractor={(item, index) => index.toString()}
@@ -1066,6 +1075,10 @@ const Add = ({ route, navigation }) => {
                   <Image
                     source={{ uri: newItemImageUris[0] }}
                     style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+                    contentFit="cover"
+                    cachePolicy="memory-and-disk"
+                    transition={100}
+                    recyclingKey={newItemImageUris[0]}
                   />
                 )}
                 {newItemDescription.length > 0 && (
@@ -1262,6 +1275,10 @@ const Add = ({ route, navigation }) => {
                     <Image
                       source={{ uri: itemComparisons[binarySearchM].image }}
                       style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                      contentFit="cover"
+                      cachePolicy="memory-and-disk"
+                      transition={100}
+                      recyclingKey={itemComparisons[binarySearchM].image || itemComparisons[binarySearchM].content}
                     />
                   )}
                   <View style={{
