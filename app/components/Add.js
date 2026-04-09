@@ -259,13 +259,30 @@ const Add = ({ route, navigation }) => {
     }
   }, [isFocused]);
 
-  const finalizeRerankCleanup = async () => {
-    if (!rerankItemKey) return;
+  const finalizeRerankCleanup = async (keyOverride) => {
+    const key = keyOverride || rerankItemKey;
+    if (!key) return;
     try {
-      await remove(ref(database, `items/${rerankItemKey}`));
+      await remove(ref(database, `items/${key}`));
     } catch (error) {
       console.error("Error removing old reranked item:", error);
     }
+  };
+
+  const findDuplicateInCategory = async () => {
+    const categoryItemsRef = ref(database, 'items');
+    const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(newItemCategory));
+    const snapshot = await get(categoryItemsQuery);
+    if (!snapshot.exists()) return null;
+    const newImage = newItemImageUris[0] || null;
+    let found = null;
+    snapshot.forEach((childSnapshot) => {
+      const val = childSnapshot.val();
+      if (val.content === newItem || (newImage && val.image === newImage)) {
+        found = childSnapshot.key;
+      }
+    });
+    return found;
   };
 
   function addElementAndRecalculate(array, newItemObj, newBinarySearchM, isNewCard) {
@@ -316,7 +333,7 @@ const Add = ({ route, navigation }) => {
 
   // update 4 here ***
   // I've had errors where some fields in the database don't have a field causing an error that is not logged
-  const addNewItem = async (newItemBucket, newBinarySearchM, isNewCard) => {
+  const addNewItem = async (newItemBucket, newBinarySearchM, isNewCard, dupKey) => {
     setRankMode(false);
     setAddView('addingItem');
     if (newItemImageUris.length > 0 && addedCustomImage) {
@@ -392,7 +409,7 @@ const Add = ({ route, navigation }) => {
           })
         }
       }
-      await finalizeRerankCleanup();
+      await finalizeRerankCleanup(dupKey);
       for (const taggedUser of taggedUsers) {
         const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
         set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey });
@@ -463,7 +480,7 @@ const Add = ({ route, navigation }) => {
           })
         }
       }
-      await finalizeRerankCleanup();
+      await finalizeRerankCleanup(dupKey);
       for (const taggedUser of taggedUsers) {
         const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
         set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey, image: newItemImageUris[0] || null });
@@ -476,7 +493,7 @@ const Add = ({ route, navigation }) => {
     const categoryRef = ref(database, 'categories/' + newItemCategory);
     update(categoryRef, {
       latest_add: Date.now(),
-      num_items: rerankItemKey ? numItems : numItems + 1
+      num_items: (dupKey || rerankItemKey) ? numItems : numItems + 1
     })
 
     // notify user if item was added from another post
@@ -494,16 +511,23 @@ const Add = ({ route, navigation }) => {
     }
   }
 
-  // update here ***
-  const onBucketPress = (bucket) => {
+  const onBucketPress = async (bucket) => {
+    let duplicateKey = rerankItemKey;
+    if (!rerankItemKey) {
+      duplicateKey = await findDuplicateInCategory();
+      if (duplicateKey) {
+        setRerankItemKey(duplicateKey);
+      }
+    }
+
     const categoryItemsRef = ref(database, 'items');
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(newItemCategory));
 
     get(categoryItemsQuery).then((snapshot) => {
       const itemComparisons = [];
-      if (snapshot.exists()) { // didn't affect anything
+      if (snapshot.exists()) {
         snapshot.forEach((childSnapshot) => {
-          if (childSnapshot.key !== rerankItemKey && childSnapshot.val().bucket === bucket) {
+          if (childSnapshot.key !== duplicateKey && childSnapshot.val().bucket === bucket) {
             itemComparisons.push({ // this is used as a parameter in the recalc function
               'key': childSnapshot.key,
               'content':childSnapshot.val().content, 
@@ -532,7 +556,7 @@ const Add = ({ route, navigation }) => {
       if (itemComparisons.length === 0) {
         setBinarySearchL(0);
         setBinarySearchR(0);
-        addNewItem(bucket, 0, true); // if there are no items to compare add it to the first position
+        addNewItem(bucket, 0, true, duplicateKey); // if there are no items to compare add it to the first position
       }
     }).catch((error) => {
       console.error("Error onBucketPress:", error);
@@ -584,8 +608,15 @@ const Add = ({ route, navigation }) => {
     }
   }
 
-  // update here ***
   const onAddLaterPress = async () => {
+    let duplicateKey = rerankItemKey;
+    if (!duplicateKey) {
+      duplicateKey = await findDuplicateInCategory();
+      if (duplicateKey) {
+        setRerankItemKey(duplicateKey);
+      }
+    }
+
     const newLaterItemRef = push(ref(database, 'items'));
     let imageType = 'image';
     // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
@@ -626,7 +657,7 @@ const Add = ({ route, navigation }) => {
         set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newLaterItemRef.key });
         update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
       }
-      await finalizeRerankCleanup();
+      await finalizeRerankCleanup(duplicateKey);
     } catch (error) {
       console.error(`Failed to add later item: ${error}`);
       return;
@@ -636,7 +667,7 @@ const Add = ({ route, navigation }) => {
     const categoryRef = ref(database, 'categories/' + newItemCategory);
     update(categoryRef, {
       latest_add: Date.now(),
-      num_items: rerankItemKey ? numItems : numItems + 1
+      num_items: duplicateKey ? numItems : numItems + 1
     })
 
     // notify user if item was added from another post
