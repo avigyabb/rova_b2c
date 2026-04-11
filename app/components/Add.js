@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import RNPickerSelect from 'react-native-picker-select';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -537,15 +537,49 @@ const Add = ({ route, navigation }) => {
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(newItemCategory));
 
     get(categoryItemsQuery).then((snapshot) => {
+      // Check for duplicates before ranking
+      let isDuplicate = false;
+
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          // Skip if this is a rerank (editing existing item)
+          if (childSnapshot.key === rerankItemKey) return;
+
+          const existingItem = childSnapshot.val();
+
+          // Check for duplicate by ID (for API items like Spotify songs, movies, etc.)
+          if (newItemId && existingItem.id === newItemId) {
+            isDuplicate = true;
+            return;
+          }
+
+          // Check for duplicate by name (for custom items without ID)
+          if (!newItemId && existingItem.content && existingItem.content.trim().toLowerCase() === newItem.trim().toLowerCase()) {
+            isDuplicate = true;
+            return;
+          }
+        });
+      }
+
+      // If duplicate found, show alert and exit
+      if (isDuplicate) {
+        Alert.alert(
+          'Duplicate Item',
+          `"${newItem}" is already in this list!`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       const itemComparisons = [];
       if (snapshot.exists()) {
         snapshot.forEach((childSnapshot) => {
           if (childSnapshot.key !== duplicateKey && childSnapshot.val().bucket === bucket) {
             itemComparisons.push({ // this is used as a parameter in the recalc function
               'key': childSnapshot.key,
-              'content':childSnapshot.val().content, 
+              'content':childSnapshot.val().content,
               'description': childSnapshot.val().description,
-              'image': childSnapshot.val().image || null, 
+              'image': childSnapshot.val().image || null,
               'score': childSnapshot.val().score,
               'timestamp': childSnapshot.val().timestamp || 0, // do this for new fields where previous items may not have
               'user_id': childSnapshot.val().user_id,
@@ -632,7 +666,7 @@ const Add = ({ route, navigation }) => {
 
     const newLaterItemRef = push(ref(database, 'items'));
     let imageType = 'image';
-    // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
+    // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) {
     //   imageType = 'video';
     // }
 
@@ -641,8 +675,8 @@ const Add = ({ route, navigation }) => {
     let updateObject = {
       category_id: newItemCategory,
       category_name: newItemCategoryName,
-      content: newItem, 
-      score: -1, 
+      content: newItem,
+      score: -1,
       bucket: 'later',
       description: newItemDescription,
       image: newItemImageUris[0] || '',

@@ -9,6 +9,8 @@ import Hyperlink from 'react-native-hyperlink';
 import { useFonts } from 'expo-font';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Profile from './Profile';
+import CommentLikesModal from './CommentLikesModal';
+import CommentItem from './CommentItem';
 import axios from 'axios';
 import { generateRandom, deriveChallenge } from 'expo-auth-session';
 import { Video } from 'expo-av';
@@ -92,6 +94,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [commentTypingMode, setCommentTypingMode] = useState(false);
+  const [replyMode, setReplyMode] = useState(null); // { commentId, username, userId }
   const [isVerified, setIsVerified] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
   const [devices, setDevices] = useState([]);
@@ -346,40 +349,116 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     }
   }
 
-  const onNewCommentSubmit = (item) => {
+  const onNewCommentSubmit = async (item) => {
     console.log(item)
     const itemCommentRef = push(ref(database, 'items/' + item.key + '/comments/'));
-    set(itemCommentRef, {
+    const newCommentData = {
       userId: visitingUserId,
       comment: newComment,
-      timestamp: Date.now()
-    })
-    setComments([{
-      userId: visitingUserId,
-      comment: newComment,
-      timestamp: Date.now()
-    }, ...comments]);
-    setNewComment(''); // Clear the input after submission
-
-    const eventsRef = push(ref(database, 'events/' + item.user_id));
-    const userRef = ref(database, 'users/' + item.user_id);
-    set(eventsRef, {
-      evokerId: visitingUserId,
-      content: 'commented on your post: ' + item.content + '!',
       timestamp: Date.now(),
-      image: item.image, //added to make the image appear in the notifcation center
-      postId: item.key
-    })
-    update(userRef, {
-      unreadNotifications: true
-    })
+      likes: {},
+      parentCommentId: replyMode ? replyMode.commentId : null,
+      replyCount: 0
+    };
+
+    await set(itemCommentRef, newCommentData);
+
+    // If replying, increment parent's replyCount
+    if (replyMode) {
+      const parentRef = ref(database, `items/${item.key}/comments/${replyMode.commentId}/replyCount`);
+      const parentSnapshot = await get(parentRef);
+      const currentCount = parentSnapshot.val() || 0;
+      await set(parentRef, currentCount + 1);
+
+      // Notify original commenter (if not replying to self)
+      if (replyMode.userId !== visitingUserId) {
+        const eventsRef = push(ref(database, `events/${replyMode.userId}`));
+        await set(eventsRef, {
+          evokerId: visitingUserId,
+          content: `replied to your comment on ${item.content}`,
+          timestamp: Date.now(),
+          image: item.image,
+          postId: item.key,
+          type: 'comment_reply'
+        });
+
+        await update(ref(database, `users/${replyMode.userId}`), {
+          unreadNotifications: true
+        });
+      }
+    } else {
+      // Only update local state for top-level comments
+      setComments([{
+        id: itemCommentRef.key,
+        userId: visitingUserId,
+        comment: newComment,
+        timestamp: Date.now(),
+        likes: {},
+        parentCommentId: null,
+        replyCount: 0
+      }, ...comments]);
+
+      // Notify post owner (existing logic for top-level comments)
+      if (item.user_id !== visitingUserId) {
+        const eventsRef = push(ref(database, 'events/' + item.user_id));
+        const userRef = ref(database, 'users/' + item.user_id);
+        await set(eventsRef, {
+          evokerId: visitingUserId,
+          content: 'commented on your post: ' + item.content + '!',
+          timestamp: Date.now(),
+          image: item.image,
+          postId: item.key
+        });
+        await update(userRef, {
+          unreadNotifications: true
+        });
+      }
+    }
+
+    setNewComment('');
+    setReplyMode(null);
   }
+
+  const handleReply = (commentId, username, userId) => {
+    setReplyMode({ commentId, username, userId });
+  };
+
+  const toggleCommentLike = async (commentId, commentData) => {
+    const likeRef = ref(database, `items/${item.key}/comments/${commentId}/likes/${visitingUserId}`);
+    const currentlyLiked = commentData.likes && commentData.likes[visitingUserId];
+
+    if (currentlyLiked) {
+      await remove(likeRef);
+    } else {
+      await set(likeRef, true);
+
+      // Create notification for comment author (if not liking own comment)
+      if (commentData.userId !== visitingUserId) {
+        const eventsRef = push(ref(database, `events/${commentData.userId}`));
+        const excerpt = commentData.comment.length > 30
+          ? commentData.comment.substring(0, 30) + '...'
+          : commentData.comment;
+
+        set(eventsRef, {
+          evokerId: visitingUserId,
+          content: `liked your comment: "${excerpt}"`,
+          timestamp: Date.now(),
+          postId: item.key,
+          type: 'comment_like'
+        });
+
+        update(ref(database, `users/${commentData.userId}`), {
+          unreadNotifications: true
+        });
+      }
+    }
+  };
 
   const onCommentPress = () => {
     setItemInfo(item);
     console.log(item.key)
     console.log('item Image' + item.image)
-  }  
+  }
 
   const writeModerationReport = async (type) => {
     const moderationRef = push(ref(database, 'moderation_reports'));
@@ -459,54 +538,6 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
       ]
     );
   };
-
-  const CommentTile = React.memo(({ item }) => {
-    const [userInfo, setUserInfo] = useState({});
-
-    useEffect(() => {
-      const userRef = ref(database, `users/${item.userId}`);
-      get(userRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          setUserInfo(snapshot.val());
-        }
-      })
-    }, [])
-
-    const date = new Date(item.timestamp);
-    const realDateStr = moment(item.timestamp).fromNow();
-    const dateString = date ? date.toLocaleDateString("en-US", {
-      year: 'numeric',
-      month: '2-digit',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }) : 'N/A';
-
-    return (
-        <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
-          <TouchableOpacity onPress={() => visitingUserId === item.userId ? navigation.navigate('Profile') : setFeedView({userKey: item.userId, username: userInfo.username})}>
-            <Image
-              source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-              style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
-              cachePolicy="memory-and-disk"
-            />
-          </TouchableOpacity>
-          <View>
-            <View style={{ flexDirection: 'row' }}>
-              <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
-              <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text>
-            </View>
-            <Text style={{ marginTop: 5, width: 320 }}>{item.comment}</Text>
-            {/*<TouchableOpacity onPress={() => console.log('Reply pressed')}>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: 'grey', marginTop: 5 }}>Reply</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => console.log('')}>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: 'grey', marginTop: 5 }}> ——— View 1 more replies</Text>
-            </TouchableOpacity>*/}
-          </View>
-        </View>
-    );
-  });
 
   const fetchDevices = async () => {
     const devicesUrl = 'https://api.spotify.com/v1/me/player/devices';
@@ -651,7 +682,24 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     }
   }
 
-  const memoizedComments = useMemo(() => comments.map((item, index) => <CommentTile item={item} key={index} />), [comments]);
+  const memoizedComments = useMemo(() => {
+    // Filter to show only top-level comments (parentCommentId is null or undefined)
+    const topLevelComments = comments.filter(comment => !comment.parentCommentId);
+    return topLevelComments.map((comment) => (
+      <CommentItem
+        key={comment.id}
+        comment={comment}
+        commentId={comment.id}
+        level={0}
+        onReply={handleReply}
+        visitingUserId={visitingUserId}
+        itemKey={item.key}
+        itemOwnerId={item.user_id}
+        setFeedView={setFeedView}
+        navigation={navigation}
+      />
+    ));
+  }, [comments, visitingUserId, item.key, item.user_id]);
 
   return (
     <ScrollView style={{ backgroundColor: 'white' }}>
@@ -944,6 +992,16 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     {showComments && (
       <View style={{ paddingHorizontal: 15 }}>
         {/* Render your comments section here */}
+        {replyMode && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10, backgroundColor: '#f5f5f5', marginTop: 10, borderRadius: 10 }}>
+            <Text style={{ flex: 1, fontSize: 13, color: 'grey' }}>
+              Replying to {replyMode.username}
+            </Text>
+            <TouchableOpacity onPress={() => setReplyMode(null)}>
+              <Ionicons name="close" size={20} color="grey" />
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={{
           flexDirection: 'row',
           marginTop: 15,
@@ -957,7 +1015,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           paddingBottom: 10
         }}>
           <TextInput
-            placeholder={`Add a comment for ${username}...`}
+            placeholder={replyMode ? `Reply to ${replyMode.username}...` : `Add a comment for ${username}...`}
             placeholderTextColor="gray"
             style={{
               flex: 1, // Takes up the maximum space leaving the icon on the far side
