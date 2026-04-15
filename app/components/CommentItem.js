@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { database } from '../../firebaseConfig';
 import { ref, get, onValue, off, query, orderByChild, equalTo, set, remove, push, update } from 'firebase/database';
 import moment from 'moment';
@@ -137,12 +138,52 @@ const CommentItem = ({
     setIsExpanded(!isExpanded);
   };
 
+  const handleDeleteComment = async () => {
+    // Only allow user to delete their own comments
+    if (comment.userId !== visitingUserId) return;
+
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Delete the comment from Firebase
+              const commentRef = ref(database, `items/${itemKey}/comments/${commentId}`);
+              await remove(commentRef);
+
+              // If this is a reply, decrement parent's reply count
+              if (comment.parentCommentId) {
+                const parentReplyCountRef = ref(database, `items/${itemKey}/comments/${comment.parentCommentId}/replyCount`);
+                const parentSnapshot = await get(parentReplyCountRef);
+                const currentCount = parentSnapshot.val() || 0;
+                if (currentCount > 0) {
+                  await set(parentReplyCountRef, currentCount - 1);
+                }
+              }
+            } catch (error) {
+              console.error('Error deleting comment:', error);
+              Alert.alert('Error', 'Failed to delete comment. Please try again.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const realDateStr = moment(comment.timestamp).fromNow();
   const indentWidth = Math.min(level * 20, 60); // Cap at 60px
 
   return (
     <View style={{ marginLeft: indentWidth }}>
-      <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
+      <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 15 }}>
         <TouchableOpacity onPress={() => visitingUserId === comment.userId ? navigation.navigate('Profile') : setFeedView({ userKey: comment.userId, username: userInfo.username })}>
           <Image
             source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
@@ -155,16 +196,16 @@ const CommentItem = ({
             <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name || 'Loading...'}</Text>
             <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text>
           </View>
-          <Text style={{ marginTop: 5, width: 320 - indentWidth }}>{comment.comment}</Text>
+          <TouchableOpacity
+            onLongPress={comment.userId === visitingUserId ? handleDeleteComment : undefined}
+            activeOpacity={comment.userId === visitingUserId ? 0.7 : 1}
+            delayLongPress={500}
+          >
+            <Text style={{ marginTop: 5, marginRight: 40 }}>{comment.comment}</Text>
+          </TouchableOpacity>
 
           {/* Action buttons */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, gap: 15 }}>
-            <TouchableOpacity onPress={handleLike}>
-              <Text style={{ fontSize: 12, fontWeight: 'bold', color: 'grey' }}>
-                {liked ? 'Unlike' : 'Like'}
-              </Text>
-            </TouchableOpacity>
-
             <TouchableOpacity onPress={handleReply}>
               <Text style={{ fontSize: 12, fontWeight: 'bold', color: 'grey' }}>
                 Reply
@@ -224,6 +265,15 @@ const CommentItem = ({
             />
           )}
         </View>
+
+        {/* Like Icon */}
+        <TouchableOpacity onPress={handleLike} style={{ marginLeft: 10, alignSelf: 'flex-start', paddingTop: 5 }}>
+          <Ionicons
+            name={liked ? "heart" : "heart-outline"}
+            size={14}
+            color={liked ? "black" : "grey"}
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );

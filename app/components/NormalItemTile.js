@@ -11,6 +11,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Profile from './Profile';
 import CommentLikesModal from './CommentLikesModal';
 import CommentItem from './CommentItem';
+import CommentsBottomSheet from './CommentsBottomSheet';
 import axios from 'axios';
 import { generateRandom, deriveChallenge } from 'expo-auth-session';
 import { Video } from 'expo-av';
@@ -95,6 +96,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [newComment, setNewComment] = useState('');
   const [commentTypingMode, setCommentTypingMode] = useState(false);
   const [replyMode, setReplyMode] = useState(null); // { commentId, username, userId }
+  const [commentsModalVisible, setCommentsModalVisible] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
   const [devices, setDevices] = useState([]);
@@ -455,9 +457,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   };
 
   const onCommentPress = () => {
-    setItemInfo(item);
-    console.log(item.key)
-    console.log('item Image' + item.image)
+    setCommentsModalVisible(true);
   }
 
   const writeModerationReport = async (type) => {
@@ -702,6 +702,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   }, [comments, visitingUserId, item.key, item.user_id]);
 
   return (
+    <>
     <ScrollView style={{ backgroundColor: 'white' }}>
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
     <View>
@@ -1038,6 +1039,20 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     </View>
     </TouchableWithoutFeedback>
     </ScrollView>
+
+    {!showComments && (
+      <CommentsBottomSheet
+        visible={commentsModalVisible}
+        onClose={() => setCommentsModalVisible(false)}
+        item={item}
+        userKey={userKey}
+        visitingUserId={visitingUserId}
+        navigation={navigation}
+        username={username}
+        setFeedView={setFeedView}
+      />
+    )}
+    </>
   );
 })
 
