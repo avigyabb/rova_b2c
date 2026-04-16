@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
@@ -6,7 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  ScrollView,
+  FlatList,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -26,13 +26,18 @@ const CommentsBottomSheet = ({
   visitingUserId,
   navigation,
   username,
-  setFeedView
+  setFeedView,
+  focusCommentId
 }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [replyMode, setReplyMode] = useState(null); // { commentId, username, userId }
   const [loading, setLoading] = useState(true);
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+
+  // Ref for FlatList to enable scrollToIndex
+  const flatListRef = useRef(null);
 
   // Fetch current user profile for avatar
   useEffect(() => {
@@ -75,6 +80,33 @@ const CommentsBottomSheet = ({
     }
   }, [visible, item]);
 
+  // Scroll to and highlight the focused comment when focusCommentId changes
+  useEffect(() => {
+    if (focusCommentId && visible && comments.length > 0 && !loading) {
+      // Small delay to ensure FlatList is fully rendered
+      setTimeout(() => {
+        const commentIndex = comments.findIndex(c => c.id === focusCommentId);
+
+        if (commentIndex !== -1) {
+          // Scroll to the comment
+          flatListRef.current?.scrollToIndex({
+            index: commentIndex,
+            animated: true,
+            viewPosition: 0.3 // Position at 30% from top of screen
+          });
+
+          // Highlight the comment
+          setHighlightedCommentId(focusCommentId);
+
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            setHighlightedCommentId(null);
+          }, 3000);
+        }
+      }, 300); // 300ms delay for UI to settle
+    }
+  }, [focusCommentId, visible, comments, loading]);
+
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
 
@@ -107,6 +139,7 @@ const CommentsBottomSheet = ({
             timestamp: Date.now(),
             image: item.image,
             postId: item.key,
+            commentId: itemCommentRef.key, // NEW: Include commentId for deep linking
             type: 'comment_reply'
           });
 
@@ -123,7 +156,8 @@ const CommentsBottomSheet = ({
             content: `commented on your post: ${item.content}!`,
             timestamp: Date.now(),
             image: item.image,
-            postId: item.key
+            postId: item.key,
+            commentId: itemCommentRef.key  // NEW: Include commentId for deep linking
           });
 
           await update(ref(database, `users/${item.user_id}`), {
@@ -139,8 +173,12 @@ const CommentsBottomSheet = ({
     }
   };
 
-  const handleReply = (commentId, username, userId) => {
+  const handleReply = (commentId, username, userId, level) => {
     setReplyMode({ commentId, username, userId });
+    // Auto-insert @ mention when replying to a reply (level > 0)
+    if (level > 0) {
+      setNewComment(`@${username} `);
+    }
   };
 
   return (
@@ -170,36 +208,54 @@ const CommentsBottomSheet = ({
           </View>
 
           {/* Comments List */}
-          <ScrollView
-            style={styles.commentsList}
-            contentContainerStyle={styles.commentsListContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="black" />
-              </View>
-            ) : comments.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>No comments yet</Text>
-                <Text style={styles.emptySubtitle}>Start the conversation.</Text>
-              </View>
-            ) : (
-              comments.map((comment) => (
-                <CommentItem
-                  key={comment.id}
-                  comment={comment}
-                  commentId={comment.id}
-                  itemKey={item.key}
-                  userKey={userKey}
-                  onReply={handleReply}
-                  visitingUserId={visitingUserId}
-                  navigation={navigation}
-                  setFeedView={setFeedView}
-                />
-              ))
-            )}
-          </ScrollView>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="black" />
+            </View>
+          ) : comments.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No comments yet</Text>
+              <Text style={styles.emptySubtitle}>Start the conversation.</Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={comments}
+              keyExtractor={(comment) => comment.id}
+              style={styles.commentsList}
+              contentContainerStyle={styles.commentsListContent}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item: comment }) => (
+                <View
+                  style={
+                    comment.id === highlightedCommentId
+                      ? styles.highlighted
+                      : null
+                  }
+                >
+                  <CommentItem
+                    comment={comment}
+                    commentId={comment.id}
+                    level={0}
+                    itemKey={item.key}
+                    itemOwnerId={item.user_id}
+                    onReply={handleReply}
+                    visitingUserId={visitingUserId}
+                    navigation={navigation}
+                    setFeedView={setFeedView}
+                    onCloseComments={onClose}
+                  />
+                </View>
+              )}
+              onScrollToIndexFailed={(info) => {
+                // Fallback: scroll to offset if index fails
+                flatListRef.current?.scrollToOffset({
+                  offset: info.averageItemLength * info.index,
+                  animated: true
+                });
+              }}
+            />
+          )}
 
           {/* Reply Indicator */}
           {replyMode && (
@@ -297,6 +353,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   commentsListContent: {
+    paddingTop: 4,
     paddingBottom: 20,
   },
   loadingContainer: {
@@ -363,6 +420,11 @@ const styles = StyleSheet.create({
   sendButton: {
     marginLeft: 10,
     padding: 5,
+  },
+  highlighted: {
+    backgroundColor: 'rgba(255, 235, 59, 0.2)', // Yellow tint with transparency
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFD700', // Gold color
   },
 });
 

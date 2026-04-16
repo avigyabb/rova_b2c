@@ -440,6 +440,7 @@ const Feed = ({ route, navigation }) => {
       get(itemRef).then((snapshot) => {
         const tempFocusedItem = snapshot.val();
         tempFocusedItem.key = item.postId;
+        tempFocusedItem.focusCommentId = item.commentId; // NEW: Pass commentId for deep linking
         setFocusedItem(tempFocusedItem);
         setNotifications(null);
       });
