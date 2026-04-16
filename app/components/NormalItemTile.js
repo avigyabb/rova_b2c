@@ -1050,6 +1050,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
         navigation={navigation}
         username={username}
         setFeedView={setFeedView}
+        focusCommentId={item.focusCommentId}
       />
     )}
     </>

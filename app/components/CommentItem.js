@@ -6,6 +6,7 @@ import { database } from '../../firebaseConfig';
 import { ref, get, onValue, off, query, orderByChild, equalTo, set, remove, push, update } from 'firebase/database';
 import moment from 'moment';
 import CommentLikesModal from './CommentLikesModal';
+import CommentText from './CommentText';
 
 const CommentItem = ({
   comment,
@@ -16,7 +17,8 @@ const CommentItem = ({
   itemKey,
   itemOwnerId,
   setFeedView,
-  navigation
+  navigation,
+  onCloseComments
 }) => {
   const [userInfo, setUserInfo] = useState({});
   const [liked, setLiked] = useState(false);
@@ -114,6 +116,7 @@ const CommentItem = ({
             content: `liked your comment: "${excerpt}"`,
             timestamp: Date.now(),
             postId: itemKey,
+            commentId: commentId, // NEW: Include commentId for deep linking
             type: 'comment_like'
           });
 
@@ -131,7 +134,14 @@ const CommentItem = ({
   };
 
   const handleReply = () => {
-    onReply(commentId, userInfo.username || comment.userId, comment.userId);
+    // Ensure we use the username handle for @mentions, not the display name
+    // Priority: username field > fallback to fetching from Firebase
+    const usernameForMention = userInfo?.username || 'user';
+
+    console.log('Reply - userInfo:', userInfo);
+    console.log('Using username:', usernameForMention);
+
+    onReply(commentId, usernameForMention, comment.userId, level);
   };
 
   const handleToggleExpand = () => {
@@ -179,43 +189,65 @@ const CommentItem = ({
   };
 
   const realDateStr = moment(comment.timestamp).fromNow();
-  const indentWidth = Math.min(level * 20, 60); // Cap at 60px
+  // Only apply indent to level 1 (direct replies)
+  // Level 2+ replies are nested inside level 1, so they inherit the indent automatically
+  const indentWidth = level === 1 ? 48 : 0;
 
   return (
     <View style={{ marginLeft: indentWidth }}>
-      <View style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 15 }}>
+      <View style={{ flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 16 }}>
         <TouchableOpacity onPress={() => visitingUserId === comment.userId ? navigation.navigate('Profile') : setFeedView({ userKey: comment.userId, username: userInfo.username })}>
           <Image
             source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-            style={{ height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            style={{ height: 32, width: 32, borderRadius: 16 }}
             cachePolicy="memory-and-disk"
           />
         </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row' }}>
-            <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name || 'Loading...'}</Text>
-            <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text>
+
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          {/* Username and timestamp */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#000', marginRight: 8 }}>
+              {userInfo.name || 'Loading...'}
+            </Text>
+            <Text style={{ fontSize: 12, color: '#737373' }}>
+              {realDateStr}
+            </Text>
+            {itemOwnerId === comment.userId && (
+              <Text style={{ fontSize: 12, color: '#737373', marginLeft: 4 }}>
+                · by author
+              </Text>
+            )}
           </View>
+
+          {/* Comment text */}
           <TouchableOpacity
             onLongPress={comment.userId === visitingUserId ? handleDeleteComment : undefined}
             activeOpacity={comment.userId === visitingUserId ? 0.7 : 1}
             delayLongPress={500}
           >
-            <Text style={{ marginTop: 5, marginRight: 40 }}>{comment.comment}</Text>
+            <View style={{ marginBottom: 8 }}>
+              <CommentText
+                text={comment.comment}
+                setFeedView={setFeedView}
+                navigation={navigation}
+                onCloseComments={onCloseComments}
+              />
+            </View>
           </TouchableOpacity>
 
-          {/* Action buttons */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, gap: 15 }}>
+          {/* Action row: Reply and like count */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <TouchableOpacity onPress={handleReply}>
-              <Text style={{ fontSize: 12, fontWeight: 'bold', color: 'grey' }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#737373' }}>
                 Reply
               </Text>
             </TouchableOpacity>
 
             {likeCount > 0 && (
               <TouchableOpacity onPress={() => setLikesModalVisible(true)}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: 'grey' }}>
-                  {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+                <Text style={{ fontSize: 13, color: '#737373' }}>
+                  {likeCount}
                 </Text>
               </TouchableOpacity>
             )}
@@ -223,58 +255,59 @@ const CommentItem = ({
 
           {/* View replies toggle */}
           {replyCount > 0 && (
-            <TouchableOpacity onPress={handleToggleExpand} style={{ marginTop: 5 }}>
-              <Text style={{ fontSize: 12, color: 'grey' }}>
+            <TouchableOpacity onPress={handleToggleExpand} style={{ marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: '#737373' }}>
                 {isExpanded
-                  ? '——— Hide replies'
-                  : `——— View ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}`
+                  ? `Hide ${replyCount === 1 ? 'reply' : 'replies'}`
+                  : `View ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}`
                 }
               </Text>
             </TouchableOpacity>
           )}
-
-          {/* Render nested replies */}
-          {isExpanded && replies.length > 0 && (
-            <View style={{ marginTop: 5 }}>
-              {replies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  commentId={reply.id}
-                  level={level + 1}
-                  onReply={onReply}
-                  visitingUserId={visitingUserId}
-                  itemKey={itemKey}
-                  itemOwnerId={itemOwnerId}
-                  setFeedView={setFeedView}
-                  navigation={navigation}
-                />
-              ))}
-            </View>
-          )}
-
-          {/* Likes Modal */}
-          {likesModalVisible && (
-            <CommentLikesModal
-              visible={likesModalVisible}
-              onClose={() => setLikesModalVisible(false)}
-              likes={commentLikes}
-              setFeedView={setFeedView}
-              visitingUserId={visitingUserId}
-              navigation={navigation}
-            />
-          )}
         </View>
 
         {/* Like Icon */}
-        <TouchableOpacity onPress={handleLike} style={{ marginLeft: 10, alignSelf: 'flex-start', paddingTop: 5 }}>
+        <TouchableOpacity onPress={handleLike} style={{ paddingLeft: 12, paddingTop: 4 }}>
           <Ionicons
             name={liked ? "heart" : "heart-outline"}
-            size={14}
-            color={liked ? "black" : "grey"}
+            size={16}
+            color={liked ? "#000" : "#737373"}
           />
         </TouchableOpacity>
       </View>
+
+      {/* Render nested replies */}
+      {isExpanded && replies.length > 0 && (
+        <View>
+          {replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              commentId={reply.id}
+              level={Math.min(level + 1, 2)}
+              onReply={onReply}
+              visitingUserId={visitingUserId}
+              itemKey={itemKey}
+              itemOwnerId={itemOwnerId}
+              setFeedView={setFeedView}
+              navigation={navigation}
+              onCloseComments={onCloseComments}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* Likes Modal */}
+      {likesModalVisible && (
+        <CommentLikesModal
+          visible={likesModalVisible}
+          onClose={() => setLikesModalVisible(false)}
+          likes={commentLikes}
+          setFeedView={setFeedView}
+          visitingUserId={visitingUserId}
+          navigation={navigation}
+        />
+      )}
     </View>
   );
 };
