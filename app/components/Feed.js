@@ -68,7 +68,6 @@ const Feed = ({ route, navigation }) => {
   });
   const [feedType, setFeedType] = useState('Following');
   const [topPostsTime, setTopPostsTime] = useState('All Time');
-  const [itemInfo, setItemInfo] = useState(null);
   const [notifications, setNotifications] = useState(null);
   const [spotifyAccessToken, setSpotifyAccessToken] = useState(null);
   const spotifyRedirectUri = AuthSession.makeRedirectUri({ scheme: 'amborasocial' });
@@ -379,10 +378,7 @@ const Feed = ({ route, navigation }) => {
     if (focusedItem && focusedItem.user_id === blockedUserId) {
       setFocusedItem(null);
     }
-    if (itemInfo && itemInfo.user_id === blockedUserId) {
-      setItemInfo(null);
-    }
-  }, [focusedItem, itemInfo]);
+  }, [focusedItem]);
 
   const NotificationsTile = ({ item, visitingUserId }) => {
     const [userInfo, setUserInfo] = useState({});
@@ -444,6 +440,7 @@ const Feed = ({ route, navigation }) => {
       get(itemRef).then((snapshot) => {
         const tempFocusedItem = snapshot.val();
         tempFocusedItem.key = item.postId;
+        tempFocusedItem.focusCommentId = item.commentId; // NEW: Pass commentId for deep linking
         setFocusedItem(tempFocusedItem);
         setNotifications(null);
       });
@@ -458,6 +455,10 @@ const Feed = ({ route, navigation }) => {
           <Image
             source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
             style={{ height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            contentFit="cover"
+            cachePolicy="memory-and-disk"
+            transition={100}
+            recyclingKey={userInfo.profile_pic || item.evokerId}
           />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -484,6 +485,10 @@ const Feed = ({ route, navigation }) => {
                   <Image
                     source={{ uri: item.image }}
                     style={{ width: 50, height: 50 }}
+                    contentFit="cover"
+                    cachePolicy="memory-and-disk"
+                    transition={100}
+                    recyclingKey={item.image || item.id}
                   />
                 </TouchableOpacity>
               ) : null
@@ -496,7 +501,7 @@ const Feed = ({ route, navigation }) => {
 
   const keyExtractor = useCallback((item) => item.key, []);
   const renderFeedItem = useCallback(({ item }) => (
-    <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />
+    <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />
   ), [topPostsTime, individualSpotifyAccessToken, promptAsync, onBlockUserLocal]);
 
   if (notifications) {
@@ -536,28 +541,6 @@ const Feed = ({ route, navigation }) => {
     );
   }
 
-  if (itemInfo) {
-    const onBackPress = (params) => {
-      setFeedView(params)
-      setItemInfo(null)
-    }
-
-    return (
-      <View style={{ backgroundColor: 'black', height: '100%' }}>
-        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
-          <TouchableOpacity onPress={() => {
-            setItemInfo(null) 
-            setFeedType('For You')
-            getListData();
-          }}> 
-            <Ionicons name="arrow-back" size={30} color="black" />
-          </TouchableOpacity>
-        </View>
-        <NormalItemTile item={itemInfo} userKey={userKey} visitingUserId={userKey} navigation={navigation} editMode={false} showComments={true} setFeedView={onBackPress} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal}/>
-      </View>
-    );
-  }
-
   if (feedView) {
     return (
       <Profile 
@@ -580,11 +563,19 @@ const Feed = ({ route, navigation }) => {
             <Image
               source={{ uri: profileInfo.profile_pic }}
               style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: 'lightgrey' }}
+              contentFit="cover"
+              cachePolicy="memory-and-disk"
+              transition={100}
+              recyclingKey={profileInfo.profile_pic || userKey}
             />
           ) : (
             <Image
               source={'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
               style={{height: 30, width: 30, borderWidth: 0.5, borderRadius: 15, borderColor: 'lightgrey' }}
+              contentFit="cover"
+              cachePolicy="memory-and-disk"
+              transition={100}
+              recyclingKey={userKey}
             />
           )}
         </TouchableOpacity>
@@ -651,7 +642,7 @@ const Feed = ({ route, navigation }) => {
       ) : (
         <>
         {/*{listData.length > 0 && (
-          <FeedItemTile item={listData[index]} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} setItemInfo={setItemInfo} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} setIndex={setIndex}/>
+          <FeedItemTile item={listData[index]} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} setIndex={setIndex}/>
         )} uncomment this for swiping*/}
         <FlatList
           data={

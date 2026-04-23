@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import RNPickerSelect from 'react-native-picker-select';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -272,13 +272,30 @@ const Add = ({ route, navigation }) => {
     }
   }, [isFocused]);
 
-  const finalizeRerankCleanup = async () => {
-    if (!rerankItemKey) return;
+  const finalizeRerankCleanup = async (keyOverride) => {
+    const key = keyOverride || rerankItemKey;
+    if (!key) return;
     try {
-      await remove(ref(database, `items/${rerankItemKey}`));
+      await remove(ref(database, `items/${key}`));
     } catch (error) {
       console.error("Error removing old reranked item:", error);
     }
+  };
+
+  const findDuplicateInCategory = async () => {
+    const categoryItemsRef = ref(database, 'items');
+    const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(newItemCategory));
+    const snapshot = await get(categoryItemsQuery);
+    if (!snapshot.exists()) return null;
+    const newImage = newItemImageUris[0] || null;
+    let found = null;
+    snapshot.forEach((childSnapshot) => {
+      const val = childSnapshot.val();
+      if (val.content === newItem || (newImage && val.image === newImage)) {
+        found = childSnapshot.key;
+      }
+    });
+    return found;
   };
 
   function addElementAndRecalculate(array, newItemObj, newBinarySearchM, isNewCard) {
@@ -329,7 +346,7 @@ const Add = ({ route, navigation }) => {
 
   // update 4 here ***
   // I've had errors where some fields in the database don't have a field causing an error that is not logged
-  const addNewItem = async (newItemBucket, newBinarySearchM, isNewCard) => {
+  const addNewItem = async (newItemBucket, newBinarySearchM, isNewCard, dupKey) => {
     setRankMode(false);
     setAddView('addingItem');
     if (newItemImageUris.length > 0 && addedCustomImage) {
@@ -393,7 +410,7 @@ const Add = ({ route, navigation }) => {
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
 
         // update category photo if its the best
-        if (item.score === 10.0) {
+        if (item.score === 10.0 && item.image) {
           const categoryRef = ref(database, 'categories/' + newItemCategory);
           get(categoryRef).then((snapshot) => {
             if (snapshot.exists() && snapshot.val().presetImage && !snapshot.val().user_set_image) {
@@ -405,7 +422,7 @@ const Add = ({ route, navigation }) => {
           })
         }
       }
-      await finalizeRerankCleanup();
+      await finalizeRerankCleanup(dupKey);
       for (const taggedUser of taggedUsers) {
         const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
         set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey });
@@ -464,7 +481,7 @@ const Add = ({ route, navigation }) => {
         .catch((error) => console.error(`Failed to update score for ${item.content}: ${error}`));
 
         // update category photo if its the best
-        if (item.score === 10.0) {
+        if (item.score === 10.0 && item.image) {
           const categoryRef = ref(database, 'categories/' + newItemCategory);
           get(categoryRef).then((snapshot) => {
             if (snapshot.exists() && snapshot.val().presetImage && !snapshot.val().user_set_image) {
@@ -476,7 +493,7 @@ const Add = ({ route, navigation }) => {
           })
         }
       }
-      await finalizeRerankCleanup();
+      await finalizeRerankCleanup(dupKey);
       for (const taggedUser of taggedUsers) {
         const eventsRef = push(ref(database, 'events/' + taggedUser.userId));
         set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey, image: newItemImageUris[0] || null });
@@ -489,7 +506,7 @@ const Add = ({ route, navigation }) => {
     const categoryRef = ref(database, 'categories/' + newItemCategory);
     update(categoryRef, {
       latest_add: Date.now(),
-      num_items: rerankItemKey ? numItems : numItems + 1
+      num_items: (dupKey || rerankItemKey) ? numItems : numItems + 1
     })
 
     // notify user if item was added from another post
@@ -507,21 +524,62 @@ const Add = ({ route, navigation }) => {
     }
   }
 
-  // update here ***
-  const onBucketPress = (bucket) => {
+  const onBucketPress = async (bucket) => {
+    let duplicateKey = rerankItemKey;
+    if (!rerankItemKey) {
+      duplicateKey = await findDuplicateInCategory();
+      if (duplicateKey) {
+        setRerankItemKey(duplicateKey);
+      }
+    }
+
     const categoryItemsRef = ref(database, 'items');
     const categoryItemsQuery = query(categoryItemsRef, orderByChild('category_id'), equalTo(newItemCategory));
 
     get(categoryItemsQuery).then((snapshot) => {
-      const itemComparisons = [];
-      if (snapshot.exists()) { // didn't affect anything
+      // Check for duplicates before ranking
+      let isDuplicate = false;
+
+      if (snapshot.exists()) {
         snapshot.forEach((childSnapshot) => {
-          if (childSnapshot.key !== rerankItemKey && childSnapshot.val().bucket === bucket) {
+          // Skip if this is a rerank (editing existing item)
+          if (childSnapshot.key === rerankItemKey) return;
+
+          const existingItem = childSnapshot.val();
+
+          // Check for duplicate by ID (for API items like Spotify songs, movies, etc.)
+          if (newItemId && existingItem.id === newItemId) {
+            isDuplicate = true;
+            return;
+          }
+
+          // Check for duplicate by name (for custom items without ID)
+          if (!newItemId && existingItem.content && existingItem.content.trim().toLowerCase() === newItem.trim().toLowerCase()) {
+            isDuplicate = true;
+            return;
+          }
+        });
+      }
+
+      // If duplicate found, show alert and exit
+      if (isDuplicate) {
+        Alert.alert(
+          'Duplicate Item',
+          `"${newItem}" is already in this list!`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      const itemComparisons = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          if (childSnapshot.key !== duplicateKey && childSnapshot.val().bucket === bucket) {
             itemComparisons.push({ // this is used as a parameter in the recalc function
               'key': childSnapshot.key,
-              'content':childSnapshot.val().content, 
+              'content':childSnapshot.val().content,
               'description': childSnapshot.val().description,
-              'image': childSnapshot.val().image || null, 
+              'image': childSnapshot.val().image || null,
               'score': childSnapshot.val().score,
               'timestamp': childSnapshot.val().timestamp || 0, // do this for new fields where previous items may not have
               'user_id': childSnapshot.val().user_id,
@@ -545,7 +603,7 @@ const Add = ({ route, navigation }) => {
       if (itemComparisons.length === 0) {
         setBinarySearchL(0);
         setBinarySearchR(0);
-        addNewItem(bucket, 0, true); // if there are no items to compare add it to the first position
+        addNewItem(bucket, 0, true, duplicateKey); // if there are no items to compare add it to the first position
       }
     }).catch((error) => {
       console.error("Error onBucketPress:", error);
@@ -597,11 +655,18 @@ const Add = ({ route, navigation }) => {
     }
   }
 
-  // update here ***
   const onAddLaterPress = async () => {
+    let duplicateKey = rerankItemKey;
+    if (!duplicateKey) {
+      duplicateKey = await findDuplicateInCategory();
+      if (duplicateKey) {
+        setRerankItemKey(duplicateKey);
+      }
+    }
+
     const newLaterItemRef = push(ref(database, 'items'));
     let imageType = 'image';
-    // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) { 
+    // if (imageUri.endsWith('.mp4') || imageUri.endsWith('.avi') || imageUri.endsWith('.mov') || imageUri.endsWith('.mkv') || imageUri.endsWith('.wmv') || imageUri.endsWith('.webm') || imageUri.endsWith('.flv') || imageUri.endsWith('.mp3')) {
     //   imageType = 'video';
     // }
 
@@ -610,8 +675,8 @@ const Add = ({ route, navigation }) => {
     let updateObject = {
       category_id: newItemCategory,
       category_name: newItemCategoryName,
-      content: newItem, 
-      score: -1, 
+      content: newItem,
+      score: -1,
       bucket: 'later',
       description: newItemDescription,
       image: newItemImageUris[0] || '',
@@ -639,7 +704,7 @@ const Add = ({ route, navigation }) => {
         set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newLaterItemRef.key });
         update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
       }
-      await finalizeRerankCleanup();
+      await finalizeRerankCleanup(duplicateKey);
     } catch (error) {
       console.error(`Failed to add later item: ${error}`);
       return;
@@ -649,7 +714,7 @@ const Add = ({ route, navigation }) => {
     const categoryRef = ref(database, 'categories/' + newItemCategory);
     update(categoryRef, {
       latest_add: Date.now(),
-      num_items: rerankItemKey ? numItems : numItems + 1
+      num_items: duplicateKey ? numItems : numItems + 1
     })
 
     // notify user if item was added from another post
@@ -764,6 +829,10 @@ const Add = ({ route, navigation }) => {
               <Image
                 source={{ uri: newItemImageUris[0] }}
                 style={{height: 80, width: 80, borderWidth: 0.5, borderRadius: 5, borderColor: 'lightgrey' }}
+                contentFit="cover"
+                cachePolicy="memory-and-disk"
+                transition={100}
+                recyclingKey={newItemImageUris[0]}
               />
             )}
             
@@ -901,7 +970,7 @@ const Add = ({ route, navigation }) => {
                       let items = new Set();
                       snapshot.forEach((childSnapshot) => {
                         let item = childSnapshot.val();
-                        items.add(item.content);
+                        if (item.image) items.add(item.image);
                       })
                       setNumItems(Object.keys(snapshot.val()).length)
                       setItemsInCategory(items)
@@ -1007,7 +1076,12 @@ const Add = ({ route, navigation }) => {
                       borderRadius: 5,
                       borderWidth: 0.5,
                       borderColor: 'lightgray'
-                    }}/>
+                    }}
+                    contentFit="cover"
+                    cachePolicy="memory-and-disk"
+                    transition={100}
+                    recyclingKey={item.image || item.content}
+                    />
                   ) : (
                     <View style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center', backgroundColor: 'lightgray', borderRadius: 5 }}>
                       <Ionicons name="location-sharp" size={40} color="black" />
@@ -1017,7 +1091,7 @@ const Add = ({ route, navigation }) => {
                     <Text style={{ fontWeight: 'bold' }}>{item.content}</Text>
                     <Text style={{ color: 'gray', fontSize: 12 }}>{item.description}</Text>
                   </View>
-                  { itemsInCategory && itemsInCategory.has(item.content) && <Ionicons name="list" size={25} />}
+                  { itemsInCategory && item.image && itemsInCategory.has(item.image) && <Ionicons name="list" size={25} />}
                 </TouchableOpacity>
               )}
               keyExtractor={(item, index) => index.toString()}
@@ -1049,6 +1123,10 @@ const Add = ({ route, navigation }) => {
                   <Image
                     source={{ uri: newItemImageUris[0] }}
                     style={{height: 50, width: 50, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+                    contentFit="cover"
+                    cachePolicy="memory-and-disk"
+                    transition={100}
+                    recyclingKey={newItemImageUris[0]}
                   />
                 )}
                 {newItemDescription.length > 0 && (
@@ -1245,6 +1323,10 @@ const Add = ({ route, navigation }) => {
                     <Image
                       source={{ uri: itemComparisons[binarySearchM].image }}
                       style={{height: 40, width: 40, borderWidth: 0.5, marginRight: 10, borderRadius: 5, borderColor: 'lightgrey' }}
+                      contentFit="cover"
+                      cachePolicy="memory-and-disk"
+                      transition={100}
+                      recyclingKey={itemComparisons[binarySearchM].image || itemComparisons[binarySearchM].content}
                     />
                   )}
                   <View style={{

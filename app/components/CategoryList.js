@@ -1,5 +1,5 @@
-import React, {useEffect, useState, useMemo, useLayoutEffect} from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, TextInput, ScrollView, ActivityIndicator, InteractionManager } from "react-native";
+import React, {useEffect, useState, useMemo, useLayoutEffect, useRef} from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, TextInput, ScrollView, ActivityIndicator, InteractionManager, FlatList } from "react-native";
 import { Image } from 'expo-image';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ref, set, remove, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
@@ -61,6 +61,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [categoryListView, setCategoryListView] = useState(null);
   const [listBackButtonKey, setListBackButtonKey] = useState(0);
   const [isListBackPressing, setIsListBackPressing] = useState(false);
+  const [focusedItemIndex, setFocusedItemIndex] = useState(null);
+  const [scrollViewMode, setScrollViewMode] = useState(false);
+  const flatListRef = useRef(null);
 
   // Keep local editable list data in sync with parent updates before paint to avoid empty-state flicker.
   useLayoutEffect(() => {
@@ -184,6 +187,18 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     }
   }, [focusedItem, categoryListView, profileView]);
 
+  useEffect(() => {
+    if (scrollViewMode && focusedItemIndex !== null) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: focusedItemIndex,
+          animated: false,
+          viewPosition: 0.1,
+        });
+      }, 100);
+    }
+  }, [scrollViewMode, focusedItemIndex]);
+
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
       'like': [10.0, 6.7],
@@ -283,20 +298,16 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     });
   }
 
-  const onItemPress = (item_key) => {
-    const itemRef = ref(database, `items/${item_key}`);
-    get(itemRef).then((snapshot) => {
-      const tempFocusedItem = snapshot.val();
-      tempFocusedItem.key = item_key;
-      setFocusedItem(tempFocusedItem);
-    });
+  const onItemPress = (item_key, index) => {
+    setFocusedItemIndex(index);
+    setScrollViewMode(true);
   }
 
   const ListItemTile = ({ item, item_key, index }) => {
     let scoreColor = getScoreColorHSL(Number(item.score));
 
     return (
-      <TouchableOpacity onPress={() => onItemPress(item_key)}>
+      <TouchableOpacity onPress={() => !editMode && onItemPress(item_key, index)}>
         <View style={{ paddingVertical: 10, borderBottomColor: 'lightgrey', borderBottomWidth: 1, alignItems: 'center', }}>
           <View style={{ flexDirection: 'row', paddingHorizontal: editMode && 10 }}>
             {editMode && (
@@ -555,6 +566,30 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     })
   }
 
+  const ESTIMATED_ITEM_HEIGHT = 550;
+
+  const getItemLayout = (data, index) => ({
+    length: ESTIMATED_ITEM_HEIGHT,
+    offset: ESTIMATED_ITEM_HEIGHT * index,
+    index,
+  });
+
+  const renderScrollableItem = ({ item: [item_key, item], index }) => {
+    const itemWithKey = { ...item, key: item_key };
+
+    return (
+      <NormalItemTile
+        item={itemWithKey}
+        visitingUserId={visitingUserId}
+        navigation={navigation}
+        showComments={false}
+        setFeedView={setProfileView}
+        userKey={userKey}
+        isMyProfile={isMyProfile}
+      />
+    );
+  };
+
   const memoizedList = useMemo(() => {
     if (!shouldRenderList) return [];
 
@@ -575,7 +610,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     return (
       <>
       <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
-        <TouchableOpacity onPress={() => setCategoryListView(null)}> 
+        <TouchableOpacity onPress={() => setCategoryListView(null)}>
           <Ionicons name="arrow-back" size={30} color="black" />
         </TouchableOpacity>
         <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Similarity Score</Text>
@@ -583,6 +618,44 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
       <CategoryComparison onContinuePress={() => setCategoryListView(null)} userCategories={visitingUserCategories} curListData={listData['now']} curListInfo={categoryInfo}/>
       </>
     )
+  }
+
+  if (scrollViewMode) {
+    return (
+      <View style={{ flex: 1, backgroundColor: 'white' }}>
+        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => {
+            setScrollViewMode(false);
+            setFocusedItemIndex(null);
+          }}>
+            <Ionicons name="arrow-back" size={30} color="black" />
+          </TouchableOpacity>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{categoryInfo.category_name}</Text>
+          </View>
+          <View style={{ width: 30 }} />
+        </View>
+
+        <FlatList
+          ref={flatListRef}
+          data={listData[listView]}
+          renderItem={renderScrollableItem}
+          keyExtractor={([item_key, item]) => item_key}
+          initialScrollIndex={focusedItemIndex}
+          getItemLayout={getItemLayout}
+          onScrollToIndexFailed={(info) => {
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
+            }, 100);
+          }}
+          ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#e0e0e0' }} />}
+          windowSize={5}
+          maxToRenderPerBatch={3}
+          initialNumToRender={3}
+          removeClippedSubviews={true}
+        />
+      </View>
+    );
   }
 
   if (focusedItem) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator, Share } from 'react-native';
+import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator } from 'react-native';
 import { Image as ReactImage } from 'react-native';
 import { useFonts } from 'expo-font';
 // import profilePic from '../../assets/images/lebron_profile_pic.webp';
@@ -17,6 +17,7 @@ import FollowUsers from './FollowUsers';
 import GoodreadsImport from './GoodreadsImport';
 import CategoryTile from './CategoryTile';
 import { getAuth, deleteUser } from 'firebase/auth';
+import { triggerExploreInviteShare } from '../../exploreInviteShare';
 
 const styles = StyleSheet.create({
   profilePic: {
