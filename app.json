@@ -8,6 +8,7 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      "expo-apple-authentication",
       [
         "expo-image-picker",
         {
@@ -32,6 +33,7 @@
       "bundleIdentifier": "com.swing.b2capp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "icon": "./assets/AppIcon.png",
+      "usesAppleSignIn": true,
       "runtimeVersion": "1.0.0"
     },
     "android": {
@@ -46,6 +48,10 @@
     },
     "extra": {
       "firebaseApiKey": "AIzaSyAHmo5zkdpph4xa-CgO2eWrwpq56tzC9hE",
+      "googleOAuth": {
+        "iosClientId": "186422493109-g5ab70hh58cnrksrt6llrbei6al4ek86.apps.googleusercontent.com",
+        "webClientId": "186422493109-19djaiqvjh4pg4ofncvitfk5kkhqh4ho.apps.googleusercontent.com"
+      },
       "router": {
         "origin": false
       },

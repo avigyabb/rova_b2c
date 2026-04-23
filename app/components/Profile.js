@@ -166,7 +166,7 @@ const Profile = ({ route, navigation }) => {
   const shareLink = () => {
     Share.share({
       message: 'Follow these steps and rank with me on ambora/social!',
-      url: 'https://testflight.apple.com/join/6VpEA1gh',
+      url: 'https://apps.apple.com/us/app/ambora-social/id6483945060',
     })
     .then((result) => {
       if (result.action === Share.sharedAction) {
