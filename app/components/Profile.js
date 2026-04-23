@@ -164,23 +164,16 @@ const Profile = ({ route, navigation }) => {
     });
   }
 
-  const shareLink = () => {
-    Share.share({
-      message: 'Follow these steps and rank with me on ambora/social!',
-      url: 'https://apps.apple.com/us/app/ambora-social/id6483945060',
-    })
-    .then((result) => {
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          console.log('Shared with activity type: ', result.activityType);
-        } else {
-          console.log('Shared');
-        }
-      } else if (result.action === Share.dismissedAction) {
-        console.log('Dismissed');
-      }
-    })
-    .catch((error) => console.error('Error sharing:', error));
+  const shareLink = async () => {
+    await triggerExploreInviteShare({
+      userKey,
+      onInviteCountUpdated: (nextInviteCount) => {
+        setProfileInfo((currentProfileInfo) => ({
+          ...currentProfileInfo,
+          inviteCount: nextInviteCount,
+        }));
+      },
+    });
   };
 
   const onBackPress = () => {
