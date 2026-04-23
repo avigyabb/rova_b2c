@@ -14,6 +14,7 @@ import axios from 'axios';
 import qs from 'qs';
 import { Buffer } from 'buffer';
 import * as AuthSession from 'expo-auth-session';
+import moment from 'moment';
 
 const styles = StyleSheet.create({
   timesText: {
@@ -27,6 +28,96 @@ const styles = StyleSheet.create({
     backgroundColor: 'lightgrey',
     width: 85,
     borderRadius: 5,
+  },
+  notificationScreen: {
+    backgroundColor: '#f8f8f8',
+    flex: 1,
+  },
+  notificationHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: '#ececec',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  notificationHeaderTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginLeft: 12,
+  },
+  notificationListContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  notificationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    marginBottom: 10,
+    borderRadius: 16,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#efefef',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  notificationAvatar: {
+    height: 44,
+    width: 44,
+    borderWidth: 0.5,
+    marginRight: 12,
+    borderRadius: 22,
+    borderColor: '#dddddd',
+  },
+  notificationBody: {
+    flex: 1,
+    marginRight: 10,
+  },
+  notificationTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+    gap: 8,
+  },
+  notificationName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'black',
+    flex: 1,
+  },
+  notificationTime: {
+    color: '#8c8c8c',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  notificationMessage: {
+    fontSize: 14,
+    lineHeight: 19,
+    color: '#333333',
+  },
+  notificationsEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  notificationsEmptyTitle: {
+    marginTop: 14,
+    fontSize: 18,
+    fontWeight: '700',
+    color: 'black',
+  },
+  notificationsEmptyText: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#777777',
+    textAlign: 'center',
   }
 });
 
@@ -266,45 +357,49 @@ const Feed = ({ route, navigation }) => {
       })
     }, [])
 
-    const date = new Date(item.timestamp);
-    const dateString = date ? date.toLocaleDateString("en-US", {
-      year: 'numeric',
-      month: '2-digit',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }) : 'N/A';
+    const realDateStr = moment(item.timestamp).fromNow();
 
     return (
-      <View style={{ width: '90%', flexDirection: 'row', padding: 10 }}>
+      <View style={styles.notificationCard}>
         <TouchableOpacity onPress={() => {
           setFeedView({userKey: item.evokerId, username: userInfo.username})
           setNotifications(null)
         }}>
           <Image
-            source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
-            style={{height: 30, width: 30, borderWidth: 0.5, marginRight: 10, borderRadius: 15, borderColor: 'lightgrey' }}
+            source={userInfo.profile_pic || profilePic}
+            style={styles.notificationAvatar}
             contentFit="cover"
             cachePolicy="memory-and-disk"
             transition={100}
             recyclingKey={userInfo.profile_pic || item.evokerId}
           />
         </TouchableOpacity>
-        <View>
-          <View style={{ flexDirection: 'row' }}>
-            <Text style={{ fontSize: 13, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
-            <Text style={{ color: 'grey', fontSize: 10 }}>{dateString}</Text>
+        <View style={styles.notificationBody}>
+          <View style={styles.notificationTopRow}>
+            <Text style={styles.notificationName}>{userInfo.name || userInfo.username || 'Someone'}</Text>
+            <Text style={styles.notificationTime}>{realDateStr}</Text>
           </View>
-          <Text style={{ marginTop: 5, flexShrink: 1 }}>{item.content}</Text>
+          <Text style={styles.notificationMessage}>{item.content}</Text>
         </View>
+        <Ionicons name="heart" size={20} color="#eb4034" />
       </View>
     );
   }
 
+  const renderNotificationsEmpty = () => (
+    <View style={styles.notificationsEmpty}>
+      <Ionicons name="heart-outline" size={42} color="#c6c6c6" />
+      <Text style={styles.notificationsEmptyTitle}>No notifications yet</Text>
+      <Text style={styles.notificationsEmptyText}>
+        When people interact with your posts or profile, they&apos;ll show up here.
+      </Text>
+    </View>
+  );
+
   if (notifications) {
     return (
-      <View style={{ backgroundColor: 'white', height: '100%' }}>
-        <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white' }}>
+      <View style={styles.notificationScreen}>
+        <View style={styles.notificationHeader}>
           <TouchableOpacity onPress={() => {
             setNotifications(null)
             setFeedType('For You')
@@ -312,12 +407,14 @@ const Feed = ({ route, navigation }) => {
           }}> 
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Notifications</Text>
+          <Text style={styles.notificationHeaderTitle}>Activity</Text>
         </View>
         <FlatList
           data={notifications}
           renderItem={({ item }) => <NotificationsTile item={item} />}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={notifications.length ? styles.notificationListContent : { flex: 1 }}
+          ListEmptyComponent={renderNotificationsEmpty}
           removeClippedSubviews={true}
           maxToRenderPerBatch={20}
           windowSize={5}
@@ -390,9 +487,9 @@ const Feed = ({ route, navigation }) => {
         <Text style={{ color: 'black', fontSize: 24, fontFamily: 'Poppins Regular' }}>ambora\social</Text>
         <TouchableOpacity onPress={() => getNotifications()}>
           {profileInfo.unreadNotifications ? (
-            <Ionicons name="notifications-sharp" size={28} color="#eb4034"/>
+            <Ionicons name="heart" size={28} color="#eb4034"/>
           ) : (
-            <Ionicons name="notifications-outline" size={28} color="gray"/>
+            <Ionicons name="heart-outline" size={28} color="gray"/>
           )}
         </TouchableOpacity>
       </View>
