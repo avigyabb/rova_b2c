@@ -136,7 +136,7 @@ const GroupsGateScreen = ({ route, navigation }) => (
     route={route}
     navigation={navigation}
     UnlockedComponent={Groups}
-    titleText={`Unlock the group page after inviting friends`}
+    titleText={`Unlock the group page after inviting friends!`}
     subtitleText={`See the top rankers for categories like movies, albums, and more after inviting ${EXPLORE_INVITE_THRESHOLD} friends!`}
   />
 );

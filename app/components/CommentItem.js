@@ -237,7 +237,7 @@ const CommentItem = ({
           </TouchableOpacity>
 
           {/* Action row: Reply and like count */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity onPress={handleReply}>
               <Text style={{ fontSize: 13, fontWeight: '500', color: '#737373' }}>
                 Reply
@@ -245,9 +245,9 @@ const CommentItem = ({
             </TouchableOpacity>
 
             {likeCount > 0 && (
-              <TouchableOpacity onPress={() => setLikesModalVisible(true)}>
+              <TouchableOpacity onPress={() => setLikesModalVisible(true)} style={{ marginLeft: 14 }}>
                 <Text style={{ fontSize: 13, color: '#737373' }}>
-                  {likeCount}
+                  {likeCount} {likeCount === 1 ? 'like' : 'likes'}
                 </Text>
               </TouchableOpacity>
             )}
