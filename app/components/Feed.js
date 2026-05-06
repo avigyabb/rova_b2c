@@ -173,7 +173,7 @@ const Feed = ({ route, navigation }) => {
     get(userFollowingRef).then((snapshot) => {
       if (snapshot.exists()) {
         followingList = Object.keys(snapshot.val());
-        const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(1000));
+        const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(100));
         get(categoryItemsRef).then((inner_snapshot) => {
           if (inner_snapshot.exists()) {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));

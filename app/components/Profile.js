@@ -454,6 +454,9 @@ const Profile = ({ route, navigation }) => {
                 )}
                 numColumns={3}
                 contentContainerStyle={styles.grid}
+                keyExtractor={(item) => item.id}
+                initialNumToRender={12}
+                removeClippedSubviews={false}
               />
             ) : (
               <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>
@@ -568,6 +571,9 @@ const Profile = ({ route, navigation }) => {
                 scrollEnabled={false}
                 numColumns={3}
                 contentContainerStyle={styles.grid}
+                keyExtractor={(item) => item.id}
+                initialNumToRender={12}
+                removeClippedSubviews={false}
               />
             ) : (
               <Text style={{ textAlign: 'center', marginTop: '20%', fontWeight: 'bold', fontSize: 16, color: 'lightgray' }}>

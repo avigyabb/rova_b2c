@@ -321,7 +321,7 @@ const Add = ({ route, navigation }) => {
         const response = await fetch(uri);
         const blob = await response.blob();
         const filename = uri.substring(uri.lastIndexOf('/') + 1);
-        const storageRef = storRef(storage, filename);
+        const storageRef = storRef(storage, `users/${userKey}/${filename}`);
         const uploadTask = uploadBytesResumable(storageRef, blob);
         uploadTask.on('state_changed',
           (snapshot) => {
@@ -981,9 +981,13 @@ const Add = ({ route, navigation }) => {
                 }}
                 fromPage={'Add'}
               />}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(item) => item.id}
               numColumns={3}
               contentContainerStyle={{}}
+              initialNumToRender={9}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={9}
+              windowSize={5}
             />
             </>
           ) : (
@@ -1094,7 +1098,7 @@ const Add = ({ route, navigation }) => {
                   { itemsInCategory && item.image && itemsInCategory.has(item.image) && <Ionicons name="list" size={25} />}
                 </TouchableOpacity>
               )}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(item) => item.id || item.content}
               numColumns={1}
               key={"single-column"}
             />
