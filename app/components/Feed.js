@@ -629,7 +629,7 @@ const Feed = ({ route, navigation }) => {
           keyExtractor={keyExtractor}
           removeClippedSubviews={true}
           maxToRenderPerBatch={10}
-          windowSize={5}
+          windowSize={21}
           initialNumToRender={10}
           numColumns={1}
           key={"single-column"}

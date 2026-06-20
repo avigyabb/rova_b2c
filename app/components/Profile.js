@@ -492,7 +492,7 @@ const Profile = ({ route, navigation }) => {
                 refreshProfile();
               }
             }}
-            scrollEventThrottle={1} // This ensures the scroll position is updated frequently
+            scrollEventThrottle={16}
           >
             {!visitingUserId ? (
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>

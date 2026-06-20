@@ -652,7 +652,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             }, 100);
           }}
           ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#e0e0e0' }} />}
-          windowSize={5}
+          windowSize={21}
           maxToRenderPerBatch={3}
           initialNumToRender={3}
           removeClippedSubviews={true}
