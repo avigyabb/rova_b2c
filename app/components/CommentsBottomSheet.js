@@ -188,15 +188,17 @@ const CommentsBottomSheet = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
         {/* Backdrop */}
         <TouchableWithoutFeedback onPress={onClose}>
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
 
         {/* Modal Content */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <View
           style={styles.modalContent}
         >
           {/* Drag Handle */}
@@ -305,8 +307,8 @@ const CommentsBottomSheet = ({
               />
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -314,6 +316,7 @@ const CommentsBottomSheet = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'flex-end',
   },
   overlay: {
     flex: 1,
@@ -323,7 +326,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    height: '50%',
+    maxHeight: '85%',
+    minHeight: '40%',
   },
   dragHandle: {
     width: 40,

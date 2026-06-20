@@ -622,8 +622,8 @@ const Feed = ({ route, navigation }) => {
             feedType === 'Top Posts' && listData && listData[topPostsTime]
               ? listData[topPostsTime].slice(0, numFeedItems)
               : feedType === 'For You'
-                ? listData
-                : listData.slice(0, numFeedItems)
+                ? (Array.isArray(listData) ? listData : [])
+                : (Array.isArray(listData) ? listData.slice(0, numFeedItems) : [])
           }
           renderItem={renderFeedItem}
           keyExtractor={keyExtractor}
