@@ -759,8 +759,12 @@ const Add = ({ route, navigation }) => {
   }
 
   const onContinuePress = () => {
+    const wasRerank = !!rerankItemKey;
     resetToDefaultAddState();
     getUserCategories();
+    if (wasRerank) {
+      navigation.goBack();
+    }
   }
 
   if (addView === 'addingItem') {
