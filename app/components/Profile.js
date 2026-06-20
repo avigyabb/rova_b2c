@@ -1,4 +1,5 @@
 import React from 'react';
+import { useUser } from '../context/UserContext';
 import { View, Alert, Text, StyleSheet, FlatList, TouchableOpacity, Linking, ScrollView, ActivityIndicator } from 'react-native';
 import { Image as ReactImage } from 'react-native';
 import { useFonts } from 'expo-font';
@@ -61,7 +62,14 @@ const styles = StyleSheet.create({
 
 const Profile = ({ route, navigation }) => {
   const { userKey, setView, fetchUserData, visitingUserId, setFeedView } = route.params;
-  const [profileInfo, setProfileInfo] = useState({});
+  const isOwnProfile = userKey === visitingUserId;
+
+  // For own profile, read from the shared UserContext (no extra Firebase call).
+  // For visiting someone else's profile, fetch their data directly.
+  const { profileInfo: ownProfileInfo } = useUser();
+  const [visitingProfileInfo, setVisitingProfileInfo] = useState({});
+  const profileInfo = isOwnProfile ? (ownProfileInfo || {}) : visitingProfileInfo;
+
   const [categories, setCategories] = useState({});
   const [archivedCategories, setArchivedCategories] = useState([]);
   const [focusedCategory, setFocusedCategory] = useState(null);
@@ -70,7 +78,7 @@ const Profile = ({ route, navigation }) => {
   const [refreshed, setRefreshed] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [loaded] = useFonts({
-    'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
+    'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'),
     'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
     'Hedvig Letters Sans Regular': require('../../assets/fonts/Hedvig_Letters_Sans/HedvigLettersSans-Regular.ttf'),
   });
@@ -81,11 +89,13 @@ const Profile = ({ route, navigation }) => {
   const categoryRequestRef = useRef(0);
 
   const getUserInfo = () => {
+    // Only needed when viewing someone else's profile — own profile data comes from UserContext
+    if (isOwnProfile) return;
     const userRef = ref(database, 'users/' + userKey);
     get(userRef).then((snapshot) => {
       if (snapshot.exists()) {
         setIsFollowing(snapshot.val().followers && snapshot.val().followers.hasOwnProperty(visitingUserId));
-        setProfileInfo(snapshot.val());
+        setVisitingProfileInfo(snapshot.val());
       } else {
         console.log("No user data.");
       }

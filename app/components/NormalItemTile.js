@@ -83,6 +83,19 @@ const styles = StyleSheet.create({
 });
 
 
+// arePropsEqual is the custom comparator for React.memo.
+// React calls this with the OLD props and the NEW props every time the parent re-renders.
+// Return true  → "nothing important changed, skip the re-render"
+// Return false → "something real changed, please redraw this tile"
+//
+// We only check item.key (is it the same post?), item.score (did the rating change?),
+// and topPostsTime (did the time filter change?). Everything else — likes, comments —
+// is managed by the tile's own internal state and does not need to be checked here.
+const arePropsEqual = (prevProps, nextProps) =>
+  prevProps.item.key === nextProps.item.key &&
+  prevProps.item.score === nextProps.item.score &&
+  prevProps.topPostsTime === nextProps.topPostsTime;
+
 const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex, onBlockUser, onReportItem }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
@@ -128,112 +141,101 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
     });
   }
   
-  const getProfileList = async (userIDList) => {
+  const getProfileList = async (userIDList, isCancelled) => {
     const results = await Promise.all(userIDList.map(userID => getProfile(userID).catch(() => null)));
-    results.forEach(addition => { if (addition) { profileList.push(addition); } });
+    if (isCancelled()) return;
+    // filter() creates a brand-new array containing only the non-null results.
+    // We hand that new array to setProfileList so React sees the change and redraws.
+    const newProfileList = results.filter(r => r !== null);
+    setProfileList(newProfileList);
     setLoading(false);
-    return profileList;
   }
   
   useEffect(() => {
-    
-  if (showComments && item.image){
-    setLoading(true);
-    // Define your Firebase database reference
-    const itemsRef = ref(database, 'items');
-    
-    // Create a query to fetch items with the specified image
-    const itemsQuery = query(itemsRef, orderByChild('image'), equalTo(item.image));
-    
-    // Use the `get` function to fetch the data once
-    get(itemsQuery).then((snapshot) => {
-      if (snapshot.exists()) {
-        const unfilteredData = snapshot.val();
-        const data = [];
-    
-        // Filter the data based on the content
-        for (let itemId in unfilteredData) {
-          console.log(itemId);
-          if (unfilteredData[itemId].content === item.content) {
-            data.push(unfilteredData[itemId]);
+    // cancelled is a plain true/false variable (not React state).
+    // When this tile unmounts, React runs the cleanup function at the bottom
+    // of this useEffect, which sets cancelled = true.
+    // Every Firebase callback checks "if (cancelled) return;" before touching state,
+    // so ghost updates from off-screen tiles can never cause rubberbanding.
+    let cancelled = false;
+    const isCancelled = () => cancelled;
+
+    if (showComments && item.image) {
+      setLoading(true);
+      const itemsRef = ref(database, 'items');
+      const itemsQuery = query(itemsRef, orderByChild('image'), equalTo(item.image));
+
+      get(itemsQuery).then((snapshot) => {
+        // Tile already unmounted — do nothing
+        if (cancelled) return;
+
+        if (snapshot.exists()) {
+          const unfilteredData = snapshot.val();
+
+          // newUserIDs and newUserRatings are plain local variables, not React state.
+          // It is perfectly safe to .push() into them — we are just building a regular
+          // JavaScript array. We will call setCompareUserID/setCompareUserRating once
+          // at the end with brand-new arrays so React notices the change.
+          const newUserIDs = [];
+          const newUserRatings = [];
+
+          for (const key in unfilteredData) {
+            const entry = unfilteredData[key];
+            const userId = entry['user_id'];
+            if (userId === item.user_id) continue;   // skip own post
+            if (entry['score'] === -1) continue;      // skip unrated
+            if (entry['content'] !== item.content) continue; // skip different content
+            newUserIDs.push(userId);
+            newUserRatings.push(entry['score']);
           }
+
+          if (!cancelled) {
+            setCompareUserID(newUserIDs);
+            setCompareUserRating(newUserRatings);
+            getProfileList(newUserIDs, isCancelled);
+          }
+        } else {
+          if (!cancelled) setLoading(false);
         }
-    
-        console.log("data: ", data);
-    
-        // Extract user IDs and scores from the filtered data
-        var same_user = false;
-        // for (const key in data) {
-        //   for (const key2 in data[key]) {
-        //     if (data[key][key2] === item.user_id) {
-        //       continue;
-        //     }
-        //     if (key2 === 'user_id') {
-        //       compareUserID.push(data[key][key2]);
-        //     } else if (key2 === 'score') {
-        //       compareUserRating.push(data[key][key2]);
-        //     }
-        //   }
-        // }
-
-        for (const key in data) {
-          const userId = data[key]['user_id'];
-
-          // Check if the current user ID matches item.userId
-          if (userId === item.user_id) {
-            continue; // Skip this iteration for both user_id and score
-          }
-
-          if (data[key]['score'] === -1) {
-            continue; // Skip the entire iteration if score is -1
-          }
-
-          for (const key2 in data[key]) {
-            if (key2 === 'user_id') {
-              compareUserID.push(userId);
-            } else if (key2 === 'score') {
-              compareUserRating.push(data[key][key2]);
-            }
-          }
+      }).catch((error) => {
+        if (!cancelled) {
+          console.error('Error Fetching Data: ', error);
+          setLoading(false);
         }
-
-
-        console.log(compareUserID);
-        console.log(compareUserRating);
-    
-        // Call a function to process the user IDs
-        getProfileList(compareUserID);
-
-        
-      } else {
-        console.log("No data available");
-      }
-    }).catch((error) => {
-      console.error('Error Fetching Data: ', error);
-    });
-  }
+      });
+    }
 
     const userRef = ref(database, `users/${item.user_id}`);
     get(userRef).then((snapshot) => {
+      if (cancelled) return;
       if (snapshot.exists()) {
-        setUsername(snapshot.val().name)
+        setUsername(snapshot.val().name);
         setUserImage(snapshot.val().profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
         setIsVerified(snapshot.val().user_type === 'verified');
       }
     }).catch((error) => {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching user:", error);
     });
 
     setLikes(item.likes || {});
     setDislikes(item.dislikes || {});
     setStars(item.stars || {});
-    setComments( item.comments ? 
-      Object.keys(item.comments).map(key => ({
-        id: key,
-        ...item.comments[key]
-      })).sort((a, b) => a.timestamp - b.timestamp) : []
-    );    
+    setComments(
+      item.comments
+        ? Object.keys(item.comments)
+            .map(key => ({ id: key, ...item.comments[key] }))
+            .sort((a, b) => a.timestamp - b.timestamp)
+        : []
+    );
     setItemDescription(item.description);
+
+    // Cleanup function: React runs this automatically when the tile unmounts
+    // (goes off screen) or when item/topPostsTime changes before the next run.
+    // Setting cancelled = true is the "sticky note on the door" — any Firebase
+    // callback that arrives after this will see it and walk away quietly.
+    return () => {
+      cancelled = true;
+    };
   }, [topPostsTime, item])
 
   let scoreColor = getScoreColorHSL(Number(item.score));

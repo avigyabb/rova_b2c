@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useUser } from '../context/UserContext';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import RNPickerSelect from 'react-native-picker-select';
@@ -138,7 +139,9 @@ const Add = ({ route, navigation }) => {
   const [loadingItems, setLoadingItems] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
   const [taggedUsers, setTaggedUsers] = useState([]);
-  const [userProfilePic, setUserProfilePic] = useState(null);
+  // Read profile pic from the shared UserContext — no Firebase call needed
+  const { profileInfo: currentUserProfile } = useUser();
+  const userProfilePic = currentUserProfile?.profile_pic || null;
 
   const resetRankingState = () => {
     setRankMode(false);
@@ -191,11 +194,6 @@ const Add = ({ route, navigation }) => {
   useEffect(() => {
     getUserCategories();
     getSpotifyAccessToken();
-    get(ref(database, 'users/' + userKey)).then((snapshot) => {
-      if (snapshot.exists()) {
-        setUserProfilePic(snapshot.val().profile_pic || null);
-      }
-    });
   }, []);
 
   // Hydrate one-time payloads when Add is opened from another screen (rerank/add-from-post).
@@ -264,11 +262,6 @@ const Add = ({ route, navigation }) => {
       setRerankItemKey(null);
     } else {
       getUserCategories();
-      get(ref(database, 'users/' + userKey)).then((snapshot) => {
-        if (snapshot.exists()) {
-          setUserProfilePic(snapshot.val().profile_pic || null);
-        }
-      });
     }
   }, [isFocused]);
 

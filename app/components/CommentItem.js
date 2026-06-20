@@ -236,21 +236,13 @@ const CommentItem = ({
             </View>
           </TouchableOpacity>
 
-          {/* Action row: Reply and like count */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Action row: Reply only */}
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity onPress={handleReply}>
               <Text style={{ fontSize: 13, fontWeight: '500', color: '#737373' }}>
                 Reply
               </Text>
             </TouchableOpacity>
-
-            {likeCount > 0 && (
-              <TouchableOpacity onPress={() => setLikesModalVisible(true)}>
-                <Text style={{ fontSize: 13, color: '#737373' }}>
-                  {likeCount}
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           {/* View replies toggle */}
@@ -266,14 +258,23 @@ const CommentItem = ({
           )}
         </View>
 
-        {/* Like Icon */}
-        <TouchableOpacity onPress={handleLike} style={{ paddingLeft: 12, paddingTop: 4 }}>
-          <Ionicons
-            name={liked ? "heart" : "heart-outline"}
-            size={16}
-            color={liked ? "#000" : "#737373"}
-          />
-        </TouchableOpacity>
+        {/* Like Icon + Count stacked */}
+        <View style={{ alignItems: 'center', paddingLeft: 12, paddingTop: 4 }}>
+          <TouchableOpacity onPress={handleLike}>
+            <Ionicons
+              name={liked ? "heart" : "heart-outline"}
+              size={16}
+              color={liked ? "#000" : "#737373"}
+            />
+          </TouchableOpacity>
+          {likeCount > 0 && (
+            <TouchableOpacity onPress={() => setLikesModalVisible(true)}>
+              <Text style={{ fontSize: 11, color: '#737373', marginTop: 2 }}>
+                {likeCount}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Render nested replies */}
