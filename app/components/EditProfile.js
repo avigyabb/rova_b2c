@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { database, storage } from '../../firebaseConfig';
 import { ref, set, onValue, off, push, query, equalTo, orderByChild, get, update } from "firebase/database";
+import { compressImage } from '../utils/imageUtils';
 
 
 const styles = StyleSheet.create({
@@ -51,13 +52,14 @@ const EditProfile = ({ userKey, onBackPress, getUserInfo }) => {
 
   const changeProfilePic = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All, // ~ may need to change to just pictures
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
-      aspect: [4,3], // search up
-      quality: 1,
+      aspect: [4, 3],
+      quality: 0.8,
     });
-
-    setProfilePicUri(result.assets[0].uri);
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+    const compressed = await compressImage(result.assets[0].uri);
+    setProfilePicUri(compressed);
   }
 
   const saveProfile = async () => {
@@ -80,7 +82,7 @@ const EditProfile = ({ userKey, onBackPress, getUserInfo }) => {
       const response = await fetch(profilePicUri);
       const blob = await response.blob();
       const filename = profilePicUri.substring(profilePicUri.lastIndexOf('/') + 1);
-      const storageRef = storRef(storage, filename);
+      const storageRef = storRef(storage, `users/${userKey}/${filename}`);
       const uploadTask = uploadBytesResumable(storageRef, blob);
     
       uploadTask.on('state_changed',

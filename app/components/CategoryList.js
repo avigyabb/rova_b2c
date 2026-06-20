@@ -4,9 +4,10 @@ import { Image } from 'expo-image';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ref, set, remove, query, orderByChild, equalTo, get, update, runTransaction } from "firebase/database";
 import { database, storage } from '../../firebaseConfig';
-import { getStorage, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import Hyperlink from 'react-native-hyperlink';
 import * as ImagePicker from 'expo-image-picker';
+import { compressImage } from '../utils/imageUtils';
 import NormalItemTile from "./NormalItemTile";
 import Profile from './Profile';
 import CategoryComparison from "./CategoryListComponents/CategoryComparison";
@@ -402,7 +403,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         const response = await fetch(categoryImage);
         const blob = await response.blob();
         const filename = categoryImage.substring(categoryImage.lastIndexOf('/') + 1);
-        const storageRef = storageRef(storage, filename);
+        const storageRef = storRef(storage, `users/${userKey}/${filename}`);
         const uploadTask = uploadBytesResumable(storageRef, blob);
 
         uploadTask.on('state_changed',
@@ -543,10 +544,12 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
-      aspect: [4,3],
-      quality: 1,
+      aspect: [4, 3],
+      quality: 0.8,
     });
-    setCategoryImage(result.assets[0].uri);
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+    const compressed = await compressImage(result.assets[0].uri);
+    setCategoryImage(compressed);
   }; 
 
   const onRerankItemPress = () => {

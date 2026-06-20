@@ -17,6 +17,7 @@ import { database } from '../firebaseConfig';
 import { onValue, ref } from 'firebase/database';
 import { EXPLORE_INVITE_THRESHOLD, getRemainingExploreInvites } from '../exploreInviteConfig';
 import { triggerExploreInviteShare } from '../exploreInviteShare';
+import { UserProvider } from './context/UserContext';
 // import * as Analytics from 'expo-firebase-analytics';
 // import analytics from '@react-native-firebase/analytics';
 
@@ -286,7 +287,9 @@ const App = () => {
             {view === 'pickCategory' ? (
               <PickCategory userKey={userKey} setView={() => setView(null)} />
             ) : (
+              <UserProvider userKey={userKey}>
               <MyTabs userKey={userKey} setView={setView} fetchUserData={fetchUserData} />
+            </UserProvider>
             )}
           </>
         ) : (

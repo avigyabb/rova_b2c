@@ -8,6 +8,7 @@ import { database, storage } from '../../firebaseConfig';
 import { ref, set, onValue, off, push, query, equalTo, orderByChild, get } from "firebase/database"; // Import 'ref' and 'set' from the database package
 import RNPickerSelect from 'react-native-picker-select';
 import { signInCategories } from '../consts';
+import { compressImage } from '../utils/imageUtils';
 import CategoryTile from './CategoryTile';
 
 const styles = StyleSheet.create({
@@ -46,7 +47,7 @@ const AddCategory = ({ onBackPress, userKey }) => {
       const response = await fetch(newCategoryImageUri);
       const blob = await response.blob();
       const filename = newCategoryImageUri.substring(newCategoryImageUri.lastIndexOf('/') + 1);
-      const storageRef = storRef(storage, filename); // Use the previously renamed 'ref' function
+      const storageRef = storRef(storage, `users/${userKey}/${filename}`);
       const uploadTask = uploadBytesResumable(storageRef, blob);
 
       uploadTask.on('state_changed',
@@ -167,12 +168,14 @@ const AddCategory = ({ onBackPress, userKey }) => {
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All, // ~ may need to change to just pictures
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
-      aspect: [4,3], // search up
-      quality: 1,
+      aspect: [4, 3],
+      quality: 0.8,
     });
-    setNewCategoryImageUri(result.assets[0].uri);
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+    const compressed = await compressImage(result.assets[0].uri);
+    setNewCategoryImageUri(compressed);
     setNewCategoryImageSet(true);
   }; 
 

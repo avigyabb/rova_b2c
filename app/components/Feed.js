@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useUser } from '../context/UserContext';
 import { Text, View, FlatList, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import { database } from '../../firebaseConfig';
 import { ref, onValue, off, query, orderByChild, equalTo, limitToLast, endBefore, startAt, get, update, set, push } from "firebase/database";
@@ -52,7 +53,7 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const Feed = ({ route, navigation }) => {
-  const [profileInfo, setProfileInfo] = useState({});
+  const { profileInfo } = useUser();
   const [listData, setListData] = useState([]);
   const [feedView, setFeedView] = useState(null);
   const [refreshed, setRefreshed] = useState(false);
@@ -119,17 +120,6 @@ const Feed = ({ route, navigation }) => {
         console.error("Error fetching categories:", error);
       });
   
-      const userRef = ref(database, 'users/' + userKey);
-      get(userRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          console.log(snapshot.val());
-          setProfileInfo(snapshot.val());
-        } else {
-          console.log("No user data.");
-        }
-      }).catch((error) => {
-        console.error(error);
-      });
     })
   }
 
@@ -168,12 +158,13 @@ const Feed = ({ route, navigation }) => {
 
   const getFollowingListData = () => {
     setRefreshed(true);
+    setListData([]);
     const userFollowingRef = ref(database, 'users/' + userKey + '/following');
     let followingList = [];
     get(userFollowingRef).then((snapshot) => {
       if (snapshot.exists()) {
         followingList = Object.keys(snapshot.val());
-        const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(1000));
+        const categoryItemsRef = query(ref(database, 'items'), orderByChild('timestamp'), limitToLast(500));
         get(categoryItemsRef).then((inner_snapshot) => {
           if (inner_snapshot.exists()) {
             const tempListData = Object.entries(inner_snapshot.val()).map(([key, value]) => ({ key, ...value }));
@@ -184,24 +175,16 @@ const Feed = ({ route, navigation }) => {
           setRefreshed(false);
         }).catch((error) => {
           console.error("Error fetching categories:", error);
+          setRefreshed(false);
         });
       } else {
         setNumFollowers(0);
+        setRefreshed(false);
       }
     })
 
-    const userRef = ref(database, 'users/' + userKey);
-    get(userRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        setProfileInfo(snapshot.val());
-      } else {
-        console.log("No user data.");
-      }
-    }).catch((error) => {
-      console.error(error);
-    });
   }
-  
+
   const getTopPostsListData = async () => {
     setRefreshed(true);
 
@@ -260,15 +243,6 @@ const Feed = ({ route, navigation }) => {
       setRefreshed(false);
     }
 
-    get(ref(database, 'users/' + userKey)).then((snapshot) => {
-      if (snapshot.exists()) {
-        setProfileInfo(snapshot.val());
-      } else {
-        console.log("No user data.");
-      }
-    }).catch((error) => {
-      console.error(error);
-    });
   }
 
   const getNotifications = () => {
@@ -353,7 +327,7 @@ const Feed = ({ route, navigation }) => {
     } else if (feedType === 'Top Posts') {
       getTopPostsListData();
     }
-  }, [response, blockedUserIds]);
+  }, [response, blockedUserIds, feedType]);
 
   const onBlockUserLocal = useCallback((blockedUserId) => {
     setBlockedUserIds((prev) => {
@@ -604,7 +578,6 @@ const Feed = ({ route, navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {
           setFeedType('Following')
-          getFollowingListData();
         }}>
           <Text style={feedType === 'Following' ? { color: 'black', fontSize: 16, fontWeight: 'bold' } : { color: 'gray', fontSize: 14, fontWeight: 'bold' }}>Following</Text>
         </TouchableOpacity>

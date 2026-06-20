@@ -7,6 +7,7 @@ import PeopleList from './AddFlow/TagFriends';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import axios from 'axios' 
 import * as FileSystem from 'expo-file-system'
+import { compressImage } from '../utils/imageUtils'
 
 
 const styles = StyleSheet.create({
@@ -76,7 +77,7 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
       selectionLimit: remaining,
-      quality: 1,
+      quality: 0.8,
     });
 
     if (result.canceled || !result.assets || result.assets.length === 0) {
@@ -94,7 +95,8 @@ const AddPost = ({ setNewItemDescription, newItemDescription, newItemImageUris, 
       }
     }
 
-    setNewItemImageUris([...newItemImageUris, ...selectedUris]);
+    const compressedUris = await Promise.all(selectedUris.map(uri => compressImage(uri)));
+    setNewItemImageUris([...newItemImageUris, ...compressedUris]);
     setAddedCustomImage(true);
   }; 
   // const getLocation = async () => {
