@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { Image } from 'expo-image';
@@ -759,8 +759,19 @@ const Add = ({ route, navigation }) => {
   }
 
   const onContinuePress = () => {
+    const wasRerank = !!rerankItemKey;
+    const categoryId = newItemCategory;
+    const categoryName = newItemCategoryName;
+    const categoryNumItems = numItems;
     resetToDefaultAddState();
     getUserCategories();
+    if (wasRerank) {
+      navigation.navigate('Profile', {
+        openCategoryId: categoryId,
+        openCategoryName: categoryName,
+        openNumItems: categoryNumItems,
+      });
+    }
   }
 
   if (addView === 'addingItem') {
@@ -989,7 +1000,18 @@ const Add = ({ route, navigation }) => {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ marginTop: 5, fontWeight: 'bold', fontSize: 20 }}>{newItemCategoryName}</Text>
               <TouchableOpacity onPress={() => {
-                resetToDefaultAddState()
+                const wasRerank = !!rerankItemKey;
+                const categoryId = newItemCategory;
+                const categoryName = newItemCategoryName;
+                const categoryNumItems = numItems;
+                resetToDefaultAddState();
+                if (wasRerank) {
+                  navigation.navigate('Profile', {
+                    openCategoryId: categoryId,
+                    openCategoryName: categoryName,
+                    openNumItems: categoryNumItems,
+                  });
+                }
               }}>
                 <View style={{ backgroundColor: 'lightgrey', padding: 8, fontSize: 13, borderRadius: 10 }}>
                   <Text style={{ fontWeight: 'bold' }}>Back</Text>

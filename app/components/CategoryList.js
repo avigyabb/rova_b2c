@@ -219,6 +219,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     return similarBucketItems;
   }
 
+
   const deleteImageFromStorage = async (imageUri) => {
     try {
       const storage = getStorage();
@@ -342,12 +343,17 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
               </View>
             </View>
             { !editMode && (
-              <View>
+              <View style={{ alignItems: 'center' }}>
                 <View style={[styles.listTileScore, { borderColor: scoreColor, marginLeft: 'auto' }]}>
                   <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
                 </View>
+                { isMyProfile && (
+                  <TouchableOpacity onPress={() => onRerankItemFromList(item, item_key)}>
+                    <Text style={{ fontSize: 11, color: 'gray', marginTop: 4 }}>Rerank</Text>
+                  </TouchableOpacity>
+                )}
                 { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryInfo.category_type !== "" && (
-                  <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} /> 
+                  <MaterialIcons name="playlist-add-check-circle" size={20} color="gray" style={{ marginLeft: 'auto', marginTop: 'auto' }} />
                 )}
               </View>
             )}
@@ -569,6 +575,23 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     })
   }
 
+  const onRerankItemFromList = (item, item_key) => {
+    navigation.navigate('Add', {
+      itemName: item.content,
+      itemDescription: item.description,
+      itemImage: [item.image],
+      itemCategory: item.category_id,
+      itemCategoryName: item.category_name,
+      trackUri: item.trackUri,
+      itemId: item.id,
+      itemContentDescription: item.contentDescription,
+      numItems: numItems,
+      rerankItemKey: item_key,
+      taggedUser: null,
+      presetImage: categoryInfo.presetImage
+    });
+  }
+
   const ESTIMATED_ITEM_HEIGHT = 550;
 
   const getItemLayout = (data, index) => ({
@@ -652,7 +675,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             }, 100);
           }}
           ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#e0e0e0' }} />}
-          windowSize={5}
+          windowSize={21}
           maxToRenderPerBatch={3}
           initialNumToRender={3}
           removeClippedSubviews={true}

@@ -139,6 +139,13 @@ const Profile = ({ route, navigation }) => {
     }
   }, [profileInfo?.profile_pic]);
 
+  useEffect(() => {
+    const { openCategoryId, openCategoryName, openNumItems } = route.params || {};
+    if (!openCategoryId) return;
+    onCategoryPress(openCategoryName, openCategoryId, openNumItems || 0);
+    navigation.setParams({ openCategoryId: undefined, openCategoryName: undefined, openNumItems: undefined });
+  }, [route.params?.openCategoryId]);
+
   const onCategoryPress = (category_name, category_id, num_items) => {
     const requestId = ++categoryRequestRef.current;
 
@@ -492,7 +499,7 @@ const Profile = ({ route, navigation }) => {
                 refreshProfile();
               }
             }}
-            scrollEventThrottle={1} // This ensures the scroll position is updated frequently
+            scrollEventThrottle={16}
           >
             {!visitingUserId ? (
               <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center', width: '100%', paddingHorizontal: 20 }}>
