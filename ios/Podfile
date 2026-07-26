@@ -60,5 +60,18 @@ target 'ambora' do
         end
       end
     end
+
+    # Fix fmt build failure under Xcode 26 / Apple Clang 21. React Native on Expo
+    # SDK 54 bundles fmt 11.0.2, whose consteval format-string checks the newer
+    # compiler rejects ("fmt consteval ... is not a constant expression"). Flipping
+    # FMT_USE_CONSTEVAL to 0 falls back to constexpr; the produced binary is equivalent.
+    Dir.glob(File.join(installer.sandbox.root, '**', 'fmt', '**', '*.h')).each do |header|
+      contents = File.read(header)
+      next unless contents.include?('FMT_USE_CONSTEVAL')
+      patched = contents.gsub(/(#\s*define\s+FMT_USE_CONSTEVAL\s+)1\b/) { "#{$1}0" }
+      next if patched == contents
+      File.write(header, patched)
+      Pod::UI.puts "[fmt-consteval-fix] Patched #{header}"
+    end
   end
 end

@@ -21,7 +21,7 @@
     },
     "production": {
       "ios": {
-        "image": "macos-sequoia-15.5-xcode-16.4"
+        "image": "macos-tahoe-26.5-xcode-26.6"
       },
       "channel": "production"
     }
