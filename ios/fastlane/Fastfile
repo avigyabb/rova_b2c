@@ -1,0 +1,73 @@
+# Public App Store release automation for Ambora.
+#
+# EAS builds & uploads the binary to App Store Connect (TestFlight). These lanes do
+# the remaining "public release" paperwork from the CLI: create/update the App Store
+# version, attach the latest processed build, set the "What's New" text, and submit
+# for App Store review (with automatic release once Apple approves).
+#
+# Auth uses an App Store Connect API key (.p8). Provide these via ios/fastlane/.env
+# (git-ignored) or the shell environment:
+#   ASC_KEY_ID      – the key's Key ID
+#   ASC_ISSUER_ID   – the Issuer ID shown on the Keys page
+#   ASC_KEY_PATH    – optional; defaults to the single .p8 in ios/private_keys/
+# Optional per-release overrides:
+#   APP_VERSION     – marketing version (defaults to 1.0.44)
+#   RELEASE_NOTES   – the "What's New" text
+#   BUILD_NUMBER    – specific build to attach (defaults to the latest processed one)
+
+default_platform(:ios)
+
+# Build the App Store Connect API key object shared by every lane.
+def asc_api_key
+  key_path = ENV["ASC_KEY_PATH"] ||
+             Dir[File.expand_path("../private_keys/AuthKey_*.p8", __dir__)].first
+  unless key_path && File.exist?(key_path)
+    UI.user_error!("No App Store Connect .p8 key found. Put it in ios/private_keys/ (AuthKey_XXXX.p8) or set ASC_KEY_PATH.")
+  end
+
+  app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+    key_filepath: key_path,
+    duration: 1200,
+    in_house: false
+  )
+end
+
+platform :ios do
+  desc "Read-only check: authenticate with the ASC API key and print the latest build"
+  lane :verify do
+    api_key = asc_api_key
+    build = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: "com.swing.b2capp"
+    )
+    UI.success("✅ Authenticated with App Store Connect. Latest TestFlight build number: #{build}")
+  end
+
+  desc "Create/update the App Store version, attach latest build, and submit for review"
+  lane :release do |options|
+    api_key = asc_api_key
+
+    version = options[:version] || ENV["APP_VERSION"] || "1.0.44"
+    notes   = options[:notes]   || ENV["RELEASE_NOTES"] || "Bug fixes and improvements."
+
+    upload_to_app_store(
+      api_key: api_key,
+      app_identifier: "com.swing.b2capp",
+      app_version: version,
+      build_number: options[:build] || ENV["BUILD_NUMBER"], # nil => latest processed build
+      release_notes: { "en-US" => notes },
+      submit_for_review: true,
+      automatic_release: true,
+      force: true,                    # skip the interactive HTML metadata preview
+      run_precheck_before_submit: true,
+      skip_screenshots: true,         # don't touch existing screenshots
+      overwrite_screenshots: false,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_uses_idfa: false  # answer the IDFA question so submission doesn't stall
+      }
+    )
+  end
+end

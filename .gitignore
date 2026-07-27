@@ -1,2 +1,12 @@
 node_modules
 .worktrees
+
+# App Store Connect API key — PRIVATE, never commit
+*.p8
+
+# fastlane
+ios/fastlane/.env
+ios/fastlane/.env.*
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/test_output/
