@@ -62,9 +62,10 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   const [categoryListView, setCategoryListView] = useState(null);
   const [listBackButtonKey, setListBackButtonKey] = useState(0);
   const [isListBackPressing, setIsListBackPressing] = useState(false);
-  const [focusedItemIndex, setFocusedItemIndex] = useState(null);
+  const [focusedItemKey, setFocusedItemKey] = useState(null);
   const [scrollViewMode, setScrollViewMode] = useState(false);
   const flatListRef = useRef(null);
+  const itemHeightsRef = useRef({});
 
   // Keep local editable list data in sync with parent updates before paint to avoid empty-state flicker.
   useLayoutEffect(() => {
@@ -189,16 +190,19 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }, [focusedItem, categoryListView, profileView]);
 
   useEffect(() => {
-    if (scrollViewMode && focusedItemIndex !== null) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: focusedItemIndex,
-          animated: false,
-          viewPosition: 0.1,
-        });
-      }, 100);
+    if (scrollViewMode && focusedItemKey !== null) {
+      const scrollToFocused = () => {
+        const idx = listData[listView].findIndex(([k]) => k === focusedItemKey);
+        if (idx < 0) return;
+        const itemsAbove = listData[listView].slice(0, idx);
+        const itemsHeight = itemsAbove.reduce((sum, [k]) => sum + (itemHeightsRef.current[k] ?? 0), 0);
+        const separatorsHeight = itemsAbove.length;
+        flatListRef.current?.scrollToOffset({ offset: itemsHeight + separatorsHeight, animated: false });
+      };
+      setTimeout(scrollToFocused, 250);
+      setTimeout(scrollToFocused, 700);
     }
-  }, [scrollViewMode, focusedItemIndex]);
+  }, [scrollViewMode, focusedItemKey]);
 
   function recalculateItems(similarBucketItems, item_bucket) {
     const minMaxMap = {
@@ -301,7 +305,7 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   const onItemPress = (item_key, index) => {
-    setFocusedItemIndex(index);
+    setFocusedItemKey(item_key);
     setScrollViewMode(true);
   }
 
@@ -348,8 +352,8 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
                   <Text style={{ color: scoreColor, fontWeight: 'bold' }}>{item.score < 0 ? '...' : item.score.toFixed(1)}</Text>
                 </View>
                 { isMyProfile && (
-                  <TouchableOpacity onPress={() => onRerankItemFromList(item, item_key)}>
-                    <Text style={{ fontSize: 11, color: 'gray', marginTop: 4 }}>Rerank</Text>
+                  <TouchableOpacity onPress={() => onListItemMenuPress(item, item_key)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="ellipsis-horizontal" size={16} color="gray" style={{ marginTop: 4 }} />
                   </TouchableOpacity>
                 )}
                 { visitingUserId !== userKey && itemsInCategory && itemsInCategory.has(item.image) && categoryInfo.category_type !== "" && (
@@ -546,6 +550,18 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     );
   };
 
+  const onFocusedItemMenuPress = () => {
+    Alert.alert(
+      "Item options",
+      "",
+      [
+        { text: "Rerank", onPress: () => onRerankItemPress() },
+        { text: "Edit", onPress: () => onEditPress() },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -592,29 +608,21 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
     });
   }
 
-  const ESTIMATED_ITEM_HEIGHT = 550;
-
-  const getItemLayout = (data, index) => ({
-    length: ESTIMATED_ITEM_HEIGHT,
-    offset: ESTIMATED_ITEM_HEIGHT * index,
-    index,
-  });
-
-  const renderScrollableItem = ({ item: [item_key, item], index }) => {
-    const itemWithKey = { ...item, key: item_key };
-
-    return (
-      <NormalItemTile
-        item={itemWithKey}
-        visitingUserId={visitingUserId}
-        navigation={navigation}
-        showComments={false}
-        setFeedView={setProfileView}
-        userKey={userKey}
-        isMyProfile={isMyProfile}
-      />
+  const onListItemMenuPress = (item, item_key) => {
+    Alert.alert(
+      "Item options",
+      "",
+      [
+        { text: "Rerank", onPress: () => onRerankItemFromList(item, item_key) },
+        { text: "Edit", onPress: () => {
+          setFocusedItem({ ...item, key: item_key });
+          setFocusedItemDescription(item.description ?? '');
+          setEditMode(true);
+        } },
+        { text: "Cancel", style: "cancel" },
+      ]
     );
-  };
+  }
 
   const memoizedList = useMemo(() => {
     if (!shouldRenderList) return [];
@@ -647,12 +655,16 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
   }
 
   if (scrollViewMode) {
+    const focusedIndex = focusedItemKey
+      ? listData[listView].findIndex(([k]) => k === focusedItemKey)
+      : -1;
     return (
       <View style={{ flex: 1, backgroundColor: 'white' }}>
         <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', alignItems: 'center' }}>
           <TouchableOpacity onPress={() => {
             setScrollViewMode(false);
-            setFocusedItemIndex(null);
+            setFocusedItemKey(null);
+            itemHeightsRef.current = {};
           }}>
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
@@ -665,20 +677,30 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
         <FlatList
           ref={flatListRef}
           data={listData[listView]}
-          renderItem={renderScrollableItem}
-          keyExtractor={([item_key, item]) => item_key}
-          initialScrollIndex={focusedItemIndex}
-          getItemLayout={getItemLayout}
-          onScrollToIndexFailed={(info) => {
-            setTimeout(() => {
-              flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
-            }, 100);
+          keyExtractor={([k]) => k}
+          initialNumToRender={listData[listView].length}
+          renderItem={({ item: [item_key, item], index }) => {
+            const distance = focusedIndex === -1 ? Infinity : Math.abs(index - focusedIndex);
+            const priority = distance <= 5 ? 'high' : 'low';
+            return (
+              <View onLayout={(e) => { itemHeightsRef.current[item_key] = e.nativeEvent.layout.height; }}>
+                <NormalItemTile
+                  item={{ ...item, key: item_key }}
+                  visitingUserId={visitingUserId}
+                  navigation={navigation}
+                  showComments={false}
+                  setFeedView={setProfileView}
+                  userKey={userKey}
+                  isMyProfile={isMyProfile}
+                  imagePriority={priority}
+                />
+              </View>
+            );
           }}
           ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#e0e0e0' }} />}
           windowSize={21}
-          maxToRenderPerBatch={3}
-          initialNumToRender={3}
-          removeClippedSubviews={true}
+          maxToRenderPerBatch={2}
+          removeClippedSubviews={false}
         />
       </View>
     );
@@ -714,14 +736,9 @@ const CategoryList = ({ focusedCategory, focusedList, onBackPress, focusedCatego
             <Text style={{ fontSize: 15, fontWeight: 'bold' }}>Done</Text>
           </TouchableOpacity>
         ) : isMyProfile ? (
-          <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity onPress={() => onRerankItemPress()}>
-            <Text style={{ fontSize: 15, marginRight: 30 }}>Rerank</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onEditPress()}>
+          <TouchableOpacity onPress={() => onFocusedItemMenuPress()}>
             <Ionicons name="ellipsis-horizontal" size={22} color="black" />
           </TouchableOpacity>
-          </View>
         ) : (
           <Text>       </Text>
         )}
