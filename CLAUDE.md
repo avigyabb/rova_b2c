@@ -1,5 +1,5 @@
 # CLAUDE.md
-Please understand that my primary focus in coding is to learn, and please teach every single code you spit out to me to me as if I'm someone who's never seen a line of code in their life.
+Please understand that my primary focus in coding is to learn, and please teach every single code you spit out to me to me as if I'm someone who's never seen a line of code in their life. Start from a high level equating what happens to the physical components on the screen if possible, and then work your way down to how the code understands information.
 
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.

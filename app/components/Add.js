@@ -121,6 +121,7 @@ const Add = ({ route, navigation }) => {
 
   const [binarySearchM, setBinarySearchM] = useState(0);
   const [newItemFinalScore, setNewItemFinalScore] = useState(-1);
+  const tooToughKeysRef = useRef(new Set());
   const [loaded] = useFonts({
     'Poppins Regular': require('../../assets/fonts/Poppins-Regular.ttf'), 
     'Poppins Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
@@ -339,7 +340,7 @@ const Add = ({ route, navigation }) => {
 
   // update 4 here ***
   // I've had errors where some fields in the database don't have a field causing an error that is not logged
-  const addNewItem = async (newItemBucket, newBinarySearchM, isNewCard, dupKey) => {
+  const addNewItem = async (newItemBucket, newBinarySearchM, isNewCard, dupKey, tieOverride) => {
     setRankMode(false);
     setAddView('addingItem');
     if (newItemImageUris.length > 0 && addedCustomImage) {
@@ -367,7 +368,15 @@ const Add = ({ route, navigation }) => {
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
       let newKey = null;
-      let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
+      let items;
+      if (tieOverride?.tieWithScore !== undefined) {
+        newItemObj.score = tieOverride.tieWithScore;
+        const insertAt = isNewCard ? newBinarySearchM : newBinarySearchM + 1;
+        itemComparisons.splice(insertAt, 0, newItemObj);
+        items = itemComparisons;
+      } else {
+        items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
+      }
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         let itemRef = null;
@@ -421,6 +430,7 @@ const Add = ({ route, navigation }) => {
         set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey });
         update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
       }
+      tooToughKeysRef.current = new Set();
       setAddView('itemAdded'); // ~ do we need this?
     } else {
       const newItemObj = {
@@ -439,7 +449,15 @@ const Add = ({ route, navigation }) => {
       };
       // make sure any changes to newItemObj are also reflected in itemComparisons
       let newKey = null;
-      let items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
+      let items;
+      if (tieOverride?.tieWithScore !== undefined) {
+        newItemObj.score = tieOverride.tieWithScore;
+        const insertAt = isNewCard ? newBinarySearchM : newBinarySearchM + 1;
+        itemComparisons.splice(insertAt, 0, newItemObj);
+        items = itemComparisons;
+      } else {
+        items = addElementAndRecalculate(itemComparisons, newItemObj, newBinarySearchM, isNewCard);
+      }
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         let itemRef = null;
@@ -492,6 +510,7 @@ const Add = ({ route, navigation }) => {
         set(eventsRef, { evokerId: userKey, content: 'tagged you in a post: ' + newItem + '!', timestamp: Date.now(), postId: newKey, image: newItemImageUris[0] || null });
         update(ref(database, 'users/' + taggedUser.userId), { unreadNotifications: true });
       }
+      tooToughKeysRef.current = new Set();
       setAddView('itemAdded');
     }
 
@@ -590,6 +609,7 @@ const Add = ({ route, navigation }) => {
       } 
       setItemComparisons(itemComparisons)
       setNewItemBucket(bucket); // bucket doesn't update fast enough so need to pass in as a parameter
+      tooToughKeysRef.current = new Set();
       setBinarySearchL(0);
       setBinarySearchR(itemComparisons.length - 1);
       setBinarySearchM(Math.floor((itemComparisons.length - 1) / 2));
@@ -631,6 +651,19 @@ const Add = ({ route, navigation }) => {
   }
 
   const onTooToughPress = () => {
+    const currentCompareItem = itemComparisons[binarySearchM];
+    const currentKey = currentCompareItem?.key;
+
+    if (currentKey && tooToughKeysRef.current.has(currentKey)) {
+      setBinarySearchL(0);
+      setBinarySearchR(0);
+      addNewItem(newItemBucket, binarySearchM, true, undefined, { tieWithScore: currentCompareItem.score });
+      return;
+    }
+
+    if (currentKey) {
+      tooToughKeysRef.current.add(currentKey);
+    }
     setBinarySearchM(prev => prev + 1);
     if (binarySearchM >= binarySearchR) {
       setBinarySearchL(0);

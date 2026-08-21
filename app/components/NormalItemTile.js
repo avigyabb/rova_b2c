@@ -94,13 +94,14 @@ const styles = StyleSheet.create({
 const arePropsEqual = (prevProps, nextProps) =>
   prevProps.item.key === nextProps.item.key &&
   prevProps.item.score === nextProps.item.score &&
-  prevProps.topPostsTime === nextProps.topPostsTime;
+  prevProps.topPostsTime === nextProps.topPostsTime &&
+  prevProps.imagePriority === nextProps.imagePriority;
 
-const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex, onBlockUser, onReportItem }) => {
+const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex, onBlockUser, onReportItem, imagePriority='normal' }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState('https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
-  const [dimensions, setDimensions] = useState({ width: undefined, height: undefined });
+  const [dimensions, setDimensions] = useState({ width: 260, height: 260 });
   const [itemDescription, setItemDescription] = useState(item.description);
   const [likes, setLikes] = useState({});
   const [dislikes, setDislikes] = useState({});
@@ -816,6 +817,10 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
                     style={{ width: 260, height: 260, borderRadius: 5, borderWidth: 0.5, borderColor: 'lightgrey' }}
                     contentFit="cover"
                     cachePolicy="memory-and-disk"
+                    placeholder={{ blurhash: 'L6PZfSjE.AyE_3t7t7R**0o#DgR4' }}
+                    transition={200}
+                    recyclingKey={`${item.key}-${imgUri}`}
+                    priority={imagePriority}
                   />
                 )}
               />
@@ -848,6 +853,10 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
               }}
               onLoad={onImageLoad}
               cachePolicy="memory-and-disk"
+              placeholder={{ blurhash: 'L6PZfSjE.AyE_3t7t7R**0o#DgR4' }}
+              transition={200}
+              recyclingKey={item.key}
+              priority={imagePriority}
             />
           )}
           </>
