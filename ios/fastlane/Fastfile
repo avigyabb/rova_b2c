@@ -45,6 +45,17 @@ platform :ios do
     UI.success("✅ Authenticated with App Store Connect. Latest TestFlight build number: #{build}")
   end
 
+  desc "Read-only: report the build number currently LIVE on the public App Store"
+  lane :status do
+    api_key = asc_api_key
+    live_build = app_store_build_number(
+      api_key: api_key,
+      app_identifier: "com.swing.b2capp",
+      live: true
+    )
+    UI.success("🟢 Live on the public App Store: build #{live_build}")
+  end
+
   desc "Create/update the App Store version, attach latest build, and submit for review"
   lane :release do |options|
     api_key = asc_api_key
