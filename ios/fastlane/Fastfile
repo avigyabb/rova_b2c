@@ -60,6 +60,7 @@ platform :ios do
       release_notes: { "en-US" => notes },
       submit_for_review: true,
       automatic_release: true,
+      reject_if_possible: ENV["REJECT_IN_REVIEW"] == "true", # cancel a version already in review first
       force: true,                    # skip the interactive HTML metadata preview
       run_precheck_before_submit: true,
       skip_screenshots: true,         # don't touch existing screenshots
