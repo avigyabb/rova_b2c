@@ -97,7 +97,7 @@ const arePropsEqual = (prevProps, nextProps) =>
   prevProps.topPostsTime === nextProps.topPostsTime &&
   prevProps.imagePriority === nextProps.imagePriority;
 
-const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, individualSpotifyAccessToken, promptAsync, setIndex, onBlockUser, onReportItem, imagePriority='normal' }) => {
+const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedView, navigation, visitingUserId, editMode=false, setFocusedItemDescription, topPostsTime, setItemInfo, showComments=false, autoOpenComments=false, individualSpotifyAccessToken, promptAsync, setIndex, onBlockUser, onReportItem, imagePriority='normal' }) => {
   const userRef = ref(database, `users/${item.user_id}`);
   const [username, setUsername] = useState('');
   const [userImage, setUserImage] = useState('https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png');
@@ -123,6 +123,10 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
   const [profileList, setProfileList] = useState([])
   const [loading, setLoading] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
+
+  useEffect(() => {
+    if (autoOpenComments && item.focusCommentId) setCommentsModalVisible(true);
+  }, [autoOpenComments, item.focusCommentId]);
 
   const onImageLoad = (event) => {
     const { width, height } = event.source;
@@ -384,6 +388,7 @@ const NormalItemTile = React.memo(({ item, showButtons=true, userKey, setFeedVie
           timestamp: Date.now(),
           image: item.image,
           postId: item.key,
+          commentId: itemCommentRef.key,
           type: 'comment_reply'
         });
 

@@ -285,7 +285,12 @@ const Add = ({ route, navigation }) => {
     let found = null;
     snapshot.forEach((childSnapshot) => {
       const val = childSnapshot.val();
-      if (val.content === newItem || (newImage && val.image === newImage)) {
+      // Prefer matching on Spotify/preset id — it's unique per track/movie/artist.
+      // Songs from the same album share an image URL, so image-based dedupe would
+      // wrongly collapse two different songs from one album into one entry.
+      if (newItemId && val.id) {
+        if (val.id === newItemId) found = childSnapshot.key;
+      } else if (val.content === newItem || (newImage && val.image === newImage)) {
         found = childSnapshot.key;
       }
     });
@@ -955,9 +960,7 @@ const Add = ({ route, navigation }) => {
       }, text);
       setLoadingItems(false);
     }
-  };  
-
-  console.log(loadingItems)
+  };
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>

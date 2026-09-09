@@ -18,7 +18,10 @@ const CommentItem = ({
   itemOwnerId,
   setFeedView,
   navigation,
-  onCloseComments
+  onCloseComments,
+  expandedParentIds,
+  highlightedCommentId,
+  highlightStyle
 }) => {
   const [userInfo, setUserInfo] = useState({});
   const [liked, setLiked] = useState(false);
@@ -28,6 +31,13 @@ const CommentItem = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [replies, setReplies] = useState([]);
   const [replyCount, setReplyCount] = useState(comment.replyCount || 0);
+
+  // Auto-expand this thread if a descendant is the notification target.
+  useEffect(() => {
+    if (expandedParentIds && expandedParentIds.has(commentId)) {
+      setIsExpanded(true);
+    }
+  }, [expandedParentIds, commentId]);
 
   // Fetch user info
   useEffect(() => {
@@ -192,9 +202,10 @@ const CommentItem = ({
   // Only apply indent to level 1 (direct replies)
   // Level 2+ replies are nested inside level 1, so they inherit the indent automatically
   const indentWidth = level === 1 ? 48 : 0;
+  const isHighlighted = highlightedCommentId && commentId === highlightedCommentId;
 
   return (
-    <View style={{ marginLeft: indentWidth }}>
+    <View style={[{ marginLeft: indentWidth }, isHighlighted ? highlightStyle : null]}>
       <View style={{ flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 16 }}>
         <TouchableOpacity onPress={() => visitingUserId === comment.userId ? navigation.navigate('Profile') : setFeedView({ userKey: comment.userId, username: userInfo.username })}>
           <Image
@@ -293,6 +304,9 @@ const CommentItem = ({
               setFeedView={setFeedView}
               navigation={navigation}
               onCloseComments={onCloseComments}
+              expandedParentIds={expandedParentIds}
+              highlightedCommentId={highlightedCommentId}
+              highlightStyle={highlightStyle}
             />
           ))}
         </View>
@@ -318,6 +332,8 @@ export default React.memo(CommentItem, (prevProps, nextProps) => {
     prevProps.comment.id === nextProps.comment.id &&
     JSON.stringify(prevProps.comment.likes) === JSON.stringify(nextProps.comment.likes) &&
     prevProps.comment.replyCount === nextProps.comment.replyCount &&
-    prevProps.comment.comment === nextProps.comment.comment
+    prevProps.comment.comment === nextProps.comment.comment &&
+    prevProps.highlightedCommentId === nextProps.highlightedCommentId &&
+    prevProps.expandedParentIds === nextProps.expandedParentIds
   );
 });

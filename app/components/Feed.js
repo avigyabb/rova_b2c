@@ -416,7 +416,6 @@ const Feed = ({ route, navigation }) => {
         tempFocusedItem.key = item.postId;
         tempFocusedItem.focusCommentId = item.commentId; // NEW: Pass commentId for deep linking
         setFocusedItem(tempFocusedItem);
-        setNotifications(null);
       });
     }
 
@@ -424,7 +423,6 @@ const Feed = ({ route, navigation }) => {
       <View style={{ width: '95%', flexDirection: 'row', padding: 10 }}>
         <TouchableOpacity onPress={() => {
           setFeedView({ userKey: item.evokerId, username: userInfo.username });
-          setNotifications(null);
         }}>
           <Image
             source={userInfo.profile_pic || 'https://www.prolandscapermagazine.com/wp-content/uploads/2022/05/blank-profile-photo.png'}
@@ -440,7 +438,13 @@ const Feed = ({ route, navigation }) => {
             <Text style={{ fontSize: 15, fontWeight: 'bold', marginRight: 20 }}>{userInfo.name}</Text>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 15, marginTop: 5, flexShrink: 1 }}>{item.content} <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text></Text>
+            <TouchableOpacity
+              style={{ flexShrink: 1 }}
+              onPress={() => { if (item.postId) onItemPress(item); }}
+              activeOpacity={item.postId ? 0.6 : 1}
+            >
+              <Text style={{ fontSize: 15, marginTop: 5 }}>{item.content} <Text style={{ color: 'grey', fontSize: 10 }}>{realDateStr}</Text></Text>
+            </TouchableOpacity>
             {item.content.includes('follow') ? (
               <>
               {isLoadingFollowBack ? (
@@ -478,6 +482,22 @@ const Feed = ({ route, navigation }) => {
     <NormalItemTile item={item} userKey={userKey} setFeedView={setFeedView} navigation={navigation} visitingUserId={userKey} topPostsTime={topPostsTime} individualSpotifyAccessToken={individualSpotifyAccessToken} promptAsync={promptAsync} onBlockUser={onBlockUserLocal} />
   ), [topPostsTime, individualSpotifyAccessToken, promptAsync, onBlockUserLocal]);
 
+  if (focusedItem) {
+    return (
+      <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => {
+          setFocusedItem(null)
+        }}>
+          <Ionicons name="arrow-back" size={30} color="black" />
+        </TouchableOpacity>
+
+      </View>
+      <NormalItemTile item={focusedItem} userKey={userKey} visitingUserId={userKey} navigation={navigation} autoOpenComments={true} setFeedView={setFeedView} onBlockUser={onBlockUserLocal}/>
+      </View>
+    );
+  }
+
   if (notifications) {
     return (
       <View style={{ backgroundColor: 'white', height: '100%' }}>
@@ -486,7 +506,7 @@ const Feed = ({ route, navigation }) => {
             setNotifications(null)
             setFeedType('For You')
             getListData();
-          }}> 
+          }}>
             <Ionicons name="arrow-back" size={30} color="black" />
           </TouchableOpacity>
           <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Notifications</Text>
@@ -497,22 +517,6 @@ const Feed = ({ route, navigation }) => {
         />
       </View>
     )
-  }
-
-  if (focusedItem) {
-    return (
-      <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: 'lightgrey', justifyContent: 'space-between', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => {
-          setFocusedItem(null)
-        }}> 
-          <Ionicons name="arrow-back" size={30} color="black" />
-        </TouchableOpacity>
-  
-      </View>
-      <NormalItemTile item={focusedItem} userKey={userKey} visitingUserId={userKey} navigation={navigation} showComments={true} setFeedView={setFeedView} onBlockUser={onBlockUserLocal}/>
-      </View>
-    );
   }
 
   if (feedView) {
