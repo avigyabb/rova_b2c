@@ -30,11 +30,13 @@ const CommentsBottomSheet = ({
   focusCommentId
 }) => {
   const [comments, setComments] = useState([]);
+  const [commentMap, setCommentMap] = useState({});
   const [newComment, setNewComment] = useState('');
   const [replyMode, setReplyMode] = useState(null); // { commentId, username, userId }
   const [loading, setLoading] = useState(true);
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
   const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+  const [expandedParentIds, setExpandedParentIds] = useState(new Set());
 
   // Ref for FlatList to enable scrollToIndex
   const flatListRef = useRef(null);
@@ -60,11 +62,14 @@ const CommentsBottomSheet = ({
 
       const unsubscribe = onValue(commentsRef, (snapshot) => {
         const commentsData = [];
+        const flatMap = {};
         snapshot.forEach((childSnapshot) => {
-          commentsData.push({
+          const entry = {
             id: childSnapshot.key,
             ...childSnapshot.val()
-          });
+          };
+          commentsData.push(entry);
+          flatMap[entry.id] = entry;
         });
 
         // Sort comments by timestamp (newest first for top-level)
@@ -73,6 +78,7 @@ const CommentsBottomSheet = ({
           .sort((a, b) => b.timestamp - a.timestamp);
 
         setComments(topLevelComments);
+        setCommentMap(flatMap);
         setLoading(false);
       });
 
@@ -80,32 +86,45 @@ const CommentsBottomSheet = ({
     }
   }, [visible, item]);
 
-  // Scroll to and highlight the focused comment when focusCommentId changes
+  // Scroll to and highlight the focused comment when focusCommentId changes.
+  // If the target is a reply, walk up ancestors to find its top-level parent,
+  // expand every ancestor along the way, then scroll to the top-level and
+  // highlight the actual reply.
   useEffect(() => {
-    if (focusCommentId && visible && comments.length > 0 && !loading) {
-      // Small delay to ensure FlatList is fully rendered
-      setTimeout(() => {
-        const commentIndex = comments.findIndex(c => c.id === focusCommentId);
+    if (!focusCommentId || !visible || comments.length === 0 || loading) return;
 
-        if (commentIndex !== -1) {
-          // Scroll to the comment
-          flatListRef.current?.scrollToIndex({
-            index: commentIndex,
-            animated: true,
-            viewPosition: 0.3 // Position at 30% from top of screen
-          });
+    const target = commentMap[focusCommentId];
+    if (!target) return;
 
-          // Highlight the comment
-          setHighlightedCommentId(focusCommentId);
-
-          // Remove highlight after 3 seconds
-          setTimeout(() => {
-            setHighlightedCommentId(null);
-          }, 3000);
-        }
-      }, 300); // 300ms delay for UI to settle
+    // Walk up the parent chain until we hit a top-level comment.
+    const ancestors = new Set();
+    let cursor = target;
+    while (cursor && cursor.parentCommentId) {
+      ancestors.add(cursor.parentCommentId);
+      cursor = commentMap[cursor.parentCommentId];
     }
-  }, [focusCommentId, visible, comments, loading]);
+    const topLevelId = cursor ? cursor.id : focusCommentId;
+
+    setExpandedParentIds(ancestors);
+    setHighlightedCommentId(focusCommentId);
+
+    setTimeout(() => {
+      const topLevelIndex = comments.findIndex(c => c.id === topLevelId);
+      if (topLevelIndex !== -1) {
+        flatListRef.current?.scrollToIndex({
+          index: topLevelIndex,
+          animated: true,
+          viewPosition: 0.3
+        });
+      }
+    }, 300);
+
+    const highlightTimer = setTimeout(() => {
+      setHighlightedCommentId(null);
+    }, 3000);
+
+    return () => clearTimeout(highlightTimer);
+  }, [focusCommentId, visible, comments, loading, commentMap]);
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
@@ -228,26 +247,21 @@ const CommentsBottomSheet = ({
               contentContainerStyle={styles.commentsListContent}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item: comment }) => (
-                <View
-                  style={
-                    comment.id === highlightedCommentId
-                      ? styles.highlighted
-                      : null
-                  }
-                >
-                  <CommentItem
-                    comment={comment}
-                    commentId={comment.id}
-                    level={0}
-                    itemKey={item.key}
-                    itemOwnerId={item.user_id}
-                    onReply={handleReply}
-                    visitingUserId={visitingUserId}
-                    navigation={navigation}
-                    setFeedView={setFeedView}
-                    onCloseComments={onClose}
-                  />
-                </View>
+                <CommentItem
+                  comment={comment}
+                  commentId={comment.id}
+                  level={0}
+                  itemKey={item.key}
+                  itemOwnerId={item.user_id}
+                  onReply={handleReply}
+                  visitingUserId={visitingUserId}
+                  navigation={navigation}
+                  setFeedView={setFeedView}
+                  onCloseComments={onClose}
+                  expandedParentIds={expandedParentIds}
+                  highlightedCommentId={highlightedCommentId}
+                  highlightStyle={styles.highlighted}
+                />
               )}
               onScrollToIndexFailed={(info) => {
                 // Fallback: scroll to offset if index fails
