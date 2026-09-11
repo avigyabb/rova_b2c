@@ -27,7 +27,7 @@
     ],
     "name": "ambora",
     "slug": "rova-b2c-app",
-    "version": "1.0.45",
+    "version": "1.0.46",
     "ios": {
       "bundleIdentifier": "com.swing.b2capp",
       "googleServicesFile": "./GoogleService-Info.plist",
