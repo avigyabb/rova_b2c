@@ -23,6 +23,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 Read-only check: authenticate with the ASC API key and print the latest build
 
+### ios status
+
+```sh
+[bundle exec] fastlane ios status
+```
+
+Read-only: report the build number currently LIVE on the public App Store
+
 ### ios release
 
 ```sh
